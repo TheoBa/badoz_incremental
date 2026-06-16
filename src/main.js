@@ -1,13 +1,19 @@
 // main.js — entry point
 // Boots the game: loads state, wires tab switching, starts the tick loop.
 
-import { initState }  from './engine/state.js';
-import { startTick }  from './engine/tick.js';
-import { load, save } from './engine/save.js';
-import { render }     from './ui/render.js';
+import { initState }     from './engine/state.js';
+import { startTick }     from './engine/tick.js';
+import { load, save }    from './engine/save.js';
+import { render }        from './ui/render.js';
+import { generateMissions } from './engine/missions.js';
 
 // ── Load or initialise state ───────────────────────────────────
 const state = load() ?? initState();
+
+// Seed missions on first boot (missions array is empty in fresh state)
+if (state.freelance.missions.length === 0) {
+  state.freelance.missions = generateMissions(state.freelance.tier);
+}
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {

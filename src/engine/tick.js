@@ -3,6 +3,7 @@
 // Every 24 ticks = 1 in-game day.
 
 import { CONSTANTS } from './state.js';
+import { generateMissions } from './missions.js';
 
 export function startTick(state, onTick) {
   setInterval(() => {
@@ -57,7 +58,7 @@ function applyDailyLabBilling(state) {
 
 // ── Freelance mission refresh ──────────────────────────────────
 function refreshFreelanceMissions(state) {
-  // TODO: generate new mission pool based on state.freelance.tier
+  state.freelance.missions = generateMissions(state.freelance.tier);
 }
 
 // ── Histogram snapshots (one per in-game day) ──────────────────
