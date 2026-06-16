@@ -1,0 +1,117 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## What this project is
+
+DEVRUN is a **finite, speedrunnable incremental game**. The player builds a SaaS product from solo dev to $1B exit. The win condition is hard — every run ends. The design goal is that first-timers discover the game blind, then replay faster with accumulated knowledge.
+
+This is a personal project by Théo — keep implementations lean and readable over clever.
+
+---
+
+## Dev commands
+
+```bash
+npm run dev      # start server with auto-restart on file change (uses node --watch)
+npm start        # start server without auto-restart (production)
+```
+
+The Express server (`server/index.js`) serves the static frontend from the project root **and** provides the `/api/*` routes. There is no separate build step — the frontend uses native ES modules (`type="module"` in `index.html`), so the browser loads files directly without bundling.
+
+To test the API manually:
+```bash
+curl http://localhost:3000/api/analytics/runs
+curl -X POST http://localhost:3000/api/state/save \
+  -H "Content-Type: application/json" \
+  -d '{"playerId":"theo","state":{}}'
+```
+
+nginx proxies port 80 → 3000. Config lives at `infra/nginx.conf`.
+
+---
+
+## Architecture
+
+### The single rule: state flows one way
+
+```
+tick.js mutates state → render.js reads state → DOM updates
+```
+
+`state.js` is the **only place state lives**. No tab file, no render function, no route handler ever stores game values locally. This makes save/load trivial (serialize the whole object) and makes bugs easy to find (if something is wrong, check state.js first).
+
+### Frontend
+
+- **`src/main.js`** — entry point. Loads state (from save or `initState()`), calls `render()`, starts the tick loop.
+- **`src/engine/state.js`** — canonical state object + `CONSTANTS` (all balancing variables). When filling in `null` constants, change only this file.
+- **`src/engine/tick.js`** — game loop. Fires every `CONSTANTS.TICK_RATE` seconds (1 real second = 1 in-game hour). Every 24 ticks = 1 in-game day.
+- **`src/engine/save.js`** — localStorage persistence. Will later sync to `/api/state`.
+- **`src/ui/render.js`** — top-level renderer. Reads `state`, dispatches to the active tab's render function.
+- **`src/tabs/*.js`** — one file per game tab. Each exports a `renderXxx(state)` function and action handlers (`onXxx(state, ...args)`). Action handlers **mutate state directly** — they do not return new state.
+- **`src/ui/histograms.js`** — shared utility for the 7-bar KPI histograms.
+
+### Backend
+
+- **`server/index.js`** — Express entry. Mounts `/api/analytics` and `/api/state` routers, serves static files.
+- **`server/routes/analytics.js`** — POST `/event` (ingest game events), GET `/runs` (run history).
+- **`server/routes/state.js`** — POST `/save`, GET `/load` (server-side save slot).
+- **`server/db/init.js`** — initialises sql.js (pure-JS SQLite, no native build). DB is kept in memory and flushed to `server/db/badoz.db.bin` after every write via `persist()`. Call `persist()` after every `db.run()` that writes data.
+- **`server/db/schema.sql`** — three tables: `runs`, `events`, `saves`.
+
+---
+
+## Naming & style conventions
+
+- **snake_case everywhere in the UI** — tab names, property names, button labels. This is intentional: the game has a nerdy dev aesthetic.
+- **Tab identifiers**: `write_code`, `ship_feature`, `freelance`, `investment`, `frontier_lab`, `post_on_x`.
+- **CONSTANTS keys** use `PascalCase_with_underscores` (e.g. `Freelance_RCU_T1`) — this matches the GDD vocabulary so balancing discussions map directly to code.
+- **`null` constants are not yet tuned** — do not invent values. Leave them `null` until a balancing pass sets them deliberately.
+
+---
+
+## Color coding (do not change without updating both places)
+
+These three colors are used consistently across `ship_feature` upgrade cards (left border accent) **and** the KPI dashboard dot labels:
+
+| Property | Color | Hex |
+|---|---|---|
+| `satisfaction` | teal | `#1D9E75` |
+| `retention` | blue | `#378ADD` |
+| `marketing_stream` | amber | `#BA7517` |
+
+---
+
+## Key game mechanics (for context when editing logic)
+
+- **Tick rate**: 1 real second = 1 in-game hour. 24 ticks = 1 day. 1 month ≈ 12 real minutes.
+- **Three milestone tracks** (checked in `tick.js → checkMilestones`):
+  1. Lifetime RCU → freelance tier upgrades (Junior → Senior → Lead → 10x)
+  2. Cumulative Frontier Lab spend → agent unlocks
+  3. Lifetime money earned → subscription price rounds (one-way, triggers demand shock)
+- **Rush option** in freelance: one-time unlock costing `Freelance_RCU_T1` RCU, doubles mission reward, instant completion.
+- **post_on_x**: available once per in-game day (24-tick cooldown). Each post compounds `reputation.multiplier` by ×1.05. No streak mechanic.
+- **Frontier Lab billing**: plan changes take effect at the next in-game day boundary (tick % 24 === 0). Daily cost deducted then.
+- **Run info panel** in the KPI dashboard is hidden until `state.runCount > 0`.
+
+---
+
+## Git workflow
+
+- **`main`** — stable only. Never commit directly. Merges from `dev` only.
+- **`dev`** — active development. All feature branches merge here.
+- **`feature/xxx`** — short-lived, one mechanic per branch. Branch from `dev`, PR back to `dev`.
+
+Commit message format: `type(scope): description`
+Common types: `feat`, `fix`, `chore`, `docs`, `infra`, `refactor`.
+Examples: `feat(tick): implement daily revenue`, `fix(server): correct static file path`.
+
+Known issue: the macOS FUSE mount used by the Linux sandbox blocks `unlink()`, so git emits `unable to unlink` warnings. These are harmless — the post-commit hook at `.git/hooks/post-commit` clears stale lock files using `mv` instead of `rm`.
+
+---
+
+## What is not yet implemented (Phase 3 onwards)
+
+All `// TODO` stubs in `tick.js`, the tab render functions in `src/tabs/`, and the analytics event emission in `src/engine/save.js` are intentional placeholders. Do not fill them in incidentally while working on something else — each is its own feature branch.
