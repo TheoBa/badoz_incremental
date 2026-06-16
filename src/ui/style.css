@@ -169,10 +169,7 @@ body {
   border-radius: var(--radius);
   padding: 10px 13px;
   margin-bottom: 7px;
-<<<<<<< HEAD
   min-height: 54px; /* fixed height — accepted cards must not shrink the row */
-=======
->>>>>>> bc09f8a (chore: carry forward feature/freelance changes onto saas-product base)
 }
 .fl-card-done {
   opacity: .5;

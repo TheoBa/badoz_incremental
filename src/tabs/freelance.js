@@ -36,7 +36,6 @@ export function renderFreelance(state) {
 
 function missionCard(m, state) {
   const canAfford = state.rcu >= m.rcuCost;
-<<<<<<< HEAD
   const sub = m.accepted
     ? `completed ✓ · +${fmt(m.reward)}`
     : `cost <b class="teal">${fmtN(m.rcuCost)} RCU</b> · reward <b class="money">${fmt(m.reward)}</b>`;
@@ -48,34 +47,14 @@ function missionCard(m, state) {
       <div class="fl-card-left">
         <div class="fl-card-name">${m.name}</div>
         <div class="fl-card-sub">${sub}</div>
-=======
-  if (m.accepted) {
-    return `
-      <div class="fl-card fl-card-done">
-        <div class="fl-card-name">${m.name}</div>
-        <div class="fl-card-sub">completed ✓ · +${fmt(m.reward)}</div>
-      </div>`;
-  }
-  return `
-    <div class="fl-card">
-      <div class="fl-card-left">
-        <div class="fl-card-name">${m.name}</div>
-        <div class="fl-card-sub">cost <b class="teal">${fmtN(m.rcuCost)} RCU</b> · reward <b class="money">${fmt(m.reward)}</b></div>
->>>>>>> bc09f8a (chore: carry forward feature/freelance changes onto saas-product base)
       </div>
       <div class="fl-card-actions">
         <button
           id="fl-accept-${m.id}"
           class="fl-btn-accept"
-<<<<<<< HEAD
           ${m.accepted || !canAfford ? 'disabled' : ''}
           title="${m.accepted ? '' : canAfford ? '' : `need ${fmtN(m.rcuCost)} RCU`}">
           ${m.accepted ? 'done' : 'accept'}
-=======
-          ${canAfford ? '' : 'disabled'}
-          title="${canAfford ? '' : `need ${fmtN(m.rcuCost)} RCU`}">
-          accept
->>>>>>> bc09f8a (chore: carry forward feature/freelance changes onto saas-product base)
         </button>
         <button class="fl-btn-rush" disabled title="rush locked">rush ×2</button>
       </div>
