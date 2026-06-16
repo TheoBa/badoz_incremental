@@ -1,11 +1,8 @@
-// investment.js — tab renderer
-// Spend money on marketing campaigns and one-time growth events.
-
+// investment.js — stub (not yet implemented)
 export function renderInvestment(state) {
-  // TODO: render available and milestone-locked investment options
-}
-
-/** Called when player triggers an investment. */
-export function onInvest(state, investmentId) {
-  // TODO: deduct cost from wallet, apply effect (marketing stream spike, reputation, etc.)
+  const panel = document.getElementById('panel-investment');
+  if (!panel._built) {
+    panel.innerHTML = '<p style="color:var(--text2);padding:20px;font-size:12px">investment — coming soon</p>';
+    panel._built = true;
+  }
 }

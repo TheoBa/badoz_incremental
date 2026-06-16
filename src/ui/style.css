@@ -1,0 +1,153 @@
+/* style.css — global game styles */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #ffffff;
+  --bg2:     #f8f8f6;
+  --bg3:     #f1efe8;
+  --text:    #1a1a1a;
+  --text2:   #666;
+  --text3:   #999;
+  --border:  rgba(0,0,0,0.12);
+  --border2: rgba(0,0,0,0.22);
+  --radius:  8px;
+  --teal:    #1D9E75;
+  --blue:    #378ADD;
+  --amber:   #BA7517;
+  --red:     #c94040;
+  --mono:    'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+body {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg3);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--bg2);
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+#header-title { font-weight: 600; font-size: 14px; letter-spacing: 1px; }
+#header-stats { display: flex; gap: 16px; font-size: 11px; color: var(--text2); }
+#header-stats b { color: var(--text); font-weight: 500; }
+
+/* ── Tab bar ─────────────────────────────────────────────────── */
+#tabbar {
+  display: flex;
+  background: var(--bg2);
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.tab {
+  padding: 8px 13px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tab.on { color: var(--text); border-bottom-color: var(--teal); font-weight: 500; }
+
+/* ── Body ────────────────────────────────────────────────────── */
+#body {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  flex: 1;
+  overflow: hidden;
+}
+#main { padding: 14px; overflow-y: auto; }
+.panel { display: none; }
+.panel.on { display: block; }
+
+/* ── KPI sidebar ─────────────────────────────────────────────── */
+#kpi {
+  padding: 12px;
+  background: var(--bg2);
+  border-left: 0.5px solid var(--border);
+  overflow-y: auto;
+}
+.kpi-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+.km { margin-bottom: 14px; }
+.km-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--text2);
+  margin-bottom: 2px;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.km-val { font-size: 17px; font-weight: 500; }
+.hist { display: flex; align-items: flex-end; gap: 2px; height: 24px; margin-top: 4px; }
+.hist-bar { flex: 1; border-radius: 1px 1px 0 0; min-height: 2px; }
+.sr {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 11px;
+  color: var(--text2);
+}
+.sr:last-child { border-bottom: none; }
+.sr b { color: var(--text); font-weight: 500; }
+
+/* ── write_code tab ──────────────────────────────────────────── */
+.rcu-display { text-align: center; margin: 10px 0 4px; }
+.rcu-count { font-size: 48px; font-weight: 500; color: var(--teal); letter-spacing: -2px; }
+.rcu-label { font-size: 11px; color: var(--text2); margin-bottom: 14px; }
+.write-btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  font-size: 15px;
+  font-family: var(--mono);
+  cursor: pointer;
+  border: 0.5px solid var(--teal);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--teal);
+  font-weight: 500;
+  letter-spacing: .5px;
+  margin-bottom: 14px;
+}
+.write-btn:active { opacity: .6; }
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 12px;
+  color: var(--text2);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-row b { color: var(--text); font-weight: 500; }
+
+/* ── Shared utility ──────────────────────────────────────────── */
+.money { color: var(--teal) !important; }
+.burn  { color: var(--red)  !important; }
+.teal  { color: var(--teal); }
+.blue  { color: var(--blue); }
+.amber { color: var(--amber); }

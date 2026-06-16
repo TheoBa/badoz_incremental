@@ -7,7 +7,84 @@
   <link rel="stylesheet" href="src/ui/style.css">
 </head>
 <body>
-  <div id="app"></div>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div id="header">
+    <div id="header-title">DEVRUN</div>
+    <div id="header-stats">
+      <span>⏱ <b id="h-timer">00:00</b></span>
+      <span>wallet <b id="h-wallet" class="money">$0</b></span>
+      <span>RCU <b id="h-rcu">0</b></span>
+      <span>RCU/h <b id="h-rcuh">0</b></span>
+      <span>MB/h <b id="h-mbh" class="burn">$0</b></span>
+    </div>
+  </div>
+
+  <!-- ── Tab bar ────────────────────────────────────────────── -->
+  <div id="tabbar">
+    <button class="tab on" data-tab="write_code">write_code</button>
+    <button class="tab" data-tab="ship_feature">ship_feature</button>
+    <button class="tab" data-tab="freelance">freelance</button>
+    <button class="tab" data-tab="investment">investment</button>
+    <button class="tab" data-tab="frontier_lab">frontier_lab</button>
+    <button class="tab" data-tab="post_on_x">post_on_x</button>
+  </div>
+
+  <!-- ── Body: main panel + KPI sidebar ────────────────────── -->
+  <div id="body">
+
+    <div id="main">
+      <div class="panel on" id="panel-write_code"></div>
+      <div class="panel"    id="panel-ship_feature"></div>
+      <div class="panel"    id="panel-freelance"></div>
+      <div class="panel"    id="panel-investment"></div>
+      <div class="panel"    id="panel-frontier_lab"></div>
+      <div class="panel"    id="panel-post_on_x"></div>
+    </div>
+
+    <div id="kpi">
+      <div class="kpi-label">dashboard</div>
+
+      <div class="km">
+        <div class="km-head"><span class="dot" style="background:#1D9E75"></span>lifetime earned</div>
+        <div class="km-val money" id="k-earned">$0</div>
+        <div class="hist" id="hist-earned"></div>
+      </div>
+
+      <div class="km">
+        <div class="km-head"><span class="dot" style="background:#888"></span>lifetime RCU</div>
+        <div class="km-val" id="k-rcu">0</div>
+        <div class="hist" id="hist-rcu"></div>
+      </div>
+
+      <div class="km">
+        <div class="km-head"><span class="dot" style="background:#378ADD"></span>MRR</div>
+        <div class="km-val" style="color:#378ADD" id="k-mrr">$0</div>
+        <div class="hist" id="hist-mrr"></div>
+      </div>
+
+      <div class="km">
+        <div class="km-head"><span class="dot" style="background:#c94040"></span>daily burn</div>
+        <div class="km-val burn" id="k-burn">$0/d</div>
+        <div class="hist" id="hist-burn"></div>
+      </div>
+
+      <div id="kpi-props">
+        <div class="kpi-label" style="margin-top:10px">saas_properties</div>
+        <div class="sr"><span class="teal">satisfaction</span><b id="k-sat">1.00</b></div>
+        <div class="sr"><span class="blue">retention</span><b id="k-ret">1.00</b></div>
+        <div class="sr"><span class="amber">mkt_stream</span><b id="k-mkt">0/d</b></div>
+      </div>
+
+      <div id="kpi-run-info" style="display:none">
+        <div class="kpi-label" style="margin-top:10px">run_info</div>
+        <div class="sr"><span>best run</span><b id="k-best">—</b></div>
+        <div class="sr"><span>runs</span><b id="k-runs">0</b></div>
+      </div>
+    </div>
+
+  </div>
+
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
