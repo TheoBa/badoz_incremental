@@ -223,3 +223,28 @@ body {
   color: var(--text2);
 }
 .hidden { display: none; }
+
+/* ── write_code — product & price sections ───────────────────── */
+.stat-section { margin-top: 12px; }
+.stat-section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.price-picker { margin-top: 4px; }
+.price-options { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+.price-opt {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text2);
+}
+.price-opt:hover { border-color: var(--teal); color: var(--teal); }
+.price-opt.on { background: #e2f5ee; border-color: var(--teal); color: #0d6e4e; font-weight: 500; }
+.price-hint { font-size: 10px; color: var(--text3); margin-top: 6px; font-style: italic; }

@@ -15,6 +15,12 @@ if (state.freelance.missions.length === 0) {
   state.freelance.missions = generateMissions(state.freelance.tier);
 }
 
+// Prompt for product name on very first boot
+if (!state.productName) {
+  const name = prompt('name your product (snake_case):') ?? 'my_saas';
+  state.productName = name.toLowerCase().replace(/\s+/g, '_') || 'my_saas';
+}
+
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {

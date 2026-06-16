@@ -20,8 +20,9 @@ function tick(state) {
 
   // Daily events (every 24 ticks = 1 in-game day)
   if (state.ticksElapsed % 24 === 0) {
-    applyDailyRevenue(state);
+    applyDailyAcquisition(state);
     applyDailyChurn(state);
+    applyDailyRevenue(state);
     applyDailyLabBilling(state);
     refreshFreelanceMissions(state);
     pushHistorySnapshot(state);
@@ -42,12 +43,31 @@ function applyLabAgents(state) {
 
 // ── Daily revenue ──────────────────────────────────────────────
 function applyDailyRevenue(state) {
-  // TODO: daily_revenue = (mrr / 30) * customers → add to wallet + moneyLifetime
+  if (state.saas.price === 0 || state.saas.customers < 1) return;
+  const daily = (state.saas.price * state.saas.customers) / 30;
+  state.wallet        += daily;
+  state.moneyLifetime += daily;
+  state.saas.mrr       = state.saas.price * state.saas.customers;
+}
+
+// ── Daily customer acquisition ─────────────────────────────────
+function applyDailyAcquisition(state) {
+  if (state.saas.price === 0) return;
+  // Base: 1 organic visitor/day minimum, boosted by marketingStream
+  const visitors   = 1 + state.saas.marketingStream;
+  const conversion = 0.05 * state.saas.satisfaction; // 5% base conversion rate
+  const gained     = visitors * conversion;
+  state.saas.customers += gained;
+  state.saas.mrr        = state.saas.price * state.saas.customers;
 }
 
 // ── Daily churn ────────────────────────────────────────────────
 function applyDailyChurn(state) {
-  // TODO: customers *= retention multiplier (small daily decay)
+  if (state.saas.customers < 1) return;
+  // 2% daily base churn, reduced by retention multiplier
+  const churnRate      = 0.02 / state.saas.retention;
+  state.saas.customers = Math.max(0, state.saas.customers - state.saas.customers * churnRate);
+  state.saas.mrr       = state.saas.price * state.saas.customers;
 }
 
 // ── Daily Lab billing ──────────────────────────────────────────
