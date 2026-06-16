@@ -5,6 +5,23 @@
 export const CONSTANTS = {
   TICK_RATE: 1,             // real seconds per in-game hour
 
+  // ── Freelance mission generation ──────────────────────────────
+  // Mean RCU cost per tier (μ in normal distribution)
+  Freelance_RCU_Cost_T1: 8,    // junior
+  Freelance_RCU_Cost_T2: 25,   // senior
+  Freelance_RCU_Cost_T3: 90,   // lead
+  Freelance_RCU_Cost_T4: 220,  // 10x
+
+  // Std dev as a fraction of the mean (0.3 → ±30% spread)
+  Freelance_RCU_StdDev: 0.3,
+
+  // Money reward = rcuCost × multiplier (higher tiers pay more per RCU)
+  Freelance_Money_Mult_T1: 5,
+  Freelance_Money_Mult_T2: 5,
+  Freelance_Money_Mult_T3: 6,
+  Freelance_Money_Mult_T4: 8,
+
+  // ── Milestone thresholds (not yet tuned) ─────────────────────
   Freelance_RCU_T1: null,  // RCU milestone → Senior tier
   Freelance_RCU_T2: null,  // RCU milestone → Lead tier
   Freelance_RCU_T3: null,  // RCU milestone → 10x tier

@@ -110,6 +110,8 @@ Examples: `feat(tick): implement daily revenue`, `fix(server): correct static fi
 
 Known issue: the macOS FUSE mount used by the Linux sandbox blocks `unlink()`, so git emits `unable to unlink` warnings. These are harmless — the post-commit hook at `.git/hooks/post-commit` clears stale lock files using `mv` instead of `rm`.
 
+**Claude must never attempt `git push`.** The sandbox has no GitHub credentials. After committing, always tell Théo to run `git push origin <branch>` from his terminal. Do not retry push on failure — hand it off immediately.
+
 ---
 
 ## What is not yet implemented (Phase 3 onwards)
