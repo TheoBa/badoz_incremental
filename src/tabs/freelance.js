@@ -36,26 +36,25 @@ export function renderFreelance(state) {
 
 function missionCard(m, state) {
   const canAfford = state.rcu >= m.rcuCost;
-  if (m.accepted) {
-    return `
-      <div class="fl-card fl-card-done">
-        <div class="fl-card-name">${m.name}</div>
-        <div class="fl-card-sub">completed ✓ · +${fmt(m.reward)}</div>
-      </div>`;
-  }
+  const sub = m.accepted
+    ? `completed ✓ · +${fmt(m.reward)}`
+    : `cost <b class="teal">${fmtN(m.rcuCost)} RCU</b> · reward <b class="money">${fmt(m.reward)}</b>`;
+
+  // Accepted cards keep the same DOM structure — only CSS changes (fl-card-done)
+  // so the card height stays fixed and the row never jumps.
   return `
-    <div class="fl-card">
+    <div class="fl-card${m.accepted ? ' fl-card-done' : ''}">
       <div class="fl-card-left">
         <div class="fl-card-name">${m.name}</div>
-        <div class="fl-card-sub">cost <b class="teal">${fmtN(m.rcuCost)} RCU</b> · reward <b class="money">${fmt(m.reward)}</b></div>
+        <div class="fl-card-sub">${sub}</div>
       </div>
       <div class="fl-card-actions">
         <button
           id="fl-accept-${m.id}"
           class="fl-btn-accept"
-          ${canAfford ? '' : 'disabled'}
-          title="${canAfford ? '' : `need ${fmtN(m.rcuCost)} RCU`}">
-          accept
+          ${m.accepted || !canAfford ? 'disabled' : ''}
+          title="${m.accepted ? '' : canAfford ? '' : `need ${fmtN(m.rcuCost)} RCU`}">
+          ${m.accepted ? 'done' : 'accept'}
         </button>
         <button class="fl-btn-rush" disabled title="rush locked">rush ×2</button>
       </div>
