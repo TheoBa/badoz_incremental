@@ -112,6 +112,16 @@ Known issue: the macOS FUSE mount used by the Linux sandbox blocks `unlink()`, s
 
 **Claude must never attempt `git push`.** The sandbox has no GitHub credentials. After committing, always tell Théo to run `git push origin <branch>` from his terminal. Do not retry push on failure — hand it off immediately.
 
+### PR descriptions
+
+When a feature branch is ready to push, Claude must write a PR description containing:
+
+1. **Purpose** — one sentence on what the branch adds or fixes and why it matters.
+2. **Changes** — a brief list of every file touched and what changed in each.
+3. **Testing notes** — anything Théo should verify manually before merging.
+
+Format it as a markdown block so Théo can paste it directly into the GitHub PR body.
+
 ---
 
 ## What is not yet implemented (Phase 3 onwards)
