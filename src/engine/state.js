@@ -36,8 +36,25 @@ export const CONSTANTS = {
   Lab_Money_T8: null,       // → Growth loops
   Lab_Money_T9: null,       // → AI CEO mode
 
-  Price_Round_T1: null,     // lifetime earned milestone → first price raise
-  Price_Round_T2: null,     // → second price raise
+  // Subscription price tiers (auto-set on saas_product tab discovery; one-way raises)
+  Saas_Price_T1: 1,         // initial price, set on first tab visit
+  Saas_Price_T2: 10,        // unlocks at Price_Round_T1 milestone
+  Saas_Price_T3: 100,       // unlocks at Price_Round_T2 milestone
+
+  Price_Round_T1: null,     // lifetime earned milestone → raise to T2
+  Price_Round_T2: null,     // lifetime earned milestone → raise to T3
+
+  // ── Ship feature upgrade curves ───────────────────────────────
+  // Base RCU cost of the first upgrade in each track
+  Ship_Satisfaction_Base_Cost: 10,
+  Ship_Retention_Base_Cost:    10,
+  Ship_Marketing_Base_Cost:    15,
+  // Each subsequent upgrade costs baseCost × Scale^level
+  Ship_Cost_Scale: 2,
+  // Stat gain per upgrade purchased
+  Ship_Satisfaction_Delta: 0.1,   // added to satisfaction multiplier
+  Ship_Retention_Delta:    0.1,   // added to retention multiplier
+  Ship_Marketing_Delta:    1,     // additional visitors/day
 
   WIN_CONDITION: 1_000_000_000,
 };

@@ -2,7 +2,7 @@
 // Called after every tick. Reads state, updates the DOM. Never touches state.
 
 import { renderWriteCode }   from '../tabs/write_code.js';
-import { renderShipFeature } from '../tabs/ship_feature.js';
+import { renderSaasProduct } from '../tabs/saas_product.js';
 import { renderFreelance }   from '../tabs/freelance.js';
 import { renderInvestment }  from '../tabs/investment.js';
 import { renderFrontierLab } from '../tabs/frontier_lab.js';
@@ -53,8 +53,8 @@ function renderKpi(state) {
 function renderActiveTab(state) {
   const active = document.querySelector('.tab.on')?.dataset.tab ?? 'write_code';
   switch (active) {
-    case 'write_code':   renderWriteCode(state);   break;
-    case 'ship_feature': renderShipFeature(state); break;
+    case 'write_code':    renderWriteCode(state);   break;
+    case 'saas_product':  renderSaasProduct(state); break;
     case 'freelance':    renderFreelance(state);   break;
     case 'investment':   renderInvestment(state);  break;
     case 'frontier_lab': renderFrontierLab(state); break;

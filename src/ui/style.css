@@ -220,3 +220,92 @@ body {
   color: var(--text2);
 }
 .hidden { display: none; }
+
+/* ── write_code — product & price sections ───────────────────── */
+.stat-section { margin-top: 12px; }
+.stat-section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.price-picker { margin-top: 4px; }
+.price-options { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+.price-opt {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text2);
+}
+.price-opt:hover { border-color: var(--teal); color: var(--teal); }
+.price-opt.on { background: #e2f5ee; border-color: var(--teal); color: #0d6e4e; font-weight: 500; }
+.price-hint { font-size: 10px; color: var(--text3); margin-top: 6px; font-style: italic; }
+
+/* ── saas_product tab ────────────────────────────────────────── */
+.sp-section {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 0.5px solid var(--border);
+}
+.sp-section:last-child { border-bottom: none; }
+.sp-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.sp-raise-btn {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 0.5px solid var(--teal);
+  color: var(--teal);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 6px;
+}
+.sp-raise-btn:disabled {
+  border-color: var(--border);
+  color: var(--text3);
+  cursor: not-allowed;
+}
+.sp-hint { font-size: 10px; color: var(--text3); font-style: italic; }
+
+/* ── ship_feature upgrade cards ──────────────────────────────── */
+.sf-card {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 13px;
+  margin-bottom: 7px;
+}
+.sf-track-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+.sf-track-name { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.sf-track-val  { font-size: 11px; color: var(--text2); }
+.sf-card-name  { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+.sf-card-sub   { font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+.sf-btn {
+  padding: 4px 11px;
+  font-size: 11px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 0.5px solid;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.sf-btn:disabled { border-color: var(--border) !important; color: var(--text3) !important; cursor: not-allowed; }
