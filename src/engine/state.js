@@ -21,28 +21,28 @@ export const CONSTANTS = {
   Freelance_Money_Mult_T3: 6,
   Freelance_Money_Mult_T4: 8,
 
-  // ── Milestone thresholds (not yet tuned) ─────────────────────
-  Freelance_RCU_T1: null,  // RCU milestone → Senior tier
-  Freelance_RCU_T2: null,  // RCU milestone → Lead tier
-  Freelance_RCU_T3: null,  // RCU milestone → 10x tier
+  // ── Milestone thresholds ─────────────────────────────────────
+  Freelance_RCU_T1: 500,      // lifetime RCU → Senior tier
+  Freelance_RCU_T2: 5_000,    // lifetime RCU → Lead tier
+  Freelance_RCU_T3: 50_000,   // lifetime RCU → 10x tier
 
-  Lab_Money_T1: null,       // cumulative Lab spend → AI Support
-  Lab_Money_T2: null,       // → AI Marketer
-  Lab_Money_T3: null,       // → Product Hunt (Investment tab)
-  Lab_Money_T4: null,       // → Growth Hacker agent
-  Lab_Money_T5: null,       // → Enterprise tier
-  Lab_Money_T6: null,       // → PR Bot agent
-  Lab_Money_T7: null,       // → Product Manager agent
-  Lab_Money_T8: null,       // → Growth loops
-  Lab_Money_T9: null,       // → AI CEO mode
+  Lab_Money_T1: 1_000,        // cumulative Lab spend → ai_support unlocked
+  Lab_Money_T2: 10_000,       // → ai_marketer unlocked
+  Lab_Money_T3: 50_000,       // → TBD (teaser)
+  Lab_Money_T4: 200_000,      // → TBD (teaser)
+  Lab_Money_T5: 500_000,      // → TBD (teaser)
+  Lab_Money_T6: null,         // → PR Bot agent
+  Lab_Money_T7: null,         // → Product Manager agent
+  Lab_Money_T8: null,         // → Growth loops
+  Lab_Money_T9: null,         // → AI CEO mode
 
   // Subscription price tiers (auto-set on saas_product tab discovery; one-way raises)
-  Saas_Price_T1: 1,         // initial price, set on first tab visit
-  Saas_Price_T2: 10,        // unlocks at Price_Round_T1 milestone
-  Saas_Price_T3: 100,       // unlocks at Price_Round_T2 milestone
+  Saas_Price_T1: 1,           // initial price, set on first tab visit
+  Saas_Price_T2: 10,          // unlocks at Price_Round_T1 milestone
+  Saas_Price_T3: 100,         // unlocks at Price_Round_T2 milestone
 
-  Price_Round_T1: null,     // lifetime earned milestone → raise to T2
-  Price_Round_T2: null,     // lifetime earned milestone → raise to T3
+  Price_Round_T1: 5_000,      // lifetime earned → raise to $10/mo
+  Price_Round_T2: 100_000,    // lifetime earned → raise to $100/mo
 
   // ── Ship feature upgrade curves ───────────────────────────────
   // Base RCU cost of the first upgrade in each track
@@ -96,12 +96,12 @@ export const CONSTANTS = {
   PostOnX_Rep_Delta: 0.01,   // reputation.multiplier += delta per post
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
 
+  // ── Price shock (applied when player manually raises price) ───
+  Saas_Price_Shock_Satisfaction: 0.2,  // flat decrease to satisfaction
+  Saas_Price_Shock_Retention:    0.1,  // flat decrease to retention
+
   // ── Frontier Lab ───────────────────────────────────────────────
   Lab_Unlock_Money: 100,           // moneyLifetime threshold before tab becomes active
-
-  // Agent unlock costs (RCU). null = not yet tuned.
-  Lab_Support_Unlock_RCU:  null,
-  Lab_Marketer_Unlock_RCU: null,
 
   // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
   // Formula: floor(Minor_RCU_Base × Minor_Scale^totalMinorIncrements)
@@ -118,6 +118,18 @@ export const CONSTANTS = {
   // Then multiplied by the active plan multiplier (free plan = idle, no output)
   Lab_Coder_RCU_Base:  1,  // RCU/h at v1.0 with plan mult 1×
   Lab_Coder_RCU_Delta: 1,  // additional RCU/h per minor increment
+
+  // AI Support: flat retention bonus (added to effective retention in churn calc)
+  // Formula: (Retention_Base + totalMinorIncrements × Retention_Delta) × plan.multiplier
+  Lab_Support_Retention_Base:  0.2,   // retention bonus at v1.0 on any paid plan
+  Lab_Support_Retention_Delta: 0.05,  // additional per minor increment
+
+  // AI Marketer: marketing visitors/d + reputation/d
+  // Marketing formula: (Marketing_Base + totalMinorIncrements × Marketing_Delta) × plan.multiplier
+  // Rep formula: Rep_Per_Day × plan.multiplier  (applied daily if agent is on paid plan)
+  Lab_Marketer_Marketing_Base:  2,     // visitors/d at v1.0 on hobbyist
+  Lab_Marketer_Marketing_Delta: 1,     // additional visitors/d per minor increment
+  Lab_Marketer_Rep_Per_Day:     0.001, // reputation.multiplier += this per day (× plan.mult)
 
   WIN_CONDITION: 1_000_000_000,
 };
@@ -186,11 +198,48 @@ export function calcModelMajorUpgradeCost(agent) {
 /**
  * Base passive RCU/h for this agent before plan multiplier.
  * Formula: Coder_RCU_Base + totalMinorIncrements × Coder_RCU_Delta
- * Multiply by plan.multiplier in tick/render (free plan = idle = 0 output).
+ * Multiply by plan.multiplier in tick/render. Free plan (mult 1) gives the baseline floor.
  */
 export function calcCoderRcuPerHour(agent) {
   const n = calcModelTotalMinorIncrements(agent);
   return CONSTANTS.Lab_Coder_RCU_Base + n * CONSTANTS.Lab_Coder_RCU_Delta;
+}
+
+// ── AI Support helper ──────────────────────────────────────────
+/**
+ * Flat retention bonus contributed by ai_support agent.
+ * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
+ */
+export function calcSupportRetentionBonus(state) {
+  const agent = state.lab?.agents?.ai_support;
+  if (!agent?.unlocked) return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  const n    = calcModelTotalMinorIncrements(agent);
+  return (CONSTANTS.Lab_Support_Retention_Base + n * CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
+}
+
+// ── AI Marketer helpers ────────────────────────────────────────
+/**
+ * Extra marketing visitors/day contributed by ai_marketer agent.
+ * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
+ */
+export function calcMarketerMarketingBonus(state) {
+  const agent = state.lab?.agents?.ai_marketer;
+  if (!agent?.unlocked) return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  const n    = calcModelTotalMinorIncrements(agent);
+  return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
+}
+
+/**
+ * Reputation gain per in-game day from ai_marketer.
+ * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
+ */
+export function calcMarketerRepPerDay(state) {
+  const agent = state.lab?.agents?.ai_marketer;
+  if (!agent?.unlocked) return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  return CONSTANTS.Lab_Marketer_Rep_Per_Day * plan.multiplier;
 }
 
 // ── Initial state factory ──────────────────────────────────────
@@ -213,6 +262,7 @@ export function initState() {
     // SaaS product
     saas: {
       mrr: 0,
+      mrrPeak: 0,       // highest MRR ever reached this run (used for milestones)
       customers: 0,
       satisfaction: 1.0,
       retention: 1.0,
@@ -276,6 +326,17 @@ export function initState() {
       mrr:    [0, 0, 0, 0, 0, 0, 0],
       burn:   [0, 0, 0, 0, 0, 0, 0],
     },
+
+    // Milestones — player-claimed rewards
+    milestones: {
+      claimed: {},  // { [stepId]: true } for every claimed step
+    },
+
+    // RCU/h sliding window — last 10 ticks (1 tick = 1 in-game hour)
+    // Each entry = total RCU gained that tick (passive + clicks).
+    // Display: average of the array = effective RCU/h over recent play.
+    rcuHistory:   new Array(10).fill(0),
+    _rcuThisTick: 0,
 
     // Analytics events queued for backend
     _pendingEvents: [],

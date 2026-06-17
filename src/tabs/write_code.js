@@ -16,7 +16,7 @@ export function renderWriteCode(state) {
       <button class="write-btn" id="wc-btn">[ write_code() ]</button>
       <div class="stat-section">
         <div class="stat-row"><span>RCU/click</span><b id="wc-rcu-click">1</b></div>
-        <div class="stat-row"><span>RCU/h</span><b id="wc-rcuh">0 <span style="color:var(--text3)">(manual)</span></b></div>
+        <div class="stat-row"><span>RCU/h</span><b id="wc-rcuh">0</b></div>
         <div class="stat-row"><span>MB/h</span><b id="wc-mbh" class="burn">$0</b></div>
       </div>
       <div class="stat-section">
@@ -33,7 +33,10 @@ export function renderWriteCode(state) {
   const rpc = calcRcuPerClick(state);
   document.getElementById('wc-rcu').textContent       = fmtN(state.rcu);
   document.getElementById('wc-rcu-click').textContent = rpc;
-  document.getElementById('wc-rcuh').innerHTML        = fmtN(0) + ' <span style="color:var(--text3)">(manual)</span>';
+  const _rcuh = Array.isArray(state.rcuHistory) && state.rcuHistory.length
+    ? state.rcuHistory.reduce((a, b) => a + b, 0) / state.rcuHistory.length
+    : 0;
+  document.getElementById('wc-rcuh').textContent = fmtN(_rcuh);
   document.getElementById('wc-mbh').textContent       = fmt(0);
   document.getElementById('wc-product').textContent   = state.productName ?? '—';
   document.getElementById('wc-customers').textContent = Math.floor(state.saas.customers);
@@ -42,8 +45,9 @@ export function renderWriteCode(state) {
 
 export function onWriteCode(state) {
   const amount = calcRcuPerClick(state);
-  state.rcu         += amount;
-  state.rcuLifetime += amount;
+  state.rcu            += amount;
+  state.rcuLifetime    += amount;
+  state._rcuThisTick    = (state._rcuThisTick ?? 0) + amount;
 
   const btn = document.getElementById('wc-btn');
   if (btn) {

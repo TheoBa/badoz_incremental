@@ -10,41 +10,50 @@
 // Billing: daily plan costs deducted by tick.js → applyDailyLabBilling().
 
 import {
-  CONSTANTS,
   LAB_PLANS,
+  CONSTANTS,
   calcModelMinorUpgradeCost,
   calcModelMajorUpgradeCost,
   calcCoderRcuPerHour,
+  calcSupportRetentionBonus,
+  calcMarketerMarketingBonus,
+  calcMarketerRepPerDay,
 } from '../engine/state.js';
 
-// ── Plan display order ─────────────────────────────────────────
+// ── Plan display order + MRR gates ────────────────────────────
 const PLAN_ORDER = ['free', 'hobbyist', 'growth', 'scale', 'infernal'];
+// Each paid plan is locked until the corresponding MRR milestone is claimed.
+const PLAN_GATES = {
+  free:     null,       // always available
+  hobbyist: 'mrr_t1',  // $50 MRR
+  growth:   'mrr_t2',  // $200 MRR
+  scale:    'mrr_t3',  // $1K MRR
+  infernal: 'mrr_t4',  // $5K MRR
+};
 
 // ── Agent display config ───────────────────────────────────────
+// Agents are unlocked via the milestones tab (lab_burn track).
 const AGENTS = [
   {
-    id:        'ai_coder',
-    label:     'ai_coder',
-    desc:      'Writes code so you don\'t have to. Mostly correct.',
-    boost:     'passive_rcu/h',
-    unlockRcu: 0,    // pre-unlocked
-    showRcu:   true, // display live passive_rcu/h on card
+    id:      'ai_coder',
+    label:   'ai_coder',
+    desc:    'Writes code so you don\'t have to. Mostly correct.',
+    boost:   'passive_rcu/h',
+    showRcu: true, // display live passive_rcu/h on card
   },
   {
-    id:        'ai_support',
-    label:     'ai_support',
-    desc:      'Handles tickets. Rarely gaslights customers.',
-    boost:     'customer_retention',
-    unlockRcu: CONSTANTS.Lab_Support_Unlock_RCU,   // null until tuned
-    showRcu:   false,
+    id:      'ai_support',
+    label:   'ai_support',
+    desc:    'Handles tickets. Rarely gaslights customers.',
+    boost:   'customer_retention',
+    showRcu: false,
   },
   {
-    id:        'ai_marketer',
-    label:     'ai_marketer',
-    desc:      'Posts everywhere simultaneously. Results may include virality. Or controversy.',
-    boost:     'marketing_stream + reputation/d',
-    unlockRcu: CONSTANTS.Lab_Marketer_Unlock_RCU,  // null until tuned
-    showRcu:   false,
+    id:      'ai_marketer',
+    label:   'ai_marketer',
+    desc:    'Posts everywhere simultaneously. Results may include virality. Or controversy.',
+    boost:   'marketing_stream + reputation/d',
+    showRcu: false,
   },
 ];
 
@@ -87,13 +96,7 @@ export function renderFrontierLab(state) {
   AGENTS.forEach(cfg => {
     const agent = state.lab.agents[cfg.id];
 
-    if (!agent.unlocked) {
-      const btn = document.getElementById(`lab-unlock-${cfg.id}`);
-      if (btn) btn.addEventListener('click', () => {
-        onUnlockAgent(state, cfg);
-        renderFrontierLab(state);
-      });
-    } else {
+    if (agent.unlocked) {
       // Plan buttons
       PLAN_ORDER.forEach(planId => {
         const btn = document.getElementById(`lab-plan-${cfg.id}-${planId}`);
@@ -128,10 +131,6 @@ function agentCardHTML(cfg, agent, state) {
 }
 
 function lockedCardHTML(cfg, agent, state) {
-  const hasRcu    = cfg.unlockRcu != null;
-  const canAfford = hasRcu && state.rcu >= cfg.unlockRcu;
-  const costLabel = hasRcu ? `${cfg.unlockRcu} RCU` : 'TBD';
-
   return `
     <div class="lab-card lab-card-locked">
       <div class="lab-card-top">
@@ -140,10 +139,7 @@ function lockedCardHTML(cfg, agent, state) {
       </div>
       <div class="lab-agent-desc">${cfg.desc}</div>
       <div class="lab-agent-boost">boost: ${cfg.boost}</div>
-      <button class="lab-btn lab-btn-wide" id="lab-unlock-${cfg.id}"
-        ${hasRcu && canAfford ? '' : 'disabled'}>
-        [ unlock — ${costLabel} ]
-      </button>
+      <div class="lab-pending-note">unlock via lab_burn milestones</div>
     </div>`;
 }
 
@@ -178,12 +174,21 @@ function activeCardHTML(cfg, agent, state) {
 
   // ── Plan selector ──
   const planBtns = PLAN_ORDER.map(planId => {
-    const p         = LAB_PLANS[planId];
-    const isCurrent = agent.tier === planId;
-    const isPending = pending === planId && !isCurrent;
-    const cls       = ['lab-plan-btn',
+    const p          = LAB_PLANS[planId];
+    const gateId     = PLAN_GATES[planId];
+    const isUnlocked = !gateId || !!state.milestones?.claimed?.[gateId];
+    const isCurrent  = agent.tier === planId;
+    const isPending  = pending === planId && !isCurrent;
+
+    if (!isUnlocked) {
+      return `<button class="lab-plan-btn lab-plan-locked" disabled title="unlock: ${gateId}">
+        ${planId}<br><span class="lab-plan-sub">🔒 ${gateId}</span>
+      </button>`;
+    }
+
+    const cls = ['lab-plan-btn',
       isCurrent ? 'lab-plan-current' : '',
-      isPending  ? 'lab-plan-pending' : '',
+      isPending ? 'lab-plan-pending' : '',
     ].filter(Boolean).join(' ');
 
     return `<button class="${cls}" id="lab-plan-${cfg.id}-${planId}">
@@ -195,15 +200,21 @@ function activeCardHTML(cfg, agent, state) {
     ? `<div class="lab-pending-note">→ ${pending} takes effect tomorrow</div>`
     : '';
 
-  // ── Passive output (ai_coder only) ──
+  // ── Passive output ──
+  // Free plan (mult 1) always produces the baseline; paid plans scale above that.
   let boostLine;
-  if (cfg.showRcu) {
-    const baseRcu   = calcCoderRcuPerHour(agent);
-    const activeRcu = agent.tier === 'free' ? 0 : baseRcu * plan.multiplier;
-    const status    = agent.tier === 'free' ? ' (idle on free plan)' : '';
-    boostLine = `passive_rcu/h: <b class="teal">${fmtN(activeRcu)}</b>${status}`;
+  if (cfg.id === 'ai_coder') {
+    const rcu = calcCoderRcuPerHour(agent) * plan.multiplier;
+    boostLine = `passive_rcu/h: <b class="teal">${fmtN(rcu)}</b>`;
+  } else if (cfg.id === 'ai_support') {
+    const bonus = calcSupportRetentionBonusForAgent(agent);
+    boostLine = `retention_bonus: <b class="blue">+${bonus.toFixed(2)}</b>`;
+  } else if (cfg.id === 'ai_marketer') {
+    const mkt = calcMarketerMarketingBonusForAgent(agent);
+    const rep = calcMarketerRepPerDayForAgent(agent);
+    boostLine = `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b> · rep: <b>+${rep.toFixed(3)}/d</b>`;
   } else {
-    boostLine = `boost: ${cfg.boost} — <span class="lab-tbd">TBD</span>`;
+    boostLine = `boost: ${cfg.boost}`;
   }
 
   return `
@@ -221,12 +232,6 @@ function activeCardHTML(cfg, agent, state) {
 }
 
 // ── Action handlers ────────────────────────────────────────────
-function onUnlockAgent(state, cfg) {
-  if (cfg.unlockRcu == null || state.rcu < cfg.unlockRcu) return;
-  state.rcu -= cfg.unlockRcu;
-  state.lab.agents[cfg.id].unlocked = true;
-}
-
 function onSetPlan(state, agentId, planId) {
   const agent = state.lab.agents[agentId];
   if (!agent.unlocked) return;
@@ -257,6 +262,25 @@ function calcDailyBurn(state) {
   return Object.values(state.lab.agents)
     .filter(a => a.unlocked)
     .reduce((sum, a) => sum + (LAB_PLANS[a.tier]?.dailyCost ?? 0), 0);
+}
+
+// Per-agent bonus calculators (don't require full state — used for card display only)
+// Free plan uses multiplier 1, providing the baseline floor.
+function calcSupportRetentionBonusForAgent(agent) {
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  const n = (agent.modelMajor - 1) * 9 + agent.modelMinor;
+  return (CONSTANTS.Lab_Support_Retention_Base + n * CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
+}
+
+function calcMarketerMarketingBonusForAgent(agent) {
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  const n = (agent.modelMajor - 1) * 9 + agent.modelMinor;
+  return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
+}
+
+function calcMarketerRepPerDayForAgent(agent) {
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  return CONSTANTS.Lab_Marketer_Rep_Per_Day * plan.multiplier;
 }
 
 function fmtMoney(n) {
