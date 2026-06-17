@@ -15,8 +15,12 @@ if (state.freelance.missions.length === 0) {
   state.freelance.missions = generateMissions(state.freelance.tier);
 }
 
-// Initialise press coverage uses on first boot (null = not yet set)
-if (state.investments.pressUsesRemaining === null) {
+// Migrate investments shape: old saves have investments as [] instead of an object
+if (Array.isArray(state.investments)) {
+  state.investments = { active: [], productHuntUsed: false, pressUsesRemaining: CONSTANTS.Invest_Press_Uses };
+}
+// Initialise press coverage uses if not yet set
+if (state.investments.pressUsesRemaining == null) {
   state.investments.pressUsesRemaining = CONSTANTS.Invest_Press_Uses;
 }
 
