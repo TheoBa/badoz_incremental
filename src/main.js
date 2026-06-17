@@ -23,6 +23,10 @@ if (Array.isArray(state.investments)) {
 if (state.investments.pressUsesRemaining == null) {
   state.investments.pressUsesRemaining = CONSTANTS.Invest_Press_Uses;
 }
+// Initialise hardware sub-object if missing (old saves)
+if (!state.investments.hardware) {
+  state.investments.hardware = { gearLevel: 0, laptopLevel: 0, cpuPurchased: false, gpuPurchased: false };
+}
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {

@@ -74,8 +74,43 @@ export const CONSTANTS = {
   Invest_Press_Rep:           0.15,  // reputation.multiplier +0.15 (instant)
   Invest_Press_Uses:            3,   // max uses per run
 
+  // ── Hardware upgrades (rcu/click) ────────────────────────────
+  // Gear tiers — sequential additive bonus (buy T1 before T2 before T3)
+  Hardware_Gear_T1_Cost:   30,  Hardware_Gear_T1_RCU: 1,  // mechanical keyboard
+  Hardware_Gear_T2_Cost:  120,  Hardware_Gear_T2_RCU: 2,  // dual-monitor setup
+  Hardware_Gear_T3_Cost:  350,  Hardware_Gear_T3_RCU: 3,  // ergonomic workstation
+
+  // Laptop tiers — sequential additive bonus
+  Hardware_Laptop_T1_Cost:  800, Hardware_Laptop_T1_RCU: 4,  // MacBook Pro
+  Hardware_Laptop_T2_Cost: 2500, Hardware_Laptop_T2_RCU: 10, // Mac Studio
+
+  // CPU & GPU — independent multipliers (different formula knobs)
+  // Formula: rcu/click = (1 + gearBonus + laptopBonus) × cpuMult × gpuMult
+  Hardware_CPU_Cost: 1500, Hardware_CPU_Mult: 1.5,  // CPU upgrade → base × 1.5
+  Hardware_GPU_Cost: 1000, Hardware_GPU_Mult: 1.3,  // GPU rig     → total × 1.3
+
   WIN_CONDITION: 1_000_000_000,
 };
+
+// ── Derived helpers ────────────────────────────────────────────
+
+/**
+ * RCU earned per write_code() click.
+ * Formula: (1 + gearBonus + laptopBonus) × cpuMult × gpuMult
+ * Gear and laptop add flat RCU; CPU/GPU are independent multipliers.
+ */
+export function calcRcuPerClick(state) {
+  const hw = state.investments?.hardware ?? {};
+  const gearTierRCU   = [CONSTANTS.Hardware_Gear_T1_RCU,   CONSTANTS.Hardware_Gear_T2_RCU,   CONSTANTS.Hardware_Gear_T3_RCU];
+  const laptopTierRCU = [CONSTANTS.Hardware_Laptop_T1_RCU, CONSTANTS.Hardware_Laptop_T2_RCU];
+
+  const gearBonus   = gearTierRCU.slice(0, hw.gearLevel ?? 0).reduce((s, v) => s + v, 0);
+  const laptopBonus = laptopTierRCU.slice(0, hw.laptopLevel ?? 0).reduce((s, v) => s + v, 0);
+  const cpuMult     = hw.cpuPurchased ? CONSTANTS.Hardware_CPU_Mult : 1;
+  const gpuMult     = hw.gpuPurchased ? CONSTANTS.Hardware_GPU_Mult : 1;
+
+  return Math.floor((1 + gearBonus + laptopBonus) * cpuMult * gpuMult);
+}
 
 // ── Initial state factory ──────────────────────────────────────
 export function initState() {
@@ -142,6 +177,13 @@ export function initState() {
       active: [],
       productHuntUsed: false,
       pressUsesRemaining: null, // set to Invest_Press_Uses on first run (handled in main.js)
+      // Hardware upgrades (rcu/click progression)
+      hardware: {
+        gearLevel:    0,      // 0–3 gear tiers purchased
+        laptopLevel:  0,      // 0–2 laptop tiers purchased
+        cpuPurchased: false,
+        gpuPurchased: false,
+      },
     },
 
     // KPI histogram snapshots — last 7 in-game days, oldest first

@@ -3,6 +3,7 @@
 // Price and product details live in the saas_product tab.
 
 import { fmtN, fmt } from '../ui/render.js';
+import { calcRcuPerClick } from '../engine/state.js';
 
 export function renderWriteCode(state) {
   const panel = document.getElementById('panel-write_code');
@@ -14,6 +15,7 @@ export function renderWriteCode(state) {
       </div>
       <button class="write-btn" id="wc-btn">[ write_code() ]</button>
       <div class="stat-section">
+        <div class="stat-row"><span>RCU/click</span><b id="wc-rcu-click">1</b></div>
         <div class="stat-row"><span>RCU/h</span><b id="wc-rcuh">0 <span style="color:var(--text3)">(manual)</span></b></div>
         <div class="stat-row"><span>MB/h</span><b id="wc-mbh" class="burn">$0</b></div>
       </div>
@@ -28,7 +30,9 @@ export function renderWriteCode(state) {
     panel._built = true;
   }
 
+  const rpc = calcRcuPerClick(state);
   document.getElementById('wc-rcu').textContent       = fmtN(state.rcu);
+  document.getElementById('wc-rcu-click').textContent = rpc;
   document.getElementById('wc-rcuh').innerHTML        = fmtN(0) + ' <span style="color:var(--text3)">(manual)</span>';
   document.getElementById('wc-mbh').textContent       = fmt(0);
   document.getElementById('wc-product').textContent   = state.productName ?? '—';
@@ -37,12 +41,13 @@ export function renderWriteCode(state) {
 }
 
 export function onWriteCode(state) {
-  state.rcu++;
-  state.rcuLifetime++;
+  const amount = calcRcuPerClick(state);
+  state.rcu         += amount;
+  state.rcuLifetime += amount;
 
   const btn = document.getElementById('wc-btn');
   if (btn) {
-    btn.textContent = '[ +1 RCU ]';
+    btn.textContent = `[ +${amount} RCU ]`;
     clearTimeout(btn._flash);
     btn._flash = setTimeout(() => { btn.textContent = '[ write_code() ]'; }, 200);
   }
