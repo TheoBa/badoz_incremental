@@ -41,6 +41,7 @@ function renderKpi(state) {
     ? 0
     : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   set('k-mkt', fmtN(state.saas.marketingStream + investBoost) + '/d');
+  set('k-rep', state.reputation.multiplier.toFixed(2) + '×');
 
   renderHistogram(document.getElementById('hist-earned'), state.history.earned, '#1D9E75');
   renderHistogram(document.getElementById('hist-rcu'),    state.history.rcu,    '#888');

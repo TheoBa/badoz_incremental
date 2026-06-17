@@ -34,6 +34,11 @@ if ('gpuPurchased' in _hw) { _hw.gpuLevel = _hw.gpuPurchased ? 1 : 0; delete _hw
 // Initialise cooldown fields if missing (old saves)
 if (state.investments.pressCooldownTicks == null)     state.investments.pressCooldownTicks = 0;
 if (state.investments.newsletterCooldownTicks == null) state.investments.newsletterCooldownTicks = 0;
+// Migrate postsThisRun → numberOfPosts (old saves)
+if (state.reputation.numberOfPosts == null) {
+  state.reputation.numberOfPosts = state.reputation.postsThisRun ?? 0;
+  delete state.reputation.postsThisRun;
+}
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
