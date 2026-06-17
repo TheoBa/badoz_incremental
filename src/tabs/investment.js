@@ -24,7 +24,11 @@ const CATEGORIES = [
         desc:      'blast 500 cold emails · temporary visitor spike',
         cost:      () => CONSTANTS.Invest_ColdOutreach_Cost,
         effect:    () => `+${fmtN(CONSTANTS.Invest_ColdOutreach_Boost)} mkt_stream · 1 day`,
-        available: () => true,
+        available: (state) => !state.investments.active.some(b => b.label === 'cold_outreach_campaign'),
+        activeTicks: (state) => {
+          const b = state.investments.active.find(b => b.label === 'cold_outreach_campaign');
+          return b ? b.ticksRemaining : 0;
+        },
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_ColdOutreach_Cost) return;
           state.wallet -= CONSTANTS.Invest_ColdOutreach_Cost;
@@ -42,7 +46,11 @@ const CATEGORIES = [
         desc:      'optimise meta tags, schema, backlinks · slow burn',
         cost:      () => CONSTANTS.Invest_SEO_Cost,
         effect:    () => `+${fmtN(CONSTANTS.Invest_SEO_Boost)} mkt_stream · 7 days`,
-        available: () => true,
+        available: (state) => !state.investments.active.some(b => b.label === 'seo_push'),
+        activeTicks: (state) => {
+          const b = state.investments.active.find(b => b.label === 'seo_push');
+          return b ? b.ticksRemaining : 0;
+        },
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_SEO_Cost) return;
           state.wallet -= CONSTANTS.Invest_SEO_Cost;
@@ -62,32 +70,38 @@ const CATEGORIES = [
     effectClass: '',
     items: [
       {
-        id:        'newsletter',
-        label:     'sponsored_newsletter',
-        desc:      'featured in a niche indie-hacker newsletter · instant rep',
-        cost:      () => CONSTANTS.Invest_Newsletter_Cost,
-        effect:    () => `+${CONSTANTS.Invest_Newsletter_Rep.toFixed(2)} rep · permanent`,
-        available: () => true,
+        id:           'newsletter',
+        label:        'sponsored_newsletter',
+        desc:         'featured in a niche indie-hacker newsletter · instant rep',
+        cost:         () => CONSTANTS.Invest_Newsletter_Cost,
+        effect:       () => `+${CONSTANTS.Invest_Newsletter_Rep.toFixed(2)} rep · permanent`,
+        available:    (state) => state.investments.newsletterCooldownTicks === 0,
+        cooldownTicks:(state) => state.investments.newsletterCooldownTicks,
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_Newsletter_Cost) return;
-          state.wallet                -= CONSTANTS.Invest_Newsletter_Cost;
-          state.reputation.multiplier += CONSTANTS.Invest_Newsletter_Rep;
+          if (state.investments.newsletterCooldownTicks > 0) return;
+          state.wallet                          -= CONSTANTS.Invest_Newsletter_Cost;
+          state.reputation.multiplier           += CONSTANTS.Invest_Newsletter_Rep;
+          state.investments.newsletterCooldownTicks = CONSTANTS.Invest_Newsletter_Cooldown;
         },
       },
       {
-        id:        'press',
-        label:     'press_coverage',
-        desc:      'a journalist actually replied · large rep spike',
-        cost:      () => CONSTANTS.Invest_Press_Cost,
-        effect:    () => `+${CONSTANTS.Invest_Press_Rep.toFixed(2)} rep · permanent`,
-        available: (state) => state.investments.pressUsesRemaining > 0,
-        badge:     (state) => `${state.investments.pressUsesRemaining}/${CONSTANTS.Invest_Press_Uses} left`,
+        id:           'press',
+        label:        'press_coverage',
+        desc:         'a journalist actually replied · large rep spike',
+        cost:         () => CONSTANTS.Invest_Press_Cost,
+        effect:       () => `+${CONSTANTS.Invest_Press_Rep.toFixed(2)} rep · permanent`,
+        available:    (state) => state.investments.pressUsesRemaining > 0 && state.investments.pressCooldownTicks === 0,
+        cooldownTicks:(state) => state.investments.pressCooldownTicks,
+        badge:        (state) => `${state.investments.pressUsesRemaining}/${CONSTANTS.Invest_Press_Uses} left`,
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_Press_Cost) return;
           if (state.investments.pressUsesRemaining <= 0) return;
-          state.wallet                -= CONSTANTS.Invest_Press_Cost;
-          state.reputation.multiplier += CONSTANTS.Invest_Press_Rep;
+          if (state.investments.pressCooldownTicks > 0) return;
+          state.wallet                       -= CONSTANTS.Invest_Press_Cost;
+          state.reputation.multiplier        += CONSTANTS.Invest_Press_Rep;
           state.investments.pressUsesRemaining--;
+          state.investments.pressCooldownTicks = CONSTANTS.Invest_Press_Cooldown;
         },
       },
       {
@@ -97,18 +111,13 @@ const CATEGORIES = [
         cost:      () => CONSTANTS.Invest_ProductHunt_Cost,
         effect:    () => `+${CONSTANTS.Invest_ProductHunt_Rep.toFixed(2)} rep · permanent`,
         available: (state) => !state.investments.productHuntUsed,
+        done:      (state) => state.investments.productHuntUsed,
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_ProductHunt_Cost) return;
           if (state.investments.productHuntUsed) return;
-          state.wallet -= CONSTANTS.Invest_ProductHunt_Cost;
+          state.wallet                     -= CONSTANTS.Invest_ProductHunt_Cost;
           state.investments.productHuntUsed = true;
           state.reputation.multiplier      += CONSTANTS.Invest_ProductHunt_Rep;
-          state.investments.active.push({
-            id: 'product_hunt',
-            label: 'product_hunt_launch',
-            ticksRemaining: 24,
-            marketingBoost: CONSTANTS.Invest_ProductHunt_Boost,
-          });
         },
       },
     ],
@@ -200,37 +209,57 @@ const CATEGORIES = [
           state.investments.hardware.laptopLevel = 2;
         },
       },
-      // ── CPU / GPU (independent multipliers) ─────────────────
+      // ── CPU / GPU (infinite upgrades, scale like ship_feature) ─
       {
         id:        'cpu_upgrade',
         label:     'cpu_upgrade',
-        desc:      'faster compilation pipeline · multiplies base RCU output',
-        cost:      () => CONSTANTS.Hardware_CPU_Cost,
-        effect:    () => `×${CONSTANTS.Hardware_CPU_Mult} base RCU/click`,
-        available: (state) => !state.investments.hardware.cpuPurchased,
-        oneTime:   true,
-        done:      (state) => state.investments.hardware.cpuPurchased,
+        desc:      'faster compilation pipeline · repeatable · cost scales each level',
+        cost:      (state) => Math.floor(
+          CONSTANTS.Hardware_CPU_Base_Cost *
+          Math.pow(CONSTANTS.Hardware_CPU_Scale, state.investments.hardware.cpuLevel)
+        ),
+        effect:    (state) => {
+          const nextMult = 1 + (state.investments.hardware.cpuLevel + 1) * CONSTANTS.Hardware_CPU_Delta;
+          return `×${nextMult.toFixed(1)} base RCU/click`;
+        },
+        badge:     (state) => state.investments.hardware.cpuLevel > 0
+          ? `lv.${state.investments.hardware.cpuLevel}`
+          : null,
+        available: () => true,
         buy: (state) => {
-          if (state.wallet < CONSTANTS.Hardware_CPU_Cost) return;
-          if (state.investments.hardware.cpuPurchased) return;
-          state.wallet -= CONSTANTS.Hardware_CPU_Cost;
-          state.investments.hardware.cpuPurchased = true;
+          const cost = Math.floor(
+            CONSTANTS.Hardware_CPU_Base_Cost *
+            Math.pow(CONSTANTS.Hardware_CPU_Scale, state.investments.hardware.cpuLevel)
+          );
+          if (state.wallet < cost) return;
+          state.wallet -= cost;
+          state.investments.hardware.cpuLevel++;
         },
       },
       {
         id:        'gpu_rig',
         label:     'gpu_rig',
-        desc:      'parallel shader cores for... local model inference, obviously',
-        cost:      () => CONSTANTS.Hardware_GPU_Cost,
-        effect:    () => `×${CONSTANTS.Hardware_GPU_Mult} total RCU/click`,
-        available: (state) => !state.investments.hardware.gpuPurchased,
-        oneTime:   true,
-        done:      (state) => state.investments.hardware.gpuPurchased,
+        desc:      'parallel shader cores for... local model inference, obviously · repeatable',
+        cost:      (state) => Math.floor(
+          CONSTANTS.Hardware_GPU_Base_Cost *
+          Math.pow(CONSTANTS.Hardware_GPU_Scale, state.investments.hardware.gpuLevel)
+        ),
+        effect:    (state) => {
+          const nextMult = 1 + (state.investments.hardware.gpuLevel + 1) * CONSTANTS.Hardware_GPU_Delta;
+          return `×${nextMult.toFixed(1)} total RCU/click`;
+        },
+        badge:     (state) => state.investments.hardware.gpuLevel > 0
+          ? `lv.${state.investments.hardware.gpuLevel}`
+          : null,
+        available: () => true,
         buy: (state) => {
-          if (state.wallet < CONSTANTS.Hardware_GPU_Cost) return;
-          if (state.investments.hardware.gpuPurchased) return;
-          state.wallet -= CONSTANTS.Hardware_GPU_Cost;
-          state.investments.hardware.gpuPurchased = true;
+          const cost = Math.floor(
+            CONSTANTS.Hardware_GPU_Base_Cost *
+            Math.pow(CONSTANTS.Hardware_GPU_Scale, state.investments.hardware.gpuLevel)
+          );
+          if (state.wallet < cost) return;
+          state.wallet -= cost;
+          state.investments.hardware.gpuLevel++;
         },
       },
     ],
@@ -319,27 +348,42 @@ function hardwareVisible(items, state) {
 
 // ── Card builder ───────────────────────────────────────────────
 function investmentCard(inv, state, effectClass = '') {
-  const done      = inv.done ? inv.done(state) : false;
-  const available = !done && inv.available(state);
-  const canAfford = state.wallet >= inv.cost();
-  const disabled  = done || !canAfford || !available;
-  const badge     = inv.badge ? `<span class="inv-badge">${inv.badge(state)}</span>` : '';
+  const done        = inv.done ? inv.done(state) : false;
+  const activeTicks = inv.activeTicks   ? inv.activeTicks(state)   : 0;
+  const cdTicks     = inv.cooldownTicks ? inv.cooldownTicks(state) : 0;
+  const inProgress  = activeTicks > 0;
+  const onCooldown  = cdTicks > 0;
+  const cost        = inv.cost(state);
+  const canAfford   = state.wallet >= cost;
+  const disabled    = done || inProgress || onCooldown || !canAfford;
+
+  // Badge: priority — cooldown > in-progress > custom (null = no badge)
+  const customBadge = inv.badge ? inv.badge(state) : null;
+  const badge = onCooldown
+    ? `<span class="inv-badge">${ticksToLabel(cdTicks)}</span>`
+    : inProgress
+      ? `<span class="inv-badge">active · ${ticksToLabel(activeTicks)}</span>`
+      : customBadge
+        ? `<span class="inv-badge">${customBadge}</span>`
+        : '';
+
+  const btnLabel = done ? 'done' : inProgress ? 'active' : onCooldown ? 'cooldown' : 'invest';
 
   return `
     <div class="inv-card${done ? ' inv-card-used' : ''}">
       <div class="inv-card-body">
         <div class="inv-card-name">${inv.label} ${badge}</div>
         <div class="inv-card-desc">${inv.desc}</div>
-        <div class="inv-card-effect${effectClass ? ' ' + effectClass : ''}">${inv.effect()}</div>
+        <div class="inv-card-effect${effectClass ? ' ' + effectClass : ''}">${inv.effect(state)}</div>
       </div>
       <div class="inv-card-side">
-        <div class="inv-card-cost">${done ? '—' : fmt(inv.cost())}</div>
+        <div class="inv-card-cost">${done ? '—' : fmt(cost)}</div>
         <button
           id="inv-btn-${inv.id}"
           class="inv-btn"
           ${disabled ? 'disabled' : ''}
-          title="${!canAfford && !done ? `need ${fmt(inv.cost())}` : ''}">
-          ${done ? 'done' : 'invest'}
+          title="${!canAfford && !done && !inProgress && !onCooldown ? `need ${fmt(cost)}` : ''}">
+          ${btnLabel}
         </button>
       </div>
     </div>`;

@@ -25,8 +25,15 @@ if (state.investments.pressUsesRemaining == null) {
 }
 // Initialise hardware sub-object if missing (old saves)
 if (!state.investments.hardware) {
-  state.investments.hardware = { gearLevel: 0, laptopLevel: 0, cpuPurchased: false, gpuPurchased: false };
+  state.investments.hardware = { gearLevel: 0, laptopLevel: 0, cpuLevel: 0, gpuLevel: 0 };
 }
+// Migrate cpuPurchased/gpuPurchased → cpuLevel/gpuLevel (old saves)
+const _hw = state.investments.hardware;
+if ('cpuPurchased' in _hw) { _hw.cpuLevel = _hw.cpuPurchased ? 1 : 0; delete _hw.cpuPurchased; }
+if ('gpuPurchased' in _hw) { _hw.gpuLevel = _hw.gpuPurchased ? 1 : 0; delete _hw.gpuPurchased; }
+// Initialise cooldown fields if missing (old saves)
+if (state.investments.pressCooldownTicks == null)     state.investments.pressCooldownTicks = 0;
+if (state.investments.newsletterCooldownTicks == null) state.investments.newsletterCooldownTicks = 0;
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
