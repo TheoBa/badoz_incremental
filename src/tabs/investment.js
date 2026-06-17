@@ -96,6 +96,7 @@ const CATEGORIES = [
         cost:         () => CONSTANTS.Invest_Press_Cost,
         effect:       () => `+${CONSTANTS.Invest_Press_Rep.toFixed(2)} rep · permanent`,
         available:    (state) => state.investments.pressUsesRemaining > 0 && state.investments.pressCooldownTicks === 0,
+        done:         (state) => state.investments.pressUsesRemaining <= 0,
         cooldownTicks:(state) => state.investments.pressCooldownTicks,
         badge:        (state) => `${state.investments.pressUsesRemaining}/${CONSTANTS.Invest_Press_Uses} left`,
         buy: (state) => {

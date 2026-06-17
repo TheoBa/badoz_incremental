@@ -44,6 +44,12 @@ function tick(state) {
   }
 
   checkMilestones(state);
+
+  // Sliding window for RCU/h display — push this tick's total, keep last 10
+  if (!Array.isArray(state.rcuHistory)) state.rcuHistory = new Array(10).fill(0);
+  state.rcuHistory.push(state._rcuThisTick ?? 0);
+  if (state.rcuHistory.length > 10) state.rcuHistory.shift();
+  state._rcuThisTick = 0;
 }
 
 // ── Agent passive effects ──────────────────────────────────────
@@ -56,8 +62,9 @@ function applyLabAgents(state) {
   const rcuPerHour = calcCoderRcuPerHour(coder) * plan.multiplier;
 
   // 1 tick = 1 in-game hour
-  state.rcu         += rcuPerHour;
-  state.rcuLifetime += rcuPerHour;
+  state.rcu            += rcuPerHour;
+  state.rcuLifetime    += rcuPerHour;
+  state._rcuThisTick    = (state._rcuThisTick ?? 0) + rcuPerHour;
 }
 
 // ── Daily revenue ──────────────────────────────────────────────

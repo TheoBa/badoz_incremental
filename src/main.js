@@ -48,6 +48,9 @@ if (state.saas.mrrPeak == null) state.saas.mrrPeak = state.saas.mrr;
 // Migrate: add milestones object (old saves)
 if (!state.milestones)         state.milestones         = { claimed: {} };
 if (!state.milestones.claimed) state.milestones.claimed = {};
+// Migrate: init RCU/h sliding window (old saves)
+if (!Array.isArray(state.rcuHistory)) state.rcuHistory = new Array(10).fill(0);
+if (state._rcuThisTick == null)       state._rcuThisTick = 0;
 // Migrate postsThisRun → numberOfPosts (old saves)
 if (state.reputation.numberOfPosts == null) {
   state.reputation.numberOfPosts = state.reputation.postsThisRun ?? 0;

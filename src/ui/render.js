@@ -9,7 +9,7 @@ import { renderFrontierLab } from '../tabs/frontier_lab.js';
 import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderMilestones }  from '../tabs/milestones.js';
 import { renderHistogram }   from './histograms.js';
-import { LAB_PLANS, calcCoderRcuPerHour } from '../engine/state.js';
+import { LAB_PLANS } from '../engine/state.js';
 
 export function render(state) {
   renderHeader(state);
@@ -89,10 +89,8 @@ export function fmtN(n) {
 }
 
 function calcRcuPerHour(state) {
-  const coder = state.lab?.agents?.ai_coder;
-  if (!coder?.unlocked) return 0;
-  const plan = LAB_PLANS[coder.tier] ?? LAB_PLANS.free;
-  return calcCoderRcuPerHour(coder) * plan.multiplier;
+  if (!Array.isArray(state.rcuHistory) || state.rcuHistory.length === 0) return 0;
+  return state.rcuHistory.reduce((a, b) => a + b, 0) / state.rcuHistory.length;
 }
 
 function calcBurnPerHour(state) {

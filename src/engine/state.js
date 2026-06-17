@@ -332,6 +332,12 @@ export function initState() {
       claimed: {},  // { [stepId]: true } for every claimed step
     },
 
+    // RCU/h sliding window — last 10 ticks (1 tick = 1 in-game hour)
+    // Each entry = total RCU gained that tick (passive + clicks).
+    // Display: average of the array = effective RCU/h over recent play.
+    rcuHistory:   new Array(10).fill(0),
+    _rcuThisTick: 0,
+
     // Analytics events queued for backend
     _pendingEvents: [],
   };
