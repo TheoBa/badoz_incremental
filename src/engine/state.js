@@ -96,7 +96,31 @@ export const CONSTANTS = {
   PostOnX_Rep_Delta: 0.01,   // reputation.multiplier += delta per post
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
 
+  // ── Frontier Lab ───────────────────────────────────────────────
+  Lab_Unlock_Money: 100,          // moneyLifetime threshold before tab becomes active
+
+  // Agent unlock costs (RCU). null = not yet tuned.
+  Lab_Support_Unlock_RCU:  null,
+  Lab_Marketer_Unlock_RCU: null,
+
+  // Model version upgrade cost (RCU per level, shared across all agents). null = not yet tuned.
+  Lab_Model_Upgrade_RCU: null,
+
+  // AI Coder passive RCU/h at plan mult 1× and model v1. null = not yet tuned.
+  Lab_Coder_RCU_Per_Hour: null,
+
   WIN_CONDITION: 1_000_000_000,
+};
+
+// ── Frontier Lab plan definitions ──────────────────────────────
+// plan_multiplier is the base boost multiplier at this plan tier.
+// effective_boost = plan_multiplier × agent.modelLevel
+export const LAB_PLANS = {
+  free:     { dailyCost: 0,   multiplier: 1,   label: 'free'     },
+  hobbyist: { dailyCost: 5,   multiplier: 1.5, label: 'hobbyist' },
+  growth:   { dailyCost: 25,  multiplier: 4,   label: 'growth'   },
+  scale:    { dailyCost: 100, multiplier: 12,  label: 'scale'    },
+  infernal: { dailyCost: 500, multiplier: 40,  label: 'infernal' },
 };
 
 // ── Derived helpers ────────────────────────────────────────────
@@ -157,9 +181,9 @@ export function initState() {
     // Frontier Lab
     lab: {
       agents: {
-        ai_coder:    { unlocked: true,  tier: 'free', modelLevel: 1 },
-        ai_support:  { unlocked: false, tier: 'free', modelLevel: 1 },
-        ai_marketer: { unlocked: false, tier: 'free', modelLevel: 1 },
+        ai_coder:    { unlocked: true,  tier: 'free', pendingTier: null, modelLevel: 1 },
+        ai_support:  { unlocked: false, tier: 'free', pendingTier: null, modelLevel: 1 },
+        ai_marketer: { unlocked: false, tier: 'free', pendingTier: null, modelLevel: 1 },
       },
     },
 

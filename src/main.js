@@ -34,6 +34,12 @@ if ('gpuPurchased' in _hw) { _hw.gpuLevel = _hw.gpuPurchased ? 1 : 0; delete _hw
 // Initialise cooldown fields if missing (old saves)
 if (state.investments.pressCooldownTicks == null)     state.investments.pressCooldownTicks = 0;
 if (state.investments.newsletterCooldownTicks == null) state.investments.newsletterCooldownTicks = 0;
+// Add pendingTier to lab agents if missing (old saves)
+if (state.lab?.agents) {
+  for (const agent of Object.values(state.lab.agents)) {
+    if (!('pendingTier' in agent)) agent.pendingTier = null;
+  }
+}
 // Migrate postsThisRun → numberOfPosts (old saves)
 if (state.reputation.numberOfPosts == null) {
   state.reputation.numberOfPosts = state.reputation.postsThisRun ?? 0;

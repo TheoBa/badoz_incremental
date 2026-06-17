@@ -2,7 +2,7 @@
 // Fires every TICK_RATE real seconds = 1 in-game hour.
 // Every 24 ticks = 1 in-game day.
 
-import { CONSTANTS } from './state.js';
+import { CONSTANTS, LAB_PLANS } from './state.js';
 import { generateMissions } from './missions.js';
 
 export function startTick(state, onTick) {
@@ -76,8 +76,24 @@ function applyDailyChurn(state) {
 
 // ── Daily Lab billing ──────────────────────────────────────────
 function applyDailyLabBilling(state) {
-  // TODO: deduct daily cost of each active agent tier from wallet + labSpendLifetime
-  // Plan changes set on a previous day take effect here (tick % 24 === 0)
+  // Apply plan changes queued from previous day
+  for (const agent of Object.values(state.lab.agents)) {
+    if (agent.pendingTier != null) {
+      agent.tier        = agent.pendingTier;
+      agent.pendingTier = null;
+    }
+  }
+  // Deduct daily plan costs
+  let totalCost = 0;
+  for (const agent of Object.values(state.lab.agents)) {
+    if (!agent.unlocked) continue;
+    const plan = LAB_PLANS[agent.tier];
+    if (plan && plan.dailyCost > 0) totalCost += plan.dailyCost;
+  }
+  if (totalCost > 0) {
+    state.wallet           -= totalCost;
+    state.labSpendLifetime += totalCost;
+  }
 }
 
 // ── Freelance mission refresh ──────────────────────────────────

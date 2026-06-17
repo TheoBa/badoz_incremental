@@ -72,15 +72,23 @@ tick.js mutates state → render.js reads state → DOM updates
 
 ---
 
-## Color coding (do not change without updating both places)
+## Color coding — strict, never override
 
-These three colors are used consistently across `ship_feature` upgrade cards (left border accent) **and** the KPI dashboard dot labels:
+Every game mechanic has one canonical color. Use the right class or CSS variable everywhere: tab UIs, KPI sidebar dots, effect labels, button accents. **Changing a color requires updating every usage site at once.**
 
-| Property | Color | Hex |
-|---|---|---|
-| `satisfaction` | teal | `#1D9E75` |
-| `retention` | blue | `#378ADD` |
-| `marketing_stream` | amber | `#BA7517` |
+| Mechanic | Color | Hex | CSS var | Class |
+|---|---|---|---|---|
+| `RCU` / hardware | teal | `#1D9E75` | `var(--teal)` | `.teal` |
+| `money` / income | teal | `#1D9E75` | `var(--teal)` | `.money` |
+| `satisfaction` | teal | `#1D9E75` | `var(--teal)` | `.teal` |
+| `retention` | blue | `#378ADD` | `var(--blue)` | `.blue` |
+| `marketing_stream` | amber | `#BA7517` | `var(--amber)` | `.amber` |
+| `reputation` | default | `var(--text)` | — | *(none — default text color)* |
+| burn / daily cost | red | `#c94040` | `var(--red)` | `.burn` |
+| cooldown timers | amber | `#BA7517` | `var(--amber)` | `.amber` |
+| **Frontier Lab** accent | purple | `#8b5cf6` | `--lab-accent` | *(lab panel only)* |
+
+The Frontier Lab tab uses a fully separate dark theme (`#0e0e14` background, purple `#8b5cf6` accent). Its CSS is scoped to `#panel-frontier_lab` and `.lab-*` child classes. Do not mix standard utility classes (`.teal`, `.amber`, etc.) inside the lab panel — use the lab-scoped equivalents.
 
 ---
 
@@ -142,12 +150,6 @@ All `// TODO` stubs in `tick.js`, the tab render functions in `src/tabs/`, and t
   - `Freelance_RCU_T1/T2/T3` → freelance tier upgrades (junior → senior → lead → 10x)
   - `Price_Round_T1/T2` (lifetime money earned) → subscription price rounds
   - `Lab_Money_T1–T9` → Frontier Lab agent unlocks
-
-- **Frontier Lab tab** (`feature/frontier-lab`)
-  AI agents, plan tiers, daily billing, dark visual style.
-
-- **post_on_x tab** (`feature/post-on-x`)
-  Once-per-day action, compounds `reputation.multiplier` by ×1.05.
 
 - **Win condition** (`feature/win`)
   `$1B retire` button appears when `state.moneyLifetime >= WIN_CONDITION`.
