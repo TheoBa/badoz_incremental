@@ -280,4 +280,32 @@ body {
   cursor: not-allowed;
 }
 .sp-hint { font-size: 10px; color: var(--text3); font-style: italic; }
-.sp-coming-soon { font-size: 11px; color: var(--text3); padding: 6px 0; }
+
+/* ── ship_feature upgrade cards ──────────────────────────────── */
+.sf-card {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 13px;
+  margin-bottom: 7px;
+}
+.sf-track-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+.sf-track-name { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.sf-track-val  { font-size: 11px; color: var(--text2); }
+.sf-card-name  { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+.sf-card-sub   { font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+.sf-btn {
+  padding: 4px 11px;
+  font-size: 11px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 0.5px solid;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.sf-btn:disabled { border-color: var(--border) !important; color: var(--text3) !important; cursor: not-allowed; }

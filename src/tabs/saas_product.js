@@ -4,33 +4,94 @@
 // Price flow:
 //   - Price is auto-set to Saas_Price_T1 on first tab visit (handled in main.js)
 //   - raise_price() unlocks T2 then T3 at lifetime-earned milestones (Price_Round_T1/T2)
-//   - Raises are one-way and trigger a demand shock
+//   - Raises are one-way and apply negative pressure on satisfaction + retention
+//
+// Ship feature:
+//   - Three upgrade tracks: satisfaction, retention, marketing_stream
+//   - Each track shows the next purchasable upgrade; costs scale as baseCost × Scale^level
+//   - Buying mutates state.saas.* directly and records purchase in state.upgrades.*
 
 import { CONSTANTS } from '../engine/state.js';
 import { fmt, fmtN } from '../ui/render.js';
 
-const PRICE_TIERS = () => [
-  CONSTANTS.Saas_Price_T1,
-  CONSTANTS.Saas_Price_T2,
-  CONSTANTS.Saas_Price_T3,
+// ── Upgrade name pools (one per track, in purchase order) ──────
+const UPGRADE_NAMES = {
+  satisfaction: [
+    'add_user_onboarding_flow',
+    'implement_in_app_tutorials',
+    'add_live_chat_support',
+    'launch_knowledge_base',
+    'redesign_ux',
+    'add_satisfaction_surveys',
+  ],
+  retention: [
+    'add_weekly_email_digest',
+    'implement_usage_analytics',
+    'add_api_access',
+    'build_integrations_hub',
+    'implement_feature_flags',
+    'add_team_collaboration',
+  ],
+  marketingStream: [
+    'write_landing_page_copy',
+    'add_seo_meta_tags',
+    'launch_blog',
+    'open_source_a_component',
+    'add_product_demo_video',
+    'submit_to_directories',
+  ],
+};
+
+// ── Track metadata (colors match CLAUDE.md color coding) ───────
+const TRACKS = [
+  {
+    key:      'satisfaction',
+    stateKey: 'satisfaction',
+    label:    'satisfaction',
+    color:    '#1D9E75',
+    baseCost: () => CONSTANTS.Ship_Satisfaction_Base_Cost,
+    delta:    () => CONSTANTS.Ship_Satisfaction_Delta,
+    fmt:      v  => v.toFixed(2) + '×',
+  },
+  {
+    key:      'retention',
+    stateKey: 'retention',
+    label:    'retention',
+    color:    '#378ADD',
+    baseCost: () => CONSTANTS.Ship_Retention_Base_Cost,
+    delta:    () => CONSTANTS.Ship_Retention_Delta,
+    fmt:      v  => v.toFixed(2) + '×',
+  },
+  {
+    key:      'marketingStream',
+    stateKey: 'marketingStream',
+    label:    'marketing_stream',
+    color:    '#BA7517',
+    baseCost: () => CONSTANTS.Ship_Marketing_Base_Cost,
+    delta:    () => CONSTANTS.Ship_Marketing_Delta,
+    fmt:      v  => fmtN(v) + '/d',
+  },
 ];
 
-const RAISE_MILESTONES = () => [
-  CONSTANTS.Price_Round_T1,  // earned to unlock T2
-  CONSTANTS.Price_Round_T2,  // earned to unlock T3
-];
+function upgradeCost(track, level) {
+  return Math.round(track.baseCost() * Math.pow(CONSTANTS.Ship_Cost_Scale, level));
+}
 
+// ── Price tier helpers ─────────────────────────────────────────
+const PRICE_TIERS     = () => [CONSTANTS.Saas_Price_T1, CONSTANTS.Saas_Price_T2, CONSTANTS.Saas_Price_T3];
+const RAISE_MILESTONES = () => [CONSTANTS.Price_Round_T1, CONSTANTS.Price_Round_T2];
+
+// ── Renderer ───────────────────────────────────────────────────
 export function renderSaasProduct(state) {
   const panel  = document.getElementById('panel-saas_product');
   const tiers  = PRICE_TIERS();
-  const round  = state.saas.priceRound;   // 0 | 1 | 2
+  const round  = state.saas.priceRound;
   const milestones = RAISE_MILESTONES();
 
-  // Next tier raise: available only if milestone is tuned AND met
   const nextPrice     = tiers[round + 1] ?? null;
   const milestone     = milestones[round] ?? null;
-  const milestonesMet = milestone !== null && state.moneyLifetime >= milestone;
-  const canRaise      = nextPrice !== null && milestonesMet;
+  const milestoneMet  = milestone !== null && state.moneyLifetime >= milestone;
+  const canRaise      = nextPrice !== null && milestoneMet;
 
   panel.innerHTML = `
     <div class="sp-section">
@@ -51,8 +112,8 @@ export function renderSaasProduct(state) {
         ${milestone === null
           ? 'milestone threshold not yet set'
           : canRaise
-            ? 'warning: raising price triggers a demand shock'
-            : `unlock at ${fmt(milestone)} lifetime earned (current: ${fmt(state.moneyLifetime)})`}
+            ? 'warning: raises price, applies negative pressure on satisfaction + retention'
+            : `unlock at ${fmt(milestone)} lifetime earned · current: ${fmt(state.moneyLifetime)}`}
       </div>
     </div>` : `
     <div class="sp-section">
@@ -61,26 +122,89 @@ export function renderSaasProduct(state) {
 
     <div class="sp-section">
       <div class="sp-label">ship_feature</div>
-      <div class="sp-coming-soon">upgrade cards — coming soon</div>
+      <div id="sp-upgrades">
+        ${TRACKS.map(t => upgradeCard(t, state)).join('')}
+      </div>
     </div>`;
 
+  // Wire raise_price button
   if (canRaise) {
     document.getElementById('sp-raise-btn')
       ?.addEventListener('click', () => onRaisePrice(state));
   }
+
+  // Wire upgrade buttons
+  TRACKS.forEach(t => {
+    const level  = state.upgrades[t.key].length;
+    const names  = UPGRADE_NAMES[t.key];
+    if (level >= names.length) return; // max tier reached
+    const btn = document.getElementById(`sp-upgrade-${t.key}`);
+    if (btn && !btn.disabled) {
+      btn.addEventListener('click', () => onBuyUpgrade(state, t));
+    }
+  });
 }
 
+function upgradeCard(track, state) {
+  const level    = state.upgrades[track.key].length;
+  const names    = UPGRADE_NAMES[track.key];
+  const maxed    = level >= names.length;
+  const cost     = maxed ? 0 : upgradeCost(track, level);
+  const canAfford = !maxed && state.rcu >= cost;
+  const current  = state.saas[track.stateKey];
+
+  return `
+    <div class="sf-card">
+      <div class="sf-track-header">
+        <span class="sf-track-name" style="color:${track.color}">${track.label}</span>
+        <span class="sf-track-val">${track.fmt(current)}</span>
+      </div>
+      ${maxed
+        ? `<div class="sf-card-name" style="color:var(--text3)">max_tier_reached</div>`
+        : `<div class="sf-card-name">${names[level]}</div>
+           <div class="sf-card-sub">
+             cost <b style="color:${track.color}">${fmtN(cost)} RCU</b>
+             · +${track.fmt(track.delta())}
+             · lvl ${level + 1}/${names.length}
+           </div>
+           <button
+             id="sp-upgrade-${track.key}"
+             class="sf-btn"
+             style="border-color:${track.color};color:${track.color}"
+             ${canAfford ? '' : 'disabled'}>
+             ship_feature()
+           </button>`}
+    </div>`;
+}
+
+// ── Action handlers ────────────────────────────────────────────
 function onRaisePrice(state) {
   const tiers = PRICE_TIERS();
   if (state.saas.priceRound >= tiers.length - 1) return;
 
   state.saas.priceRound++;
-  state.saas.price     = tiers[state.saas.priceRound];
+  state.saas.price = tiers[state.saas.priceRound];
 
-  // Demand shock: lose 20% of customers immediately on price raise
-  // TODO: tune shock magnitude via a CONSTANT once balancing pass runs
-  state.saas.customers *= 0.8;
-  state.saas.mrr        = state.saas.price * state.saas.customers;
+  // Demand shock: price hike applies negative pressure on satisfaction + retention
+  // TODO: tune shock magnitudes via CONSTANTS once balancing pass runs
+  state.saas.satisfaction = Math.max(0.1, state.saas.satisfaction - 0.2);
+  state.saas.retention    = Math.max(0.1, state.saas.retention    - 0.2);
+  state.saas.mrr          = state.saas.price * state.saas.customers;
+
+  renderSaasProduct(state);
+}
+
+function onBuyUpgrade(state, track) {
+  const level = state.upgrades[track.key].length;
+  const cost  = upgradeCost(track, level);
+  if (state.rcu < cost) return;
+
+  state.rcu                   -= cost;
+  state.saas[track.stateKey]  += track.delta();
+  state.upgrades[track.key].push(level);
+
+  // Immediate header update
+  document.getElementById('h-rcu').textContent = fmtN(state.rcu);
 
   renderSaasProduct(state);
 }

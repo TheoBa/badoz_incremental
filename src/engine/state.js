@@ -44,6 +44,18 @@ export const CONSTANTS = {
   Price_Round_T1: null,     // lifetime earned milestone → raise to T2
   Price_Round_T2: null,     // lifetime earned milestone → raise to T3
 
+  // ── Ship feature upgrade curves ───────────────────────────────
+  // Base RCU cost of the first upgrade in each track
+  Ship_Satisfaction_Base_Cost: 10,
+  Ship_Retention_Base_Cost:    10,
+  Ship_Marketing_Base_Cost:    15,
+  // Each subsequent upgrade costs baseCost × Scale^level
+  Ship_Cost_Scale: 2,
+  // Stat gain per upgrade purchased
+  Ship_Satisfaction_Delta: 0.1,   // added to satisfaction multiplier
+  Ship_Retention_Delta:    0.1,   // added to retention multiplier
+  Ship_Marketing_Delta:    1,     // additional visitors/day
+
   WIN_CONDITION: 1_000_000_000,
 };
 
