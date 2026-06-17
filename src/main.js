@@ -27,6 +27,9 @@ if (state.investments.pressUsesRemaining == null) {
 if (!state.investments.hardware) {
   state.investments.hardware = { gearLevel: 0, laptopLevel: 0, cpuPurchased: false, gpuPurchased: false };
 }
+// Initialise cooldown fields if missing (old saves)
+if (state.investments.pressCooldownTicks == null)     state.investments.pressCooldownTicks = 0;
+if (state.investments.newsletterCooldownTicks == null) state.investments.newsletterCooldownTicks = 0;
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {

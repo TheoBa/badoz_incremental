@@ -100,6 +100,8 @@ function tickInvestments(state) {
   state.investments.active = state.investments.active
     .map(b => ({ ...b, ticksRemaining: b.ticksRemaining - 1 }))
     .filter(b => b.ticksRemaining > 0);
+  if (state.investments.newsletterCooldownTicks > 0) state.investments.newsletterCooldownTicks--;
+  if (state.investments.pressCooldownTicks > 0)      state.investments.pressCooldownTicks--;
 }
 
 // ── Milestone checks ───────────────────────────────────────────

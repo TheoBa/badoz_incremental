@@ -63,16 +63,17 @@ export const CONSTANTS = {
   Invest_SEO_Cost:            200,   // money
   Invest_SEO_Boost:             2,   // marketing_stream +2 for 7 days (168 ticks)
 
-  Invest_Newsletter_Cost:     100,   // money
-  Invest_Newsletter_Rep:     0.05,   // reputation.multiplier +0.05 (instant, permanent)
+  Invest_Newsletter_Cost:       100,   // money
+  Invest_Newsletter_Rep:        0.1,  // reputation.multiplier +0.1 (instant, permanent)
+  Invest_Newsletter_Cooldown:    24,  // ticks before can buy again (1 day)
 
-  Invest_ProductHunt_Cost:    500,   // money (once per run)
-  Invest_ProductHunt_Boost:    20,   // marketing_stream +20 for 1 day
-  Invest_ProductHunt_Rep:     0.2,   // reputation.multiplier +0.2 (instant)
+  Invest_ProductHunt_Cost:  10_000,  // money (once per run)
+  Invest_ProductHunt_Rep:      1.0,  // reputation.multiplier +1.0 (instant)
 
-  Invest_Press_Cost:          300,   // money per use
+  Invest_Press_Cost:           300,  // money per use
   Invest_Press_Rep:           0.15,  // reputation.multiplier +0.15 (instant)
-  Invest_Press_Uses:            3,   // max uses per run
+  Invest_Press_Uses:             3,  // max uses per run
+  Invest_Press_Cooldown:       168,  // ticks before can buy again (7 days)
 
   // ── Hardware upgrades (rcu/click) ────────────────────────────
   // Gear tiers — sequential additive bonus (buy T1 before T2 before T3)
@@ -176,7 +177,9 @@ export function initState() {
       // marketingStream is NOT mutated — acquisition reads active boosts separately
       active: [],
       productHuntUsed: false,
-      pressUsesRemaining: null, // set to Invest_Press_Uses on first run (handled in main.js)
+      pressUsesRemaining: null,    // set to Invest_Press_Uses on first run (handled in main.js)
+      pressCooldownTicks: 0,       // ticks until press_coverage can be bought again
+      newsletterCooldownTicks: 0,  // ticks until sponsored_newsletter can be bought again
       // Hardware upgrades (rcu/click progression)
       hardware: {
         gearLevel:    0,      // 0–3 gear tiers purchased

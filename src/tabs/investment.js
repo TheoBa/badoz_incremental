@@ -24,7 +24,11 @@ const CATEGORIES = [
         desc:      'blast 500 cold emails · temporary visitor spike',
         cost:      () => CONSTANTS.Invest_ColdOutreach_Cost,
         effect:    () => `+${fmtN(CONSTANTS.Invest_ColdOutreach_Boost)} mkt_stream · 1 day`,
-        available: () => true,
+        available: (state) => !state.investments.active.some(b => b.label === 'cold_outreach_campaign'),
+        activeTicks: (state) => {
+          const b = state.investments.active.find(b => b.label === 'cold_outreach_campaign');
+          return b ? b.ticksRemaining : 0;
+        },
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_ColdOutreach_Cost) return;
           state.wallet -= CONSTANTS.Invest_ColdOutreach_Cost;
@@ -42,7 +46,11 @@ const CATEGORIES = [
         desc:      'optimise meta tags, schema, backlinks · slow burn',
         cost:      () => CONSTANTS.Invest_SEO_Cost,
         effect:    () => `+${fmtN(CONSTANTS.Invest_SEO_Boost)} mkt_stream · 7 days`,
-        available: () => true,
+        available: (state) => !state.investments.active.some(b => b.label === 'seo_push'),
+        activeTicks: (state) => {
+          const b = state.investments.active.find(b => b.label === 'seo_push');
+          return b ? b.ticksRemaining : 0;
+        },
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_SEO_Cost) return;
           state.wallet -= CONSTANTS.Invest_SEO_Cost;
@@ -62,32 +70,38 @@ const CATEGORIES = [
     effectClass: '',
     items: [
       {
-        id:        'newsletter',
-        label:     'sponsored_newsletter',
-        desc:      'featured in a niche indie-hacker newsletter · instant rep',
-        cost:      () => CONSTANTS.Invest_Newsletter_Cost,
-        effect:    () => `+${CONSTANTS.Invest_Newsletter_Rep.toFixed(2)} rep · permanent`,
-        available: () => true,
+        id:           'newsletter',
+        label:        'sponsored_newsletter',
+        desc:         'featured in a niche indie-hacker newsletter · instant rep',
+        cost:         () => CONSTANTS.Invest_Newsletter_Cost,
+        effect:       () => `+${CONSTANTS.Invest_Newsletter_Rep.toFixed(2)} rep · permanent`,
+        available:    (state) => state.investments.newsletterCooldownTicks === 0,
+        cooldownTicks:(state) => state.investments.newsletterCooldownTicks,
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_Newsletter_Cost) return;
-          state.wallet                -= CONSTANTS.Invest_Newsletter_Cost;
-          state.reputation.multiplier += CONSTANTS.Invest_Newsletter_Rep;
+          if (state.investments.newsletterCooldownTicks > 0) return;
+          state.wallet                          -= CONSTANTS.Invest_Newsletter_Cost;
+          state.reputation.multiplier           += CONSTANTS.Invest_Newsletter_Rep;
+          state.investments.newsletterCooldownTicks = CONSTANTS.Invest_Newsletter_Cooldown;
         },
       },
       {
-        id:        'press',
-        label:     'press_coverage',
-        desc:      'a journalist actually replied · large rep spike',
-        cost:      () => CONSTANTS.Invest_Press_Cost,
-        effect:    () => `+${CONSTANTS.Invest_Press_Rep.toFixed(2)} rep · permanent`,
-        available: (state) => state.investments.pressUsesRemaining > 0,
-        badge:     (state) => `${state.investments.pressUsesRemaining}/${CONSTANTS.Invest_Press_Uses} left`,
+        id:           'press',
+        label:        'press_coverage',
+        desc:         'a journalist actually replied · large rep spike',
+        cost:         () => CONSTANTS.Invest_Press_Cost,
+        effect:       () => `+${CONSTANTS.Invest_Press_Rep.toFixed(2)} rep · permanent`,
+        available:    (state) => state.investments.pressUsesRemaining > 0 && state.investments.pressCooldownTicks === 0,
+        cooldownTicks:(state) => state.investments.pressCooldownTicks,
+        badge:        (state) => `${state.investments.pressUsesRemaining}/${CONSTANTS.Invest_Press_Uses} left`,
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_Press_Cost) return;
           if (state.investments.pressUsesRemaining <= 0) return;
-          state.wallet                -= CONSTANTS.Invest_Press_Cost;
-          state.reputation.multiplier += CONSTANTS.Invest_Press_Rep;
+          if (state.investments.pressCooldownTicks > 0) return;
+          state.wallet                       -= CONSTANTS.Invest_Press_Cost;
+          state.reputation.multiplier        += CONSTANTS.Invest_Press_Rep;
           state.investments.pressUsesRemaining--;
+          state.investments.pressCooldownTicks = CONSTANTS.Invest_Press_Cooldown;
         },
       },
       {
@@ -97,18 +111,13 @@ const CATEGORIES = [
         cost:      () => CONSTANTS.Invest_ProductHunt_Cost,
         effect:    () => `+${CONSTANTS.Invest_ProductHunt_Rep.toFixed(2)} rep · permanent`,
         available: (state) => !state.investments.productHuntUsed,
+        done:      (state) => state.investments.productHuntUsed,
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_ProductHunt_Cost) return;
           if (state.investments.productHuntUsed) return;
-          state.wallet -= CONSTANTS.Invest_ProductHunt_Cost;
+          state.wallet                     -= CONSTANTS.Invest_ProductHunt_Cost;
           state.investments.productHuntUsed = true;
           state.reputation.multiplier      += CONSTANTS.Invest_ProductHunt_Rep;
-          state.investments.active.push({
-            id: 'product_hunt',
-            label: 'product_hunt_launch',
-            ticksRemaining: 24,
-            marketingBoost: CONSTANTS.Invest_ProductHunt_Boost,
-          });
         },
       },
     ],
@@ -319,11 +328,25 @@ function hardwareVisible(items, state) {
 
 // ── Card builder ───────────────────────────────────────────────
 function investmentCard(inv, state, effectClass = '') {
-  const done      = inv.done ? inv.done(state) : false;
-  const available = !done && inv.available(state);
-  const canAfford = state.wallet >= inv.cost();
-  const disabled  = done || !canAfford || !available;
-  const badge     = inv.badge ? `<span class="inv-badge">${inv.badge(state)}</span>` : '';
+  const done         = inv.done ? inv.done(state) : false;
+  const activeTicks  = inv.activeTicks   ? inv.activeTicks(state)   : 0;
+  const cdTicks      = inv.cooldownTicks ? inv.cooldownTicks(state) : 0;
+  const inProgress   = activeTicks > 0;
+  const onCooldown   = cdTicks > 0;
+  const available    = !done && !inProgress && !onCooldown && inv.available(state);
+  const canAfford    = state.wallet >= inv.cost();
+  const disabled     = done || inProgress || onCooldown || !canAfford;
+
+  // Badge: priority order — cooldown remaining > in-progress remaining > custom badge
+  const badge = onCooldown
+    ? `<span class="inv-badge">${ticksToLabel(cdTicks)}</span>`
+    : inProgress
+      ? `<span class="inv-badge">active · ${ticksToLabel(activeTicks)}</span>`
+      : inv.badge
+        ? `<span class="inv-badge">${inv.badge(state)}</span>`
+        : '';
+
+  const btnLabel = done ? 'done' : inProgress ? 'active' : onCooldown ? 'cooldown' : 'invest';
 
   return `
     <div class="inv-card${done ? ' inv-card-used' : ''}">
@@ -338,8 +361,8 @@ function investmentCard(inv, state, effectClass = '') {
           id="inv-btn-${inv.id}"
           class="inv-btn"
           ${disabled ? 'disabled' : ''}
-          title="${!canAfford && !done ? `need ${fmt(inv.cost())}` : ''}">
-          ${done ? 'done' : 'invest'}
+          title="${!canAfford && !done && !inProgress && !onCooldown ? `need ${fmt(inv.cost())}` : ''}">
+          ${btnLabel}
         </button>
       </div>
     </div>`;
