@@ -7,6 +7,7 @@ import { renderFreelance }   from '../tabs/freelance.js';
 import { renderInvestment }  from '../tabs/investment.js';
 import { renderFrontierLab } from '../tabs/frontier_lab.js';
 import { renderPostOnX }     from '../tabs/post_on_x.js';
+import { renderMilestones }  from '../tabs/milestones.js';
 import { renderHistogram }   from './histograms.js';
 import { LAB_PLANS, calcCoderRcuPerHour } from '../engine/state.js';
 
@@ -64,6 +65,7 @@ function renderActiveTab(state) {
     case 'investment':   renderInvestment(state);  break;
     case 'frontier_lab': renderFrontierLab(state); break;
     case 'post_on_x':    renderPostOnX(state);     break;
+    case 'milestones':   renderMilestones(state);  break;
   }
 }
 

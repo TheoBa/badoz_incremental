@@ -10,41 +10,39 @@
 // Billing: daily plan costs deducted by tick.js → applyDailyLabBilling().
 
 import {
-  CONSTANTS,
   LAB_PLANS,
   calcModelMinorUpgradeCost,
   calcModelMajorUpgradeCost,
   calcCoderRcuPerHour,
+  CONSTANTS,
 } from '../engine/state.js';
 
 // ── Plan display order ─────────────────────────────────────────
 const PLAN_ORDER = ['free', 'hobbyist', 'growth', 'scale', 'infernal'];
 
 // ── Agent display config ───────────────────────────────────────
+// Agents are unlocked via the milestones tab (lab_burn track).
 const AGENTS = [
   {
-    id:        'ai_coder',
-    label:     'ai_coder',
-    desc:      'Writes code so you don\'t have to. Mostly correct.',
-    boost:     'passive_rcu/h',
-    unlockRcu: 0,    // pre-unlocked
-    showRcu:   true, // display live passive_rcu/h on card
+    id:      'ai_coder',
+    label:   'ai_coder',
+    desc:    'Writes code so you don\'t have to. Mostly correct.',
+    boost:   'passive_rcu/h',
+    showRcu: true, // display live passive_rcu/h on card
   },
   {
-    id:        'ai_support',
-    label:     'ai_support',
-    desc:      'Handles tickets. Rarely gaslights customers.',
-    boost:     'customer_retention',
-    unlockRcu: CONSTANTS.Lab_Support_Unlock_RCU,   // null until tuned
-    showRcu:   false,
+    id:      'ai_support',
+    label:   'ai_support',
+    desc:    'Handles tickets. Rarely gaslights customers.',
+    boost:   'customer_retention',
+    showRcu: false,
   },
   {
-    id:        'ai_marketer',
-    label:     'ai_marketer',
-    desc:      'Posts everywhere simultaneously. Results may include virality. Or controversy.',
-    boost:     'marketing_stream + reputation/d',
-    unlockRcu: CONSTANTS.Lab_Marketer_Unlock_RCU,  // null until tuned
-    showRcu:   false,
+    id:      'ai_marketer',
+    label:   'ai_marketer',
+    desc:    'Posts everywhere simultaneously. Results may include virality. Or controversy.',
+    boost:   'marketing_stream + reputation/d',
+    showRcu: false,
   },
 ];
 
@@ -87,13 +85,7 @@ export function renderFrontierLab(state) {
   AGENTS.forEach(cfg => {
     const agent = state.lab.agents[cfg.id];
 
-    if (!agent.unlocked) {
-      const btn = document.getElementById(`lab-unlock-${cfg.id}`);
-      if (btn) btn.addEventListener('click', () => {
-        onUnlockAgent(state, cfg);
-        renderFrontierLab(state);
-      });
-    } else {
+    if (agent.unlocked) {
       // Plan buttons
       PLAN_ORDER.forEach(planId => {
         const btn = document.getElementById(`lab-plan-${cfg.id}-${planId}`);
@@ -128,10 +120,6 @@ function agentCardHTML(cfg, agent, state) {
 }
 
 function lockedCardHTML(cfg, agent, state) {
-  const hasRcu    = cfg.unlockRcu != null;
-  const canAfford = hasRcu && state.rcu >= cfg.unlockRcu;
-  const costLabel = hasRcu ? `${cfg.unlockRcu} RCU` : 'TBD';
-
   return `
     <div class="lab-card lab-card-locked">
       <div class="lab-card-top">
@@ -140,10 +128,7 @@ function lockedCardHTML(cfg, agent, state) {
       </div>
       <div class="lab-agent-desc">${cfg.desc}</div>
       <div class="lab-agent-boost">boost: ${cfg.boost}</div>
-      <button class="lab-btn lab-btn-wide" id="lab-unlock-${cfg.id}"
-        ${hasRcu && canAfford ? '' : 'disabled'}>
-        [ unlock — ${costLabel} ]
-      </button>
+      <div class="lab-pending-note">unlock via lab_burn milestones</div>
     </div>`;
 }
 
@@ -221,12 +206,6 @@ function activeCardHTML(cfg, agent, state) {
 }
 
 // ── Action handlers ────────────────────────────────────────────
-function onUnlockAgent(state, cfg) {
-  if (cfg.unlockRcu == null || state.rcu < cfg.unlockRcu) return;
-  state.rcu -= cfg.unlockRcu;
-  state.lab.agents[cfg.id].unlocked = true;
-}
-
 function onSetPlan(state, agentId, planId) {
   const agent = state.lab.agents[agentId];
   if (!agent.unlocked) return;

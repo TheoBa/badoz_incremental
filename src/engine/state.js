@@ -21,28 +21,28 @@ export const CONSTANTS = {
   Freelance_Money_Mult_T3: 6,
   Freelance_Money_Mult_T4: 8,
 
-  // ── Milestone thresholds (not yet tuned) ─────────────────────
-  Freelance_RCU_T1: null,  // RCU milestone → Senior tier
-  Freelance_RCU_T2: null,  // RCU milestone → Lead tier
-  Freelance_RCU_T3: null,  // RCU milestone → 10x tier
+  // ── Milestone thresholds ─────────────────────────────────────
+  Freelance_RCU_T1: 500,      // lifetime RCU → Senior tier
+  Freelance_RCU_T2: 5_000,    // lifetime RCU → Lead tier
+  Freelance_RCU_T3: 50_000,   // lifetime RCU → 10x tier
 
-  Lab_Money_T1: null,       // cumulative Lab spend → AI Support
-  Lab_Money_T2: null,       // → AI Marketer
-  Lab_Money_T3: null,       // → Product Hunt (Investment tab)
-  Lab_Money_T4: null,       // → Growth Hacker agent
-  Lab_Money_T5: null,       // → Enterprise tier
-  Lab_Money_T6: null,       // → PR Bot agent
-  Lab_Money_T7: null,       // → Product Manager agent
-  Lab_Money_T8: null,       // → Growth loops
-  Lab_Money_T9: null,       // → AI CEO mode
+  Lab_Money_T1: 1_000,        // cumulative Lab spend → ai_support unlocked
+  Lab_Money_T2: 10_000,       // → ai_marketer unlocked
+  Lab_Money_T3: 50_000,       // → TBD (teaser)
+  Lab_Money_T4: 200_000,      // → TBD (teaser)
+  Lab_Money_T5: 500_000,      // → TBD (teaser)
+  Lab_Money_T6: null,         // → PR Bot agent
+  Lab_Money_T7: null,         // → Product Manager agent
+  Lab_Money_T8: null,         // → Growth loops
+  Lab_Money_T9: null,         // → AI CEO mode
 
   // Subscription price tiers (auto-set on saas_product tab discovery; one-way raises)
-  Saas_Price_T1: 1,         // initial price, set on first tab visit
-  Saas_Price_T2: 10,        // unlocks at Price_Round_T1 milestone
-  Saas_Price_T3: 100,       // unlocks at Price_Round_T2 milestone
+  Saas_Price_T1: 1,           // initial price, set on first tab visit
+  Saas_Price_T2: 10,          // unlocks at Price_Round_T1 milestone
+  Saas_Price_T3: 100,         // unlocks at Price_Round_T2 milestone
 
-  Price_Round_T1: null,     // lifetime earned milestone → raise to T2
-  Price_Round_T2: null,     // lifetime earned milestone → raise to T3
+  Price_Round_T1: 5_000,      // lifetime earned → raise to $10/mo
+  Price_Round_T2: 100_000,    // lifetime earned → raise to $100/mo
 
   // ── Ship feature upgrade curves ───────────────────────────────
   // Base RCU cost of the first upgrade in each track
@@ -275,6 +275,11 @@ export function initState() {
       rcu:    [0, 0, 0, 0, 0, 0, 0],
       mrr:    [0, 0, 0, 0, 0, 0, 0],
       burn:   [0, 0, 0, 0, 0, 0, 0],
+    },
+
+    // Milestones — player-claimed rewards
+    milestones: {
+      claimed: {},  // { [stepId]: true } for every claimed step
     },
 
     // Analytics events queued for backend

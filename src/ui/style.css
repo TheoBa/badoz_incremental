@@ -458,6 +458,89 @@ body {
   min-height: 20px;
 }
 
+/* ── milestones tab ──────────────────────────────────────────── */
+.ms-track {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--border);
+}
+.ms-track:last-child { border-bottom: none; margin-bottom: 0; }
+.ms-track-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ms-track-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  font-weight: 500;
+  color: var(--text2);
+}
+.ms-label-claimable { color: var(--amber); }
+.ms-track-val { font-size: 11px; font-weight: 500; }
+.ms-bar-wrap {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.ms-bar { height: 100%; border-radius: 2px; transition: width .3s; }
+.ms-hint {
+  font-size: 10px;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.ms-hint-claimable { color: var(--amber); }
+.ms-steps { display: flex; flex-direction: column; }
+.ms-row {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--border);
+}
+.ms-row:last-child { border-bottom: none; }
+.ms-row-claimable {
+  margin: 0 -8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(186, 117, 23, 0.05);
+}
+.ms-prefix { margin-right: 3px; }
+.ms-threshold { font-size: 11px; font-weight: 500; white-space: nowrap; }
+.ms-t-done { color: var(--teal); }
+.ms-t-claim { color: var(--amber); }
+.ms-t-lock { color: var(--text3); }
+.ms-effect { font-size: 11px; }
+.ms-effect-vis { color: var(--text); }
+.ms-effect-hid { color: var(--text3); font-style: italic; }
+.ms-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.ms-badge-done   { background: #e2f5ee; color: #0d6e4e; border: 0.5px solid var(--teal); }
+.ms-badge-locked { color: var(--text3); border: 0.5px solid var(--border); }
+.ms-badge-soon   { color: var(--text3); border: 0.5px dashed var(--border2); font-style: italic; }
+.ms-claim-btn {
+  font-size: 10px;
+  font-family: var(--mono);
+  padding: 3px 9px;
+  border: 0.5px solid var(--amber);
+  color: var(--amber);
+  background: transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ms-claim-btn:hover { background: rgba(186, 117, 23, 0.08); }
+
 /* ── post_on_x tab ───────────────────────────────────────────── */
 .pox-rep-display { text-align: center; margin: 10px 0 4px; }
 .pox-rep-value   { font-size: 48px; font-weight: 500; color: var(--text); letter-spacing: -2px; }

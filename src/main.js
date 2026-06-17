@@ -43,6 +43,9 @@ if (state.lab?.agents) {
     delete agent.modelLevel;  // remove old field
   }
 }
+// Migrate: add milestones object (old saves)
+if (!state.milestones)         state.milestones         = { claimed: {} };
+if (!state.milestones.claimed) state.milestones.claimed = {};
 // Migrate postsThisRun → numberOfPosts (old saves)
 if (state.reputation.numberOfPosts == null) {
   state.reputation.numberOfPosts = state.reputation.postsThisRun ?? 0;
