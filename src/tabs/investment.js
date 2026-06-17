@@ -209,37 +209,57 @@ const CATEGORIES = [
           state.investments.hardware.laptopLevel = 2;
         },
       },
-      // ── CPU / GPU (independent multipliers) ─────────────────
+      // ── CPU / GPU (infinite upgrades, scale like ship_feature) ─
       {
         id:        'cpu_upgrade',
         label:     'cpu_upgrade',
-        desc:      'faster compilation pipeline · multiplies base RCU output',
-        cost:      () => CONSTANTS.Hardware_CPU_Cost,
-        effect:    () => `×${CONSTANTS.Hardware_CPU_Mult} base RCU/click`,
-        available: (state) => !state.investments.hardware.cpuPurchased,
-        oneTime:   true,
-        done:      (state) => state.investments.hardware.cpuPurchased,
+        desc:      'faster compilation pipeline · repeatable · cost scales each level',
+        cost:      (state) => Math.floor(
+          CONSTANTS.Hardware_CPU_Base_Cost *
+          Math.pow(CONSTANTS.Hardware_CPU_Scale, state.investments.hardware.cpuLevel)
+        ),
+        effect:    (state) => {
+          const nextMult = 1 + (state.investments.hardware.cpuLevel + 1) * CONSTANTS.Hardware_CPU_Delta;
+          return `×${nextMult.toFixed(1)} base RCU/click`;
+        },
+        badge:     (state) => state.investments.hardware.cpuLevel > 0
+          ? `lv.${state.investments.hardware.cpuLevel}`
+          : null,
+        available: () => true,
         buy: (state) => {
-          if (state.wallet < CONSTANTS.Hardware_CPU_Cost) return;
-          if (state.investments.hardware.cpuPurchased) return;
-          state.wallet -= CONSTANTS.Hardware_CPU_Cost;
-          state.investments.hardware.cpuPurchased = true;
+          const cost = Math.floor(
+            CONSTANTS.Hardware_CPU_Base_Cost *
+            Math.pow(CONSTANTS.Hardware_CPU_Scale, state.investments.hardware.cpuLevel)
+          );
+          if (state.wallet < cost) return;
+          state.wallet -= cost;
+          state.investments.hardware.cpuLevel++;
         },
       },
       {
         id:        'gpu_rig',
         label:     'gpu_rig',
-        desc:      'parallel shader cores for... local model inference, obviously',
-        cost:      () => CONSTANTS.Hardware_GPU_Cost,
-        effect:    () => `×${CONSTANTS.Hardware_GPU_Mult} total RCU/click`,
-        available: (state) => !state.investments.hardware.gpuPurchased,
-        oneTime:   true,
-        done:      (state) => state.investments.hardware.gpuPurchased,
+        desc:      'parallel shader cores for... local model inference, obviously · repeatable',
+        cost:      (state) => Math.floor(
+          CONSTANTS.Hardware_GPU_Base_Cost *
+          Math.pow(CONSTANTS.Hardware_GPU_Scale, state.investments.hardware.gpuLevel)
+        ),
+        effect:    (state) => {
+          const nextMult = 1 + (state.investments.hardware.gpuLevel + 1) * CONSTANTS.Hardware_GPU_Delta;
+          return `×${nextMult.toFixed(1)} total RCU/click`;
+        },
+        badge:     (state) => state.investments.hardware.gpuLevel > 0
+          ? `lv.${state.investments.hardware.gpuLevel}`
+          : null,
+        available: () => true,
         buy: (state) => {
-          if (state.wallet < CONSTANTS.Hardware_GPU_Cost) return;
-          if (state.investments.hardware.gpuPurchased) return;
-          state.wallet -= CONSTANTS.Hardware_GPU_Cost;
-          state.investments.hardware.gpuPurchased = true;
+          const cost = Math.floor(
+            CONSTANTS.Hardware_GPU_Base_Cost *
+            Math.pow(CONSTANTS.Hardware_GPU_Scale, state.investments.hardware.gpuLevel)
+          );
+          if (state.wallet < cost) return;
+          state.wallet -= cost;
+          state.investments.hardware.gpuLevel++;
         },
       },
     ],
@@ -328,22 +348,23 @@ function hardwareVisible(items, state) {
 
 // ── Card builder ───────────────────────────────────────────────
 function investmentCard(inv, state, effectClass = '') {
-  const done         = inv.done ? inv.done(state) : false;
-  const activeTicks  = inv.activeTicks   ? inv.activeTicks(state)   : 0;
-  const cdTicks      = inv.cooldownTicks ? inv.cooldownTicks(state) : 0;
-  const inProgress   = activeTicks > 0;
-  const onCooldown   = cdTicks > 0;
-  const available    = !done && !inProgress && !onCooldown && inv.available(state);
-  const canAfford    = state.wallet >= inv.cost();
-  const disabled     = done || inProgress || onCooldown || !canAfford;
+  const done        = inv.done ? inv.done(state) : false;
+  const activeTicks = inv.activeTicks   ? inv.activeTicks(state)   : 0;
+  const cdTicks     = inv.cooldownTicks ? inv.cooldownTicks(state) : 0;
+  const inProgress  = activeTicks > 0;
+  const onCooldown  = cdTicks > 0;
+  const cost        = inv.cost(state);
+  const canAfford   = state.wallet >= cost;
+  const disabled    = done || inProgress || onCooldown || !canAfford;
 
-  // Badge: priority order — cooldown remaining > in-progress remaining > custom badge
+  // Badge: priority — cooldown > in-progress > custom (null = no badge)
+  const customBadge = inv.badge ? inv.badge(state) : null;
   const badge = onCooldown
     ? `<span class="inv-badge">${ticksToLabel(cdTicks)}</span>`
     : inProgress
       ? `<span class="inv-badge">active · ${ticksToLabel(activeTicks)}</span>`
-      : inv.badge
-        ? `<span class="inv-badge">${inv.badge(state)}</span>`
+      : customBadge
+        ? `<span class="inv-badge">${customBadge}</span>`
         : '';
 
   const btnLabel = done ? 'done' : inProgress ? 'active' : onCooldown ? 'cooldown' : 'invest';
@@ -353,15 +374,15 @@ function investmentCard(inv, state, effectClass = '') {
       <div class="inv-card-body">
         <div class="inv-card-name">${inv.label} ${badge}</div>
         <div class="inv-card-desc">${inv.desc}</div>
-        <div class="inv-card-effect${effectClass ? ' ' + effectClass : ''}">${inv.effect()}</div>
+        <div class="inv-card-effect${effectClass ? ' ' + effectClass : ''}">${inv.effect(state)}</div>
       </div>
       <div class="inv-card-side">
-        <div class="inv-card-cost">${done ? '—' : fmt(inv.cost())}</div>
+        <div class="inv-card-cost">${done ? '—' : fmt(cost)}</div>
         <button
           id="inv-btn-${inv.id}"
           class="inv-btn"
           ${disabled ? 'disabled' : ''}
-          title="${!canAfford && !done && !inProgress && !onCooldown ? `need ${fmt(inv.cost())}` : ''}">
+          title="${!canAfford && !done && !inProgress && !onCooldown ? `need ${fmt(cost)}` : ''}">
           ${btnLabel}
         </button>
       </div>
