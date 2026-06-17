@@ -95,7 +95,7 @@ const CATEGORIES = [
         label:     'launch_on_product_hunt',
         desc:      '#1 product of the day · massive one-time event',
         cost:      () => CONSTANTS.Invest_ProductHunt_Cost,
-        effect:    () => `+${fmtN(CONSTANTS.Invest_ProductHunt_Boost)} mkt_stream (1d) · +${CONSTANTS.Invest_ProductHunt_Rep.toFixed(2)} rep`,
+        effect:    () => `+${CONSTANTS.Invest_ProductHunt_Rep.toFixed(2)} rep · permanent`,
         available: (state) => !state.investments.productHuntUsed,
         buy: (state) => {
           if (state.wallet < CONSTANTS.Invest_ProductHunt_Cost) return;
