@@ -365,3 +365,27 @@ body {
 }
 .inv-btn:disabled { border-color: var(--border); color: var(--text3); cursor: not-allowed; }
 .amber { color: var(--amber); }
+
+/* ── post_on_x tab ───────────────────────────────────────────── */
+.pox-rep-display { text-align: center; margin: 10px 0 4px; }
+.pox-rep-value   { font-size: 48px; font-weight: 500; color: var(--text); letter-spacing: -2px; }
+.pox-rep-label   { font-size: 11px; color: var(--text2); margin-bottom: 14px; }
+.pox-btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  font-size: 15px;
+  font-family: var(--mono);
+  cursor: pointer;
+  border: 0.5px solid var(--text);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font-weight: 500;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+.pox-btn:active          { opacity: .6; }
+.pox-btn:disabled        { border-color: var(--border); color: var(--text3); cursor: not-allowed; }
+.pox-btn-cooldown        { border-style: dashed; }
+.pox-cooldown            { font-size: 11px; color: var(--text3); text-align: center; margin-bottom: 14px; min-height: 16px; }

@@ -92,6 +92,10 @@ export const CONSTANTS = {
   Hardware_CPU_Base_Cost: 1500, Hardware_CPU_Scale: 2,   Hardware_CPU_Delta: 0.5,
   Hardware_GPU_Base_Cost: 1000, Hardware_GPU_Scale: 1.8,  Hardware_GPU_Delta: 0.3,
 
+  // ── post_on_x ─────────────────────────────────────────────────
+  PostOnX_Rep_Delta: 0.01,   // reputation.multiplier += delta per post
+  PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
+
   WIN_CONDITION: 1_000_000_000,
 };
 
@@ -163,7 +167,7 @@ export function initState() {
     reputation: {
       multiplier: 1.0,
       postCooldownTicks: 0,
-      postsThisRun: 0,
+      numberOfPosts: 0,
     },
 
     // Upgrades (ship_feature)
