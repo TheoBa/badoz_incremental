@@ -21,7 +21,7 @@ export function renderPostOnX(state) {
 
       <div class="stat-section">
         <div class="stat-row"><span>rep/post</span><b>+${CONSTANTS.PostOnX_Rep_Delta.toFixed(2)}</b></div>
-        <div class="stat-row"><span>posts_this_run</span><b id="pox-count">0</b></div>
+        <div class="stat-row"><span>number_of_posts</span><b id="pox-count">0</b></div>
         <div class="stat-row"><span>cooldown</span><b>1 day</b></div>
       </div>`;
 
@@ -30,7 +30,7 @@ export function renderPostOnX(state) {
   }
 
   document.getElementById('pox-rep').textContent   = state.reputation.multiplier.toFixed(2) + '×';
-  document.getElementById('pox-count').textContent = state.reputation.postsThisRun;
+  document.getElementById('pox-count').textContent = state.reputation.numberOfPosts;
 
   const btn = document.getElementById('pox-btn');
   const cd  = document.getElementById('pox-cooldown');
@@ -53,7 +53,7 @@ export function onPostOnX(state) {
 
   state.reputation.multiplier       += CONSTANTS.PostOnX_Rep_Delta;
   state.reputation.postCooldownTicks = CONSTANTS.PostOnX_Cooldown;
-  state.reputation.postsThisRun++;
+  state.reputation.numberOfPosts++;
 
   // Re-render the tab immediately
   renderPostOnX(state);

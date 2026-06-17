@@ -167,7 +167,7 @@ export function initState() {
     reputation: {
       multiplier: 1.0,
       postCooldownTicks: 0,
-      postsThisRun: 0,
+      numberOfPosts: 0,
     },
 
     // Upgrades (ship_feature)
