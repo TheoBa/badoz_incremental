@@ -15,6 +15,11 @@ if (state.freelance.missions.length === 0) {
   state.freelance.missions = generateMissions(state.freelance.tier);
 }
 
+// Initialise press coverage uses on first boot (null = not yet set)
+if (state.investments.pressUsesRemaining === null) {
+  state.investments.pressUsesRemaining = CONSTANTS.Invest_Press_Uses;
+}
+
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {

@@ -56,6 +56,24 @@ export const CONSTANTS = {
   Ship_Retention_Delta:    0.1,   // added to retention multiplier
   Ship_Marketing_Delta:    1,     // additional visitors/day
 
+  // ── Investment costs & effects ────────────────────────────────
+  Invest_ColdOutreach_Cost:    50,   // money
+  Invest_ColdOutreach_Boost:    5,   // marketing_stream +5 for 1 day (24 ticks)
+
+  Invest_SEO_Cost:            200,   // money
+  Invest_SEO_Boost:             2,   // marketing_stream +2 for 7 days (168 ticks)
+
+  Invest_Newsletter_Cost:     100,   // money
+  Invest_Newsletter_Rep:     0.05,   // reputation.multiplier +0.05 (instant, permanent)
+
+  Invest_ProductHunt_Cost:    500,   // money (once per run)
+  Invest_ProductHunt_Boost:    20,   // marketing_stream +20 for 1 day
+  Invest_ProductHunt_Rep:     0.2,   // reputation.multiplier +0.2 (instant)
+
+  Invest_Press_Cost:          300,   // money per use
+  Invest_Press_Rep:           0.15,  // reputation.multiplier +0.15 (instant)
+  Invest_Press_Uses:            3,   // max uses per run
+
   WIN_CONDITION: 1_000_000_000,
 };
 
@@ -118,7 +136,13 @@ export function initState() {
     },
 
     // Investment
-    investments: [],
+    investments: {
+      // Timed boosts: [{id, label, ticksRemaining, marketingBoost}]
+      // marketingStream is NOT mutated — acquisition reads active boosts separately
+      active: [],
+      productHuntUsed: false,
+      pressUsesRemaining: null, // set to Invest_Press_Uses on first run (handled in main.js)
+    },
 
     // KPI histogram snapshots — last 7 in-game days, oldest first
     history: {
