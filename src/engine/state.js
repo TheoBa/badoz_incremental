@@ -198,7 +198,7 @@ export function calcModelMajorUpgradeCost(agent) {
 /**
  * Base passive RCU/h for this agent before plan multiplier.
  * Formula: Coder_RCU_Base + totalMinorIncrements × Coder_RCU_Delta
- * Multiply by plan.multiplier in tick/render (free plan = idle = 0 output).
+ * Multiply by plan.multiplier in tick/render. Free plan (mult 1) gives the baseline floor.
  */
 export function calcCoderRcuPerHour(agent) {
   const n = calcModelTotalMinorIncrements(agent);
@@ -208,12 +208,12 @@ export function calcCoderRcuPerHour(agent) {
 // ── AI Support helper ──────────────────────────────────────────
 /**
  * Flat retention bonus contributed by ai_support agent.
- * Returns 0 if agent is locked, not unlocked, or on free plan.
+ * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
  */
 export function calcSupportRetentionBonus(state) {
   const agent = state.lab?.agents?.ai_support;
-  if (!agent?.unlocked || agent.tier === 'free') return 0;
-  const plan = LAB_PLANS[agent.tier];
+  if (!agent?.unlocked) return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
   const n    = calcModelTotalMinorIncrements(agent);
   return (CONSTANTS.Lab_Support_Retention_Base + n * CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
 }
@@ -221,24 +221,24 @@ export function calcSupportRetentionBonus(state) {
 // ── AI Marketer helpers ────────────────────────────────────────
 /**
  * Extra marketing visitors/day contributed by ai_marketer agent.
- * Returns 0 if agent is locked, not unlocked, or on free plan.
+ * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
  */
 export function calcMarketerMarketingBonus(state) {
   const agent = state.lab?.agents?.ai_marketer;
-  if (!agent?.unlocked || agent.tier === 'free') return 0;
-  const plan = LAB_PLANS[agent.tier];
+  if (!agent?.unlocked) return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
   const n    = calcModelTotalMinorIncrements(agent);
   return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
 }
 
 /**
  * Reputation gain per in-game day from ai_marketer.
- * Returns 0 if agent is locked, not unlocked, or on free plan.
+ * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
  */
 export function calcMarketerRepPerDay(state) {
   const agent = state.lab?.agents?.ai_marketer;
-  if (!agent?.unlocked || agent.tier === 'free') return 0;
-  const plan = LAB_PLANS[agent.tier];
+  if (!agent?.unlocked) return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
   return CONSTANTS.Lab_Marketer_Rep_Per_Day * plan.multiplier;
 }
 

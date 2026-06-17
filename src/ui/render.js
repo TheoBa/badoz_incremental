@@ -90,8 +90,8 @@ export function fmtN(n) {
 
 function calcRcuPerHour(state) {
   const coder = state.lab?.agents?.ai_coder;
-  if (!coder?.unlocked || coder.tier === 'free') return 0;
-  const plan = LAB_PLANS[coder.tier];
+  if (!coder?.unlocked) return 0;
+  const plan = LAB_PLANS[coder.tier] ?? LAB_PLANS.free;
   return calcCoderRcuPerHour(coder) * plan.multiplier;
 }
 

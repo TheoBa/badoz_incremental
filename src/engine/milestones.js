@@ -50,13 +50,13 @@ export const MILESTONE_TRACKS = [
         id:        'price_t1',
         threshold: CONSTANTS.Price_Round_T1,
         effect:    `raise_price → $${CONSTANTS.Saas_Price_T2}/mo unlocked`,
-        onClaim:   null,  // raise_price is a manual button in saas_product tab
+        onClaim:   () => {},  // raise_price is a manual button in saas_product tab
       },
       {
         id:        'price_t2',
         threshold: CONSTANTS.Price_Round_T2,
         effect:    `raise_price → $${CONSTANTS.Saas_Price_T3}/mo unlocked`,
-        onClaim:   null,  // raise_price is a manual button in saas_product tab
+        onClaim:   () => {},  // raise_price is a manual button in saas_product tab
       },
     ],
   },
@@ -102,32 +102,32 @@ export const MILESTONE_TRACKS = [
       {
         id:        'mrr_t1',
         threshold: 50,
-        effect:    'seo_push + dual_monitor_setup unlocked',
-        onClaim:   null,   // gates checked in investment tab via milestones.claimed
+        effect:    'seo_push + dual_monitor + lab hobbyist plan unlocked',
+        onClaim:   () => {},   // gates checked in investment/frontier_lab via milestones.claimed
       },
       {
         id:        'mrr_t2',
         threshold: 200,
-        effect:    'press_coverage + ergonomic_workstation unlocked',
-        onClaim:   null,
+        effect:    'press_coverage + ergonomic_workstation + lab growth plan unlocked',
+        onClaim:   () => {},
       },
       {
         id:        'mrr_t3',
         threshold: 1_000,
-        effect:    'launch_on_product_hunt + macbook_pro_upgrade unlocked',
-        onClaim:   null,
+        effect:    'product_hunt + macbook_pro + lab scale plan unlocked',
+        onClaim:   () => {},
       },
       {
         id:        'mrr_t4',
         threshold: 5_000,
-        effect:    'mac_studio unlocked',
-        onClaim:   null,
+        effect:    'mac_studio + lab infernal plan unlocked',
+        onClaim:   () => {},
       },
       {
         id:        'mrr_t5',
         threshold: 20_000,
         effect:    'cpu_upgrade + gpu_rig unlocked',
-        onClaim:   null,
+        onClaim:   () => {},
       },
     ],
   },

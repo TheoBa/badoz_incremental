@@ -466,6 +466,7 @@ body {
 .lab-plan-btn:hover  { border-color: var(--teal); color: var(--text); }
 .lab-plan-current    { background: #e2f5ee; border-color: var(--teal); color: #0d6e4e; font-weight: 500; }
 .lab-plan-pending    { border-color: var(--teal); border-style: dashed; color: var(--teal); }
+.lab-plan-locked     { opacity: .4; cursor: not-allowed; border-style: dashed; }
 .lab-plan-sub        { font-size: 9px; color: var(--text3); }
 .lab-plan-current .lab-plan-sub { color: #0d6e4e; }
 .lab-pending-note    { font-size: 10px; color: var(--amber); font-style: italic; margin-top: 4px; }

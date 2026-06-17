@@ -49,12 +49,13 @@ function tick(state) {
 // ── Agent passive effects ──────────────────────────────────────
 function applyLabAgents(state) {
   const coder = state.lab.agents.ai_coder;
-  if (!coder.unlocked || coder.tier === 'free') return;  // free plan = idle
+  if (!coder.unlocked) return;
 
-  const plan       = LAB_PLANS[coder.tier];
+  // Free plan (multiplier 1) provides the baseline floor; paid plans scale above that
+  const plan       = LAB_PLANS[coder.tier] ?? LAB_PLANS.free;
   const rcuPerHour = calcCoderRcuPerHour(coder) * plan.multiplier;
 
-  // 1 tick = 1 in-game hour, so add rcuPerHour directly
+  // 1 tick = 1 in-game hour
   state.rcu         += rcuPerHour;
   state.rcuLifetime += rcuPerHour;
 }

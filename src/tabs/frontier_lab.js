@@ -20,8 +20,16 @@ import {
   calcMarketerRepPerDay,
 } from '../engine/state.js';
 
-// ── Plan display order ─────────────────────────────────────────
+// ── Plan display order + MRR gates ────────────────────────────
 const PLAN_ORDER = ['free', 'hobbyist', 'growth', 'scale', 'infernal'];
+// Each paid plan is locked until the corresponding MRR milestone is claimed.
+const PLAN_GATES = {
+  free:     null,       // always available
+  hobbyist: 'mrr_t1',  // $50 MRR
+  growth:   'mrr_t2',  // $200 MRR
+  scale:    'mrr_t3',  // $1K MRR
+  infernal: 'mrr_t4',  // $5K MRR
+};
 
 // ── Agent display config ───────────────────────────────────────
 // Agents are unlocked via the milestones tab (lab_burn track).
@@ -166,12 +174,21 @@ function activeCardHTML(cfg, agent, state) {
 
   // ── Plan selector ──
   const planBtns = PLAN_ORDER.map(planId => {
-    const p         = LAB_PLANS[planId];
-    const isCurrent = agent.tier === planId;
-    const isPending = pending === planId && !isCurrent;
-    const cls       = ['lab-plan-btn',
+    const p          = LAB_PLANS[planId];
+    const gateId     = PLAN_GATES[planId];
+    const isUnlocked = !gateId || !!state.milestones?.claimed?.[gateId];
+    const isCurrent  = agent.tier === planId;
+    const isPending  = pending === planId && !isCurrent;
+
+    if (!isUnlocked) {
+      return `<button class="lab-plan-btn lab-plan-locked" disabled title="unlock: ${gateId}">
+        ${planId}<br><span class="lab-plan-sub">🔒 ${gateId}</span>
+      </button>`;
+    }
+
+    const cls = ['lab-plan-btn',
       isCurrent ? 'lab-plan-current' : '',
-      isPending  ? 'lab-plan-pending' : '',
+      isPending ? 'lab-plan-pending' : '',
     ].filter(Boolean).join(' ');
 
     return `<button class="${cls}" id="lab-plan-${cfg.id}-${planId}">
@@ -184,21 +201,18 @@ function activeCardHTML(cfg, agent, state) {
     : '';
 
   // ── Passive output ──
+  // Free plan (mult 1) always produces the baseline; paid plans scale above that.
   let boostLine;
   if (cfg.id === 'ai_coder') {
-    const baseRcu   = calcCoderRcuPerHour(agent);
-    const activeRcu = agent.tier === 'free' ? 0 : baseRcu * plan.multiplier;
-    const status    = agent.tier === 'free' ? ' <span class="lab-tbd">(idle on free plan)</span>' : '';
-    boostLine = `passive_rcu/h: <b class="teal">${fmtN(activeRcu)}</b>${status}`;
+    const rcu = calcCoderRcuPerHour(agent) * plan.multiplier;
+    boostLine = `passive_rcu/h: <b class="teal">${fmtN(rcu)}</b>`;
   } else if (cfg.id === 'ai_support') {
-    const bonus = agent.tier === 'free' ? 0 : calcSupportRetentionBonusForAgent(agent);
-    const status = agent.tier === 'free' ? ' <span class="lab-tbd">(idle on free plan)</span>' : '';
-    boostLine = `retention_bonus: <b class="blue">+${bonus.toFixed(2)}</b>${status}`;
+    const bonus = calcSupportRetentionBonusForAgent(agent);
+    boostLine = `retention_bonus: <b class="blue">+${bonus.toFixed(2)}</b>`;
   } else if (cfg.id === 'ai_marketer') {
-    const mkt = agent.tier === 'free' ? 0 : calcMarketerMarketingBonusForAgent(agent);
-    const rep = agent.tier === 'free' ? 0 : calcMarketerRepPerDayForAgent(agent);
-    const status = agent.tier === 'free' ? ' <span class="lab-tbd">(idle on free plan)</span>' : '';
-    boostLine = `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b> · rep: <b>+${rep.toFixed(3)}/d</b>${status}`;
+    const mkt = calcMarketerMarketingBonusForAgent(agent);
+    const rep = calcMarketerRepPerDayForAgent(agent);
+    boostLine = `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b> · rep: <b>+${rep.toFixed(3)}/d</b>`;
   } else {
     boostLine = `boost: ${cfg.boost}`;
   }
@@ -251,23 +265,21 @@ function calcDailyBurn(state) {
 }
 
 // Per-agent bonus calculators (don't require full state — used for card display only)
+// Free plan uses multiplier 1, providing the baseline floor.
 function calcSupportRetentionBonusForAgent(agent) {
-  const plan = LAB_PLANS[agent.tier];
-  if (!plan || agent.tier === 'free') return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
   const n = (agent.modelMajor - 1) * 9 + agent.modelMinor;
   return (CONSTANTS.Lab_Support_Retention_Base + n * CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
 }
 
 function calcMarketerMarketingBonusForAgent(agent) {
-  const plan = LAB_PLANS[agent.tier];
-  if (!plan || agent.tier === 'free') return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
   const n = (agent.modelMajor - 1) * 9 + agent.modelMinor;
   return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
 }
 
 function calcMarketerRepPerDayForAgent(agent) {
-  const plan = LAB_PLANS[agent.tier];
-  if (!plan || agent.tier === 'free') return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
   return CONSTANTS.Lab_Marketer_Rep_Per_Day * plan.multiplier;
 }
 
