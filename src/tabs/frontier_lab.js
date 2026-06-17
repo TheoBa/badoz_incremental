@@ -1,9 +1,21 @@
 // frontier_lab.js — Frontier Lab tab
-// Dark-themed AI agent hub. Agents unlock, subscribe to a plan tier, and upgrade their model.
-// Daily plan costs are deducted by tick.js → applyDailyLabBilling() at each day boundary.
-// Plan changes take effect at the next day boundary (pendingTier → tier).
+// AI agent hub. Agents subscribe to a plan tier and have an infinitely upgradeable model version.
+//
+// Model versioning: vX.Y where Y ∈ 0–9.
+//   Minor increments (Y < 9): RCU cost, scales per total increments purchased.
+//   Major release (Y === 9 → (X+1).0): money cost, scales per major version.
+//   Each minor increment adds Lab_Coder_RCU_Delta passive RCU/h to ai_coder.
+//
+// Plan changes: set pendingTier, applied at next day boundary by tick.js.
+// Billing: daily plan costs deducted by tick.js → applyDailyLabBilling().
 
-import { CONSTANTS, LAB_PLANS } from '../engine/state.js';
+import {
+  CONSTANTS,
+  LAB_PLANS,
+  calcModelMinorUpgradeCost,
+  calcModelMajorUpgradeCost,
+  calcCoderRcuPerHour,
+} from '../engine/state.js';
 
 // ── Plan display order ─────────────────────────────────────────
 const PLAN_ORDER = ['free', 'hobbyist', 'growth', 'scale', 'infernal'];
@@ -15,7 +27,8 @@ const AGENTS = [
     label:     'ai_coder',
     desc:      'Writes code so you don\'t have to. Mostly correct.',
     boost:     'passive_rcu/h',
-    unlockRcu: 0,    // pre-unlocked — this value never shown
+    unlockRcu: 0,    // pre-unlocked
+    showRcu:   true, // display live passive_rcu/h on card
   },
   {
     id:        'ai_support',
@@ -23,6 +36,7 @@ const AGENTS = [
     desc:      'Handles tickets. Rarely gaslights customers.',
     boost:     'customer_retention',
     unlockRcu: CONSTANTS.Lab_Support_Unlock_RCU,   // null until tuned
+    showRcu:   false,
   },
   {
     id:        'ai_marketer',
@@ -30,6 +44,7 @@ const AGENTS = [
     desc:      'Posts everywhere simultaneously. Results may include virality. Or controversy.',
     boost:     'marketing_stream + reputation/d',
     unlockRcu: CONSTANTS.Lab_Marketer_Unlock_RCU,  // null until tuned
+    showRcu:   false,
   },
 ];
 
@@ -37,26 +52,25 @@ const AGENTS = [
 export function renderFrontierLab(state) {
   const panel = document.getElementById('panel-frontier_lab');
 
-  // Build chrome once
   if (!panel._built) {
     panel.innerHTML = `
       <div class="lab-header">
-        <div class="lab-title">THE FRONTIER LAB</div>
+        <div class="lab-title">frontier_lab</div>
         <div class="lab-tagline">We align with your wallet.</div>
       </div>
       <div id="lab-gate"></div>
       <div id="lab-catalog"></div>
-      <div class="lab-burn" id="lab-burn"></div>`;
+      <div class="lab-footer" id="lab-burn"></div>`;
     panel._built = true;
   }
 
-  const unlocked = state.moneyLifetime >= CONSTANTS.Lab_Unlock_Money;
-  const gate     = document.getElementById('lab-gate');
-  const catalog  = document.getElementById('lab-catalog');
+  const active  = state.moneyLifetime >= CONSTANTS.Lab_Unlock_Money;
+  const gate    = document.getElementById('lab-gate');
+  const catalog = document.getElementById('lab-catalog');
 
-  if (!unlocked) {
+  if (!active) {
     gate.innerHTML =
-      `<div class="lab-locked">[ classified ] — unlocked_at: ${fmtMoney(CONSTANTS.Lab_Unlock_Money)} earned</div>`;
+      `<div class="lab-locked">unlocked at ${fmtMoney(CONSTANTS.Lab_Unlock_Money)} earned</div>`;
     catalog.innerHTML = '';
     document.getElementById('lab-burn').textContent = '';
     return;
@@ -64,13 +78,12 @@ export function renderFrontierLab(state) {
 
   gate.innerHTML = '';
 
-  // Rebuild catalog each render (3 cards, only active when tab is visible)
   catalog.innerHTML = AGENTS.map(cfg => {
     const agent = state.lab.agents[cfg.id];
     return agentCardHTML(cfg, agent, state);
   }).join('');
 
-  // Wire buttons
+  // Wire buttons after innerHTML is set
   AGENTS.forEach(cfg => {
     const agent = state.lab.agents[cfg.id];
 
@@ -81,6 +94,7 @@ export function renderFrontierLab(state) {
         renderFrontierLab(state);
       });
     } else {
+      // Plan buttons
       PLAN_ORDER.forEach(planId => {
         const btn = document.getElementById(`lab-plan-${cfg.id}-${planId}`);
         if (btn) btn.addEventListener('click', () => {
@@ -88,21 +102,27 @@ export function renderFrontierLab(state) {
           renderFrontierLab(state);
         });
       });
-      const upgradeBtn = document.getElementById(`lab-upgrade-${cfg.id}`);
-      if (upgradeBtn) upgradeBtn.addEventListener('click', () => {
-        onUpgradeModel(state, cfg.id);
+      // Model upgrade buttons
+      const minorBtn = document.getElementById(`lab-minor-${cfg.id}`);
+      if (minorBtn) minorBtn.addEventListener('click', () => {
+        onMinorUpgrade(state, cfg.id);
+        renderFrontierLab(state);
+      });
+      const majorBtn = document.getElementById(`lab-major-${cfg.id}`);
+      if (majorBtn) majorBtn.addEventListener('click', () => {
+        onMajorUpgrade(state, cfg.id);
         renderFrontierLab(state);
       });
     }
   });
 
-  // Daily burn total
+  // Burn footer
   const burn = calcDailyBurn(state);
   document.getElementById('lab-burn').textContent =
-    burn > 0 ? `daily_burn: $${burn}/d` : 'daily_burn: —';
+    burn > 0 ? `daily_burn: $${burn}/d` : '';
 }
 
-// ── Card HTML builders ─────────────────────────────────────────
+// ── Card builders ──────────────────────────────────────────────
 function agentCardHTML(cfg, agent, state) {
   return agent.unlocked ? activeCardHTML(cfg, agent, state) : lockedCardHTML(cfg, agent, state);
 }
@@ -116,11 +136,11 @@ function lockedCardHTML(cfg, agent, state) {
     <div class="lab-card lab-card-locked">
       <div class="lab-card-top">
         <span class="lab-agent-name">${cfg.label}</span>
-        <span class="lab-status-tag lab-tag-locked">locked</span>
+        <span class="lab-tag">locked</span>
       </div>
       <div class="lab-agent-desc">${cfg.desc}</div>
       <div class="lab-agent-boost">boost: ${cfg.boost}</div>
-      <button class="lab-btn lab-unlock-btn" id="lab-unlock-${cfg.id}"
+      <button class="lab-btn lab-btn-wide" id="lab-unlock-${cfg.id}"
         ${hasRcu && canAfford ? '' : 'disabled'}>
         [ unlock — ${costLabel} ]
       </button>
@@ -131,21 +151,43 @@ function activeCardHTML(cfg, agent, state) {
   const plan    = LAB_PLANS[agent.tier];
   const pending = agent.pendingTier;
 
-  // effective_boost = plan_multiplier × modelLevel (v1 = 1×, v2 = 2×, …)
-  const effectiveMult = plan.multiplier * agent.modelLevel;
+  // ── Model upgrade section ──
+  const versionLabel = `v${agent.modelMajor}.${agent.modelMinor}`;
+  const atMajorGate  = agent.modelMinor === 9;
 
+  let upgradeHTML;
+  if (!atMajorGate) {
+    // Minor increment: RCU cost
+    const cost       = calcModelMinorUpgradeCost(agent);
+    const canAfford  = state.rcu >= cost;
+    const nextMinor  = `v${agent.modelMajor}.${agent.modelMinor + 1}`;
+    upgradeHTML = `
+      <button class="lab-btn" id="lab-minor-${cfg.id}" ${canAfford ? '' : 'disabled'}>
+        [ ${versionLabel} → ${nextMinor} — ${cost} RCU ]
+      </button>`;
+  } else {
+    // Major release: money cost
+    const cost      = calcModelMajorUpgradeCost(agent);
+    const canAfford = state.wallet >= cost;
+    const nextMajor = `v${agent.modelMajor + 1}.0`;
+    upgradeHTML = `
+      <button class="lab-btn lab-btn-money" id="lab-major-${cfg.id}" ${canAfford ? '' : 'disabled'}>
+        [ release ${nextMajor} — ${fmtMoney(cost)} ]
+      </button>`;
+  }
+
+  // ── Plan selector ──
   const planBtns = PLAN_ORDER.map(planId => {
     const p         = LAB_PLANS[planId];
     const isCurrent = agent.tier === planId;
     const isPending = pending === planId && !isCurrent;
-    const classes   = ['lab-plan-btn',
+    const cls       = ['lab-plan-btn',
       isCurrent ? 'lab-plan-current' : '',
-      isPending ? 'lab-plan-pending' : '',
+      isPending  ? 'lab-plan-pending' : '',
     ].filter(Boolean).join(' ');
 
-    return `<button class="${classes}" id="lab-plan-${cfg.id}-${planId}">
-      ${planId}<br>
-      <span class="lab-plan-sub">${p.dailyCost === 0 ? 'free' : `$${p.dailyCost}/d`} · ×${p.multiplier}</span>
+    return `<button class="${cls}" id="lab-plan-${cfg.id}-${planId}">
+      ${planId}<br><span class="lab-plan-sub">${p.dailyCost === 0 ? 'free' : `$${p.dailyCost}/d`} · ×${p.multiplier}</span>
     </button>`;
   }).join('');
 
@@ -153,24 +195,26 @@ function activeCardHTML(cfg, agent, state) {
     ? `<div class="lab-pending-note">→ ${pending} takes effect tomorrow</div>`
     : '';
 
-  const upgradeCost = CONSTANTS.Lab_Model_Upgrade_RCU;
-  const canUpgrade  = upgradeCost != null && state.rcu >= upgradeCost;
+  // ── Passive output (ai_coder only) ──
+  let boostLine;
+  if (cfg.showRcu) {
+    const baseRcu   = calcCoderRcuPerHour(agent);
+    const activeRcu = agent.tier === 'free' ? 0 : baseRcu * plan.multiplier;
+    const status    = agent.tier === 'free' ? ' (idle on free plan)' : '';
+    boostLine = `passive_rcu/h: <b class="teal">${fmtN(activeRcu)}</b>${status}`;
+  } else {
+    boostLine = `boost: ${cfg.boost} — <span class="lab-tbd">TBD</span>`;
+  }
 
   return `
     <div class="lab-card">
       <div class="lab-card-top">
         <span class="lab-agent-name">${cfg.label}</span>
-        <span class="lab-status-tag lab-tag-model">v${agent.modelLevel}</span>
-        <button class="lab-btn lab-upgrade-btn" id="lab-upgrade-${cfg.id}"
-          ${canUpgrade ? '' : 'disabled'}>
-          ${upgradeCost == null ? '[ upgrade_model — TBD ]' : `[ upgrade_model — ${upgradeCost} RCU ]`}
-        </button>
+        <span class="lab-tag">${versionLabel}</span>
+        ${upgradeHTML}
       </div>
       <div class="lab-agent-desc">${cfg.desc}</div>
-      <div class="lab-agent-boost">
-        effective_boost: <span class="lab-boost-val">×${effectiveMult.toFixed(1)}</span>
-        <span class="lab-boost-target">${cfg.boost}</span>
-      </div>
+      <div class="lab-agent-boost">${boostLine}</div>
       <div class="lab-plans">${planBtns}</div>
       ${pendingNote}
     </div>`;
@@ -186,15 +230,26 @@ function onUnlockAgent(state, cfg) {
 function onSetPlan(state, agentId, planId) {
   const agent = state.lab.agents[agentId];
   if (!agent.unlocked) return;
-  // Clicking the current plan cancels any pending change
   agent.pendingTier = planId === agent.tier ? null : planId;
 }
 
-function onUpgradeModel(state, agentId) {
-  const cost = CONSTANTS.Lab_Model_Upgrade_RCU;
-  if (cost == null || state.rcu < cost) return;
+function onMinorUpgrade(state, agentId) {
+  const agent = state.lab.agents[agentId];
+  if (agent.modelMinor >= 9) return;  // use major upgrade instead
+  const cost = calcModelMinorUpgradeCost(agent);
+  if (state.rcu < cost) return;
   state.rcu -= cost;
-  state.lab.agents[agentId].modelLevel++;
+  agent.modelMinor++;
+}
+
+function onMajorUpgrade(state, agentId) {
+  const agent = state.lab.agents[agentId];
+  if (agent.modelMinor !== 9) return;  // must be at v X.9
+  const cost = calcModelMajorUpgradeCost(agent);
+  if (state.wallet < cost) return;
+  state.wallet -= cost;
+  agent.modelMajor++;
+  agent.modelMinor = 0;
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -209,4 +264,10 @@ function fmtMoney(n) {
   if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
   if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
   return '$' + Math.round(n);
+}
+
+function fmtN(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return (Math.round(n * 10) / 10).toFixed(1);  // one decimal for fractional RCU/h
 }

@@ -34,10 +34,13 @@ if ('gpuPurchased' in _hw) { _hw.gpuLevel = _hw.gpuPurchased ? 1 : 0; delete _hw
 // Initialise cooldown fields if missing (old saves)
 if (state.investments.pressCooldownTicks == null)     state.investments.pressCooldownTicks = 0;
 if (state.investments.newsletterCooldownTicks == null) state.investments.newsletterCooldownTicks = 0;
-// Add pendingTier to lab agents if missing (old saves)
+// Migrate lab agents: add pendingTier + modelMajor/modelMinor (old saves)
 if (state.lab?.agents) {
   for (const agent of Object.values(state.lab.agents)) {
-    if (!('pendingTier' in agent)) agent.pendingTier = null;
+    if (!('pendingTier' in agent))  agent.pendingTier = null;
+    if (!('modelMajor'  in agent))  agent.modelMajor  = agent.modelLevel ?? 1;
+    if (!('modelMinor'  in agent))  agent.modelMinor  = 0;
+    delete agent.modelLevel;  // remove old field
   }
 }
 // Migrate postsThisRun → numberOfPosts (old saves)

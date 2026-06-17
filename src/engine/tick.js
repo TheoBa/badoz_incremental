@@ -2,7 +2,7 @@
 // Fires every TICK_RATE real seconds = 1 in-game hour.
 // Every 24 ticks = 1 in-game day.
 
-import { CONSTANTS, LAB_PLANS } from './state.js';
+import { CONSTANTS, LAB_PLANS, calcCoderRcuPerHour } from './state.js';
 import { generateMissions } from './missions.js';
 
 export function startTick(state, onTick) {
@@ -41,7 +41,15 @@ function tick(state) {
 
 // ── Agent passive effects ──────────────────────────────────────
 function applyLabAgents(state) {
-  // TODO: per-agent RCU/h based on tier and modelLevel
+  const coder = state.lab.agents.ai_coder;
+  if (!coder.unlocked || coder.tier === 'free') return;  // free plan = idle
+
+  const plan       = LAB_PLANS[coder.tier];
+  const rcuPerHour = calcCoderRcuPerHour(coder) * plan.multiplier;
+
+  // 1 tick = 1 in-game hour, so add rcuPerHour directly
+  state.rcu         += rcuPerHour;
+  state.rcuLifetime += rcuPerHour;
 }
 
 // ── Daily revenue ──────────────────────────────────────────────

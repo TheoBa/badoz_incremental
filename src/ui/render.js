@@ -8,7 +8,7 @@ import { renderInvestment }  from '../tabs/investment.js';
 import { renderFrontierLab } from '../tabs/frontier_lab.js';
 import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderHistogram }   from './histograms.js';
-import { LAB_PLANS }        from '../engine/state.js';
+import { LAB_PLANS, calcCoderRcuPerHour } from '../engine/state.js';
 
 export function render(state) {
   renderHeader(state);
@@ -87,9 +87,10 @@ export function fmtN(n) {
 }
 
 function calcRcuPerHour(state) {
-  // TODO: implement when Lab_Coder_RCU_Per_Hour is tuned
-  // formula: Lab_Coder_RCU_Per_Hour × plan_multiplier × modelLevel (if ai_coder active)
-  return 0;
+  const coder = state.lab?.agents?.ai_coder;
+  if (!coder?.unlocked || coder.tier === 'free') return 0;
+  const plan = LAB_PLANS[coder.tier];
+  return calcCoderRcuPerHour(coder) * plan.multiplier;
 }
 
 function calcBurnPerHour(state) {
