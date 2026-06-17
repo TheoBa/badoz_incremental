@@ -14,8 +14,9 @@ import { fmt, fmtN } from '../ui/render.js';
 // ── Category definitions ───────────────────────────────────────
 const CATEGORIES = [
   {
-    id:    'mkt_stream',
-    label: 'mkt_stream · visitor boosts',
+    id:          'mkt_stream',
+    label:       'mkt_stream · visitor boosts',
+    effectClass: 'amber',
     items: [
       {
         id:        'cold_outreach',
@@ -56,8 +57,9 @@ const CATEGORIES = [
     ],
   },
   {
-    id:    'reputation',
-    label: 'reputation · rep multiplier',
+    id:          'reputation',
+    label:       'reputation · rep multiplier',
+    effectClass: '',
     items: [
       {
         id:        'newsletter',
@@ -112,8 +114,9 @@ const CATEGORIES = [
     ],
   },
   {
-    id:    'hardware',
-    label: 'hardware · rcu/click',
+    id:          'hardware',
+    label:       'hardware · rcu/click',
+    effectClass: 'teal',
     items: [
       // ── Gear tiers (sequential) ──────────────────────────────
       {
@@ -282,7 +285,7 @@ function categorySection(cat, state) {
     ? hardwareVisible(cat.items, state)
     : cat.items;
 
-  const cards = items.map(inv => investmentCard(inv, state)).join('');
+  const cards = items.map(inv => investmentCard(inv, state, cat.effectClass)).join('');
   return `
     <div class="inv-section">
       <div class="inv-label">${cat.label}</div>
@@ -315,7 +318,7 @@ function hardwareVisible(items, state) {
 }
 
 // ── Card builder ───────────────────────────────────────────────
-function investmentCard(inv, state) {
+function investmentCard(inv, state, effectClass = '') {
   const done      = inv.done ? inv.done(state) : false;
   const available = !done && inv.available(state);
   const canAfford = state.wallet >= inv.cost();
@@ -327,7 +330,7 @@ function investmentCard(inv, state) {
       <div class="inv-card-body">
         <div class="inv-card-name">${inv.label} ${badge}</div>
         <div class="inv-card-desc">${inv.desc}</div>
-        <div class="inv-card-effect">${inv.effect()}</div>
+        <div class="inv-card-effect${effectClass ? ' ' + effectClass : ''}">${inv.effect()}</div>
       </div>
       <div class="inv-card-side">
         <div class="inv-card-cost">${done ? '—' : fmt(inv.cost())}</div>
