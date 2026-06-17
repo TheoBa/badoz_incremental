@@ -1,14 +1,23 @@
 // freelance.js — freelance mission tab
 // Shows 3 daily missions. Missions refresh every 24 ticks (1 in-game day).
 // Accepting a mission costs RCU and pays money instantly.
+//
+// Rush mechanic:
+//   - Available only after claiming the freelance_t1 milestone (senior tier)
+//   - One-time unlock costs Freelance_RCU_T1 RCU (from current pool)
+//   - When unlocked: "rush ×2" button accepts mission at 2× RCU cost for 2× reward
 
+import { CONSTANTS } from '../engine/state.js';
 import { fmtN, fmt } from '../ui/render.js';
 
 export function renderFreelance(state) {
-  const panel = document.getElementById('panel-freelance');
+  const panel      = document.getElementById('panel-freelance');
   const ticksInDay = state.ticksElapsed % 24;
   const refreshIn  = 24 - ticksInDay;
   const day        = Math.floor(state.ticksElapsed / 24) + 1;
+
+  const seniorClaimed = !!state.milestones?.claimed?.freelance_t1;
+  const rushUnlocked  = state.freelance.rushUnlocked;
 
   panel.innerHTML = `
     <div class="fl-meta">
@@ -18,30 +27,63 @@ export function renderFreelance(state) {
     </div>
 
     <div id="fl-missions">
-      ${state.freelance.missions.map(m => missionCard(m, state)).join('')}
+      ${state.freelance.missions.map(m => missionCard(m, state, seniorClaimed, rushUnlocked)).join('')}
     </div>
 
-    <div class="fl-rush-hint ${state.freelance.rushUnlocked ? 'hidden' : ''}">
-      🔒 rush_unlock — one-time payment of
-      <b>Freelance_RCU_T1</b> RCU · doubles reward, instant completion
-    </div>`;
+    ${seniorClaimed && !rushUnlocked ? rushUnlockSection(state) : ''}`;
 
   // Wire accept buttons
   state.freelance.missions.forEach(m => {
     if (m.accepted) return;
-    const btn = document.getElementById(`fl-accept-${m.id}`);
-    if (btn) btn.addEventListener('click', () => onAcceptMission(state, m.id));
+
+    const acceptBtn = document.getElementById(`fl-accept-${m.id}`);
+    if (acceptBtn && !acceptBtn.disabled) {
+      acceptBtn.addEventListener('click', () => {
+        onAcceptMission(state, m.id, false);
+        renderFreelance(state);
+      });
+    }
+
+    if (rushUnlocked) {
+      const rushBtn = document.getElementById(`fl-rush-${m.id}`);
+      if (rushBtn && !rushBtn.disabled) {
+        rushBtn.addEventListener('click', () => {
+          onAcceptMission(state, m.id, true);
+          renderFreelance(state);
+        });
+      }
+    }
   });
+
+  // Wire rush unlock button
+  const unlockBtn = document.getElementById('fl-rush-unlock-btn');
+  if (unlockBtn && !unlockBtn.disabled) {
+    unlockBtn.addEventListener('click', () => {
+      onUnlockRush(state);
+      renderFreelance(state);
+    });
+  }
 }
 
-function missionCard(m, state) {
-  const canAfford = state.rcu >= m.rcuCost;
+function missionCard(m, state, seniorClaimed, rushUnlocked) {
+  const canAfford      = state.rcu >= m.rcuCost;
+  const canRush        = rushUnlocked && !m.accepted && state.rcu >= m.rcuCost * 2;
   const sub = m.accepted
     ? `completed ✓ · +${fmt(m.reward)}`
     : `cost <b class="teal">${fmtN(m.rcuCost)} RCU</b> · reward <b class="money">${fmt(m.reward)}</b>`;
 
-  // Accepted cards keep the same DOM structure — only CSS changes (fl-card-done)
-  // so the card height stays fixed and the row never jumps.
+  const rushBtn = seniorClaimed
+    ? rushUnlocked
+      ? `<button
+          id="fl-rush-${m.id}"
+          class="fl-btn-rush fl-btn-rush-active"
+          ${m.accepted || !canRush ? 'disabled' : ''}
+          title="${!canRush && !m.accepted ? `need ${fmtN(m.rcuCost * 2)} RCU` : ''}">
+          rush ×2
+        </button>`
+      : `<button class="fl-btn-rush" disabled title="rush not unlocked">rush ×2</button>`
+    : ''; // hidden entirely until milestone claimed
+
   return `
     <div class="fl-card${m.accepted ? ' fl-card-done' : ''}">
       <div class="fl-card-left">
@@ -56,24 +98,48 @@ function missionCard(m, state) {
           title="${m.accepted ? '' : canAfford ? '' : `need ${fmtN(m.rcuCost)} RCU`}">
           ${m.accepted ? 'done' : 'accept'}
         </button>
-        <button class="fl-btn-rush" disabled title="rush locked">rush ×2</button>
+        ${rushBtn}
       </div>
     </div>`;
 }
 
-function onAcceptMission(state, missionId) {
+function rushUnlockSection(state) {
+  const cost      = CONSTANTS.Freelance_RCU_T1;
+  const canAfford = state.rcu >= cost;
+  return `
+    <div class="fl-rush-unlock">
+      <div class="fl-rush-label">rush_mode</div>
+      <div class="fl-rush-desc">one-time unlock · doubles reward and RCU cost on any mission</div>
+      <button id="fl-rush-unlock-btn" class="fl-btn fl-btn-rush-unlock" ${canAfford ? '' : 'disabled'}>
+        [ unlock rush — ${fmtN(cost)} RCU ]
+      </button>
+      ${!canAfford ? `<div class="fl-rush-hint">need ${fmtN(cost)} RCU · current: ${fmtN(state.rcu)}</div>` : ''}
+    </div>`;
+}
+
+// ── Action handlers ────────────────────────────────────────────
+function onAcceptMission(state, missionId, isRush) {
   const mission = state.freelance.missions.find(m => m.id === missionId);
-  if (!mission || mission.accepted || state.rcu < mission.rcuCost) return;
+  if (!mission || mission.accepted) return;
 
-  state.rcu          -= mission.rcuCost;
-  state.wallet       += mission.reward;
-  state.moneyLifetime += mission.reward;
-  mission.accepted    = true;
+  const cost   = isRush ? mission.rcuCost * 2 : mission.rcuCost;
+  const reward = isRush ? mission.reward  * 2 : mission.reward;
+  if (state.rcu < cost) return;
 
-  // Immediate DOM updates without waiting for next tick
+  state.rcu           -= cost;
+  state.wallet        += reward;
+  state.moneyLifetime += reward;
+  mission.accepted     = true;
+
+  // Immediate header updates
   document.getElementById('h-rcu').textContent    = fmtN(state.rcu);
   document.getElementById('h-wallet').textContent = fmt(state.wallet);
+}
 
-  // Re-render the panel
-  renderFreelance(state);
+function onUnlockRush(state) {
+  const cost = CONSTANTS.Freelance_RCU_T1;
+  if (state.rcu < cost || state.freelance.rushUnlocked) return;
+  state.rcu -= cost;
+  state.freelance.rushUnlocked = true;
+  document.getElementById('h-rcu').textContent = fmtN(state.rcu);
 }

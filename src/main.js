@@ -43,6 +43,8 @@ if (state.lab?.agents) {
     delete agent.modelLevel;  // remove old field
   }
 }
+// Migrate: add mrrPeak to saas (old saves)
+if (state.saas.mrrPeak == null) state.saas.mrrPeak = state.saas.mrr;
 // Migrate: add milestones object (old saves)
 if (!state.milestones)         state.milestones         = { claimed: {} };
 if (!state.milestones.claimed) state.milestones.claimed = {};

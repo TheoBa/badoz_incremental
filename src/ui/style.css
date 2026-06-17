@@ -211,13 +211,42 @@ body {
   cursor: not-allowed;
   opacity: .4;
 }
-.fl-rush-hint {
-  margin-top: 10px;
-  padding: 8px 10px;
-  border: 0.5px dashed var(--border);
+.fl-btn-rush-active {
+  border-color: var(--amber);
+  color: var(--amber);
+  cursor: pointer;
+  opacity: 1;
+}
+.fl-btn-rush-active:disabled { border-color: var(--border); color: var(--text3); cursor: not-allowed; opacity: .4; }
+.fl-rush-unlock {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 0.5px dashed var(--border2);
   border-radius: var(--radius);
+}
+.fl-rush-label {
   font-size: 10px;
-  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--amber);
+  margin-bottom: 4px;
+}
+.fl-rush-desc { font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+.fl-btn-rush-unlock {
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 5px 12px;
+  border: 0.5px solid var(--amber);
+  color: var(--amber);
+  background: transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.fl-btn-rush-unlock:disabled { border-color: var(--border); color: var(--text3); cursor: not-allowed; }
+.fl-rush-hint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text3);
 }
 .hidden { display: none; }
 
@@ -280,6 +309,9 @@ body {
   cursor: not-allowed;
 }
 .sp-hint { font-size: 10px; color: var(--text3); font-style: italic; }
+.sp-raise-warning { margin-top: 4px; }
+.sp-hint-lock { color: var(--text3); }
+.sp-hint-warn { color: var(--red); font-style: normal; font-weight: 500; }
 
 /* ── ship_feature upgrade cards ──────────────────────────────── */
 .sf-card {
@@ -345,7 +377,9 @@ body {
   margin-bottom: 7px;
   gap: 10px;
 }
-.inv-card-used { opacity: .45; }
+.inv-card-used   { opacity: .45; }
+.inv-card-locked { opacity: .55; border-style: dashed; }
+.inv-badge-gate  { color: var(--text3); border-color: var(--border); font-style: italic; }
 .inv-card-body { flex: 1; min-width: 0; }
 .inv-card-name { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
 .inv-card-desc { font-size: 11px; color: var(--text2); margin-bottom: 4px; }

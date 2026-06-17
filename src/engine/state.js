@@ -96,12 +96,12 @@ export const CONSTANTS = {
   PostOnX_Rep_Delta: 0.01,   // reputation.multiplier += delta per post
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
 
+  // ── Price shock (applied when player manually raises price) ───
+  Saas_Price_Shock_Satisfaction: 0.2,  // flat decrease to satisfaction
+  Saas_Price_Shock_Retention:    0.1,  // flat decrease to retention
+
   // ── Frontier Lab ───────────────────────────────────────────────
   Lab_Unlock_Money: 100,           // moneyLifetime threshold before tab becomes active
-
-  // Agent unlock costs (RCU). null = not yet tuned.
-  Lab_Support_Unlock_RCU:  null,
-  Lab_Marketer_Unlock_RCU: null,
 
   // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
   // Formula: floor(Minor_RCU_Base × Minor_Scale^totalMinorIncrements)
@@ -118,6 +118,18 @@ export const CONSTANTS = {
   // Then multiplied by the active plan multiplier (free plan = idle, no output)
   Lab_Coder_RCU_Base:  1,  // RCU/h at v1.0 with plan mult 1×
   Lab_Coder_RCU_Delta: 1,  // additional RCU/h per minor increment
+
+  // AI Support: flat retention bonus (added to effective retention in churn calc)
+  // Formula: (Retention_Base + totalMinorIncrements × Retention_Delta) × plan.multiplier
+  Lab_Support_Retention_Base:  0.2,   // retention bonus at v1.0 on any paid plan
+  Lab_Support_Retention_Delta: 0.05,  // additional per minor increment
+
+  // AI Marketer: marketing visitors/d + reputation/d
+  // Marketing formula: (Marketing_Base + totalMinorIncrements × Marketing_Delta) × plan.multiplier
+  // Rep formula: Rep_Per_Day × plan.multiplier  (applied daily if agent is on paid plan)
+  Lab_Marketer_Marketing_Base:  2,     // visitors/d at v1.0 on hobbyist
+  Lab_Marketer_Marketing_Delta: 1,     // additional visitors/d per minor increment
+  Lab_Marketer_Rep_Per_Day:     0.001, // reputation.multiplier += this per day (× plan.mult)
 
   WIN_CONDITION: 1_000_000_000,
 };
@@ -193,6 +205,43 @@ export function calcCoderRcuPerHour(agent) {
   return CONSTANTS.Lab_Coder_RCU_Base + n * CONSTANTS.Lab_Coder_RCU_Delta;
 }
 
+// ── AI Support helper ──────────────────────────────────────────
+/**
+ * Flat retention bonus contributed by ai_support agent.
+ * Returns 0 if agent is locked, not unlocked, or on free plan.
+ */
+export function calcSupportRetentionBonus(state) {
+  const agent = state.lab?.agents?.ai_support;
+  if (!agent?.unlocked || agent.tier === 'free') return 0;
+  const plan = LAB_PLANS[agent.tier];
+  const n    = calcModelTotalMinorIncrements(agent);
+  return (CONSTANTS.Lab_Support_Retention_Base + n * CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
+}
+
+// ── AI Marketer helpers ────────────────────────────────────────
+/**
+ * Extra marketing visitors/day contributed by ai_marketer agent.
+ * Returns 0 if agent is locked, not unlocked, or on free plan.
+ */
+export function calcMarketerMarketingBonus(state) {
+  const agent = state.lab?.agents?.ai_marketer;
+  if (!agent?.unlocked || agent.tier === 'free') return 0;
+  const plan = LAB_PLANS[agent.tier];
+  const n    = calcModelTotalMinorIncrements(agent);
+  return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
+}
+
+/**
+ * Reputation gain per in-game day from ai_marketer.
+ * Returns 0 if agent is locked, not unlocked, or on free plan.
+ */
+export function calcMarketerRepPerDay(state) {
+  const agent = state.lab?.agents?.ai_marketer;
+  if (!agent?.unlocked || agent.tier === 'free') return 0;
+  const plan = LAB_PLANS[agent.tier];
+  return CONSTANTS.Lab_Marketer_Rep_Per_Day * plan.multiplier;
+}
+
 // ── Initial state factory ──────────────────────────────────────
 export function initState() {
   return {
@@ -213,6 +262,7 @@ export function initState() {
     // SaaS product
     saas: {
       mrr: 0,
+      mrrPeak: 0,       // highest MRR ever reached this run (used for milestones)
       customers: 0,
       satisfaction: 1.0,
       retention: 1.0,

@@ -49,24 +49,14 @@ export const MILESTONE_TRACKS = [
       {
         id:        'price_t1',
         threshold: CONSTANTS.Price_Round_T1,
-        effect:    `price_round → $${CONSTANTS.Saas_Price_T2}/mo`,
-        onClaim:   (state) => {
-          if (state.saas.priceRound < 1) {
-            state.saas.price      = CONSTANTS.Saas_Price_T2;
-            state.saas.priceRound = 1;
-          }
-        },
+        effect:    `raise_price → $${CONSTANTS.Saas_Price_T2}/mo unlocked`,
+        onClaim:   null,  // raise_price is a manual button in saas_product tab
       },
       {
         id:        'price_t2',
         threshold: CONSTANTS.Price_Round_T2,
-        effect:    `price_round → $${CONSTANTS.Saas_Price_T3}/mo`,
-        onClaim:   (state) => {
-          if (state.saas.priceRound < 2) {
-            state.saas.price      = CONSTANTS.Saas_Price_T3;
-            state.saas.priceRound = 2;
-          }
-        },
+        effect:    `raise_price → $${CONSTANTS.Saas_Price_T3}/mo unlocked`,
+        onClaim:   null,  // raise_price is a manual button in saas_product tab
       },
     ],
   },
@@ -96,6 +86,48 @@ export const MILESTONE_TRACKS = [
         threshold: CONSTANTS.Freelance_RCU_T3,
         effect:    'freelance: 10x',
         onClaim:   (state) => { state.freelance.tier = 'tenmx'; },
+      },
+    ],
+  },
+
+  // ── mrr ────────────────────────────────────────────────────
+  // getValue uses mrrPeak (highest MRR reached) so churn can't un-qualify a milestone
+  {
+    id:       'mrr',
+    label:    'mrr_peak',
+    getValue: (state) => state.saas.mrrPeak ?? state.saas.mrr,
+    fmtValue: fmtMoney,
+    barColor: '#378ADD',
+    steps: [
+      {
+        id:        'mrr_t1',
+        threshold: 50,
+        effect:    'seo_push + dual_monitor_setup unlocked',
+        onClaim:   null,   // gates checked in investment tab via milestones.claimed
+      },
+      {
+        id:        'mrr_t2',
+        threshold: 200,
+        effect:    'press_coverage + ergonomic_workstation unlocked',
+        onClaim:   null,
+      },
+      {
+        id:        'mrr_t3',
+        threshold: 1_000,
+        effect:    'launch_on_product_hunt + macbook_pro_upgrade unlocked',
+        onClaim:   null,
+      },
+      {
+        id:        'mrr_t4',
+        threshold: 5_000,
+        effect:    'mac_studio unlocked',
+        onClaim:   null,
+      },
+      {
+        id:        'mrr_t5',
+        threshold: 20_000,
+        effect:    'cpu_upgrade + gpu_rig unlocked',
+        onClaim:   null,
       },
     ],
   },

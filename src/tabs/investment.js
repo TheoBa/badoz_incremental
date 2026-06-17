@@ -46,6 +46,8 @@ const CATEGORIES = [
         desc:      'optimise meta tags, schema, backlinks · slow burn',
         cost:      () => CONSTANTS.Invest_SEO_Cost,
         effect:    () => `+${fmtN(CONSTANTS.Invest_SEO_Boost)} mkt_stream · 7 days`,
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t1,
+        gateLabel: 'mrr_t1',
         available: (state) => !state.investments.active.some(b => b.label === 'seo_push'),
         activeTicks: (state) => {
           const b = state.investments.active.find(b => b.label === 'seo_push');
@@ -88,6 +90,8 @@ const CATEGORIES = [
       {
         id:           'press',
         label:        'press_coverage',
+        gate:         (state) => !!state.milestones?.claimed?.mrr_t2,
+        gateLabel:    'mrr_t2',
         desc:         'a journalist actually replied · large rep spike',
         cost:         () => CONSTANTS.Invest_Press_Cost,
         effect:       () => `+${CONSTANTS.Invest_Press_Rep.toFixed(2)} rep · permanent`,
@@ -107,6 +111,8 @@ const CATEGORIES = [
       {
         id:        'product_hunt',
         label:     'launch_on_product_hunt',
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t3,
+        gateLabel: 'mrr_t3',
         desc:      '#1 product of the day · massive one-time event',
         cost:      () => CONSTANTS.Invest_ProductHunt_Cost,
         effect:    () => `+${CONSTANTS.Invest_ProductHunt_Rep.toFixed(2)} rep · permanent`,
@@ -147,6 +153,8 @@ const CATEGORIES = [
       {
         id:        'gear_t2',
         label:     'dual_monitor_setup',
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t1,
+        gateLabel: 'mrr_t1',
         desc:      'one screen for code, one for docs you never read',
         cost:      () => CONSTANTS.Hardware_Gear_T2_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Gear_T2_RCU} RCU/click`,
@@ -163,6 +171,8 @@ const CATEGORIES = [
       {
         id:        'gear_t3',
         label:     'ergonomic_workstation',
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t2,
+        gateLabel: 'mrr_t2',
         desc:      'standing desk, Herman Miller, the works',
         cost:      () => CONSTANTS.Hardware_Gear_T3_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Gear_T3_RCU} RCU/click`,
@@ -180,6 +190,8 @@ const CATEGORIES = [
       {
         id:        'laptop_t1',
         label:     'macbook_pro_upgrade',
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t3,
+        gateLabel: 'mrr_t3',
         desc:      'M-series chip, finally compiles in under a minute',
         cost:      () => CONSTANTS.Hardware_Laptop_T1_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Laptop_T1_RCU} RCU/click`,
@@ -196,6 +208,8 @@ const CATEGORIES = [
       {
         id:        'laptop_t2',
         label:     'mac_studio',
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t4,
+        gateLabel: 'mrr_t4',
         desc:      'desktop-class silicon · no thermal throttling ever',
         cost:      () => CONSTANTS.Hardware_Laptop_T2_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Laptop_T2_RCU} RCU/click`,
@@ -225,6 +239,8 @@ const CATEGORIES = [
         badge:     (state) => state.investments.hardware.cpuLevel > 0
           ? `lv.${state.investments.hardware.cpuLevel}`
           : null,
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t5,
+        gateLabel: 'mrr_t5',
         available: () => true,
         buy: (state) => {
           const cost = Math.floor(
@@ -251,6 +267,8 @@ const CATEGORIES = [
         badge:     (state) => state.investments.hardware.gpuLevel > 0
           ? `lv.${state.investments.hardware.gpuLevel}`
           : null,
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t5,
+        gateLabel: 'mrr_t5',
         available: () => true,
         buy: (state) => {
           const cost = Math.floor(
@@ -309,12 +327,18 @@ export function renderInvestment(state) {
 
 // ── Section builder ────────────────────────────────────────────
 function categorySection(cat, state) {
-  // For hardware: show only purchased items + the next available one (not all future)
+  // For hardware: show only purchased items + the next available/locked one per sub-track
   const items = cat.id === 'hardware'
     ? hardwareVisible(cat.items, state)
     : cat.items;
 
-  const cards = items.map(inv => investmentCard(inv, state, cat.effectClass)).join('');
+  const cards = items.map(inv => {
+    const gated = inv.gate && !inv.gate(state);
+    return gated
+      ? lockedInvestmentCard(inv, state)
+      : investmentCard(inv, state, cat.effectClass);
+  }).join('');
+
   return `
     <div class="inv-section">
       <div class="inv-label">${cat.label}</div>
@@ -322,8 +346,8 @@ function categorySection(cat, state) {
     </div>`;
 }
 
-// For hardware: show all done items + the first not-done item per sub-track (gear, laptop)
-// CPU and GPU are always shown.
+// For hardware: show purchased items + first not-done item per sub-track.
+// CPU and GPU are shown if gated-or-not so the locked stub appears.
 function hardwareVisible(items, state) {
   const ALWAYS = ['cpu_upgrade', 'gpu_rig'];
   const GEAR_IDS   = ['gear_t1',   'gear_t2',   'gear_t3'];
@@ -331,19 +355,33 @@ function hardwareVisible(items, state) {
 
   const visible = new Set(ALWAYS);
 
-  // Gear: show purchased + next
-  const gearPurchased = GEAR_IDS.filter(id => items.find(i => i.id === id)?.done(state));
+  // Gear: show purchased + next (even if locked/gated)
+  const gearPurchased = GEAR_IDS.filter(id => items.find(i => i.id === id)?.done?.(state));
   gearPurchased.forEach(id => visible.add(id));
-  const nextGear = GEAR_IDS.find(id => !items.find(i => i.id === id)?.done(state));
+  const nextGear = GEAR_IDS.find(id => !items.find(i => i.id === id)?.done?.(state));
   if (nextGear) visible.add(nextGear);
 
-  // Laptop: show purchased + next
-  const laptopPurchased = LAPTOP_IDS.filter(id => items.find(i => i.id === id)?.done(state));
+  // Laptop: show purchased + next (even if locked/gated)
+  const laptopPurchased = LAPTOP_IDS.filter(id => items.find(i => i.id === id)?.done?.(state));
   laptopPurchased.forEach(id => visible.add(id));
-  const nextLaptop = LAPTOP_IDS.find(id => !items.find(i => i.id === id)?.done(state));
+  const nextLaptop = LAPTOP_IDS.find(id => !items.find(i => i.id === id)?.done?.(state));
   if (nextLaptop) visible.add(nextLaptop);
 
   return items.filter(i => visible.has(i.id));
+}
+
+// ── Locked card (gated by MRR milestone) ──────────────────────
+function lockedInvestmentCard(inv, state) {
+  return `
+    <div class="inv-card inv-card-locked">
+      <div class="inv-card-body">
+        <div class="inv-card-name">${inv.label}</div>
+        <div class="inv-card-desc">${inv.desc}</div>
+      </div>
+      <div class="inv-card-side">
+        <span class="inv-badge inv-badge-gate">🔒 ${inv.gateLabel ?? 'milestone'}</span>
+      </div>
+    </div>`;
 }
 
 // ── Card builder ───────────────────────────────────────────────

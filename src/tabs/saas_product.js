@@ -78,20 +78,22 @@ function upgradeCost(track, level) {
 }
 
 // ── Price tier helpers ─────────────────────────────────────────
-const PRICE_TIERS     = () => [CONSTANTS.Saas_Price_T1, CONSTANTS.Saas_Price_T2, CONSTANTS.Saas_Price_T3];
-const RAISE_MILESTONES = () => [CONSTANTS.Price_Round_T1, CONSTANTS.Price_Round_T2];
+const PRICE_TIERS    = () => [CONSTANTS.Saas_Price_T1, CONSTANTS.Saas_Price_T2, CONSTANTS.Saas_Price_T3];
+const PRICE_CLAIM_IDS = ['price_t1', 'price_t2'];  // milestone step IDs per round
 
 // ── Renderer ───────────────────────────────────────────────────
 export function renderSaasProduct(state) {
-  const panel  = document.getElementById('panel-saas_product');
-  const tiers  = PRICE_TIERS();
-  const round  = state.saas.priceRound;
-  const milestones = RAISE_MILESTONES();
+  const panel = document.getElementById('panel-saas_product');
+  const tiers = PRICE_TIERS();
+  const round = state.saas.priceRound;
 
-  const nextPrice     = tiers[round + 1] ?? null;
-  const milestone     = milestones[round] ?? null;
-  const milestoneMet  = milestone !== null && state.moneyLifetime >= milestone;
-  const canRaise      = nextPrice !== null && milestoneMet;
+  const nextPrice  = tiers[round + 1] ?? null;
+  const claimId    = PRICE_CLAIM_IDS[round] ?? null;
+  const milestoneOk = claimId !== null && !!state.milestones?.claimed?.[claimId];
+  const canRaise   = nextPrice !== null && milestoneOk;
+
+  const shockSat = CONSTANTS.Saas_Price_Shock_Satisfaction;
+  const shockRet = CONSTANTS.Saas_Price_Shock_Retention;
 
   panel.innerHTML = `
     <div class="sp-section">
@@ -108,12 +110,10 @@ export function renderSaasProduct(state) {
       <button id="sp-raise-btn" class="sp-raise-btn" ${canRaise ? '' : 'disabled'}>
         raise_price() → $${nextPrice}/mo
       </button>
-      <div class="sp-hint">
-        ${milestone === null
-          ? 'milestone threshold not yet set'
-          : canRaise
-            ? 'warning: raises price, applies negative pressure on satisfaction + retention'
-            : `unlock at ${fmt(milestone)} lifetime earned · current: ${fmt(state.moneyLifetime)}`}
+      <div class="sp-hint sp-raise-warning">
+        ${!milestoneOk
+          ? `<span class="sp-hint-lock">locked · claim money_earned milestone in milestones tab first</span>`
+          : `<span class="sp-hint-warn">⚠ demand shock: −${shockSat.toFixed(1)} satisfaction · −${shockRet.toFixed(1)} retention</span>`}
       </div>
     </div>` : `
     <div class="sp-section">
@@ -183,12 +183,10 @@ function onRaisePrice(state) {
   if (state.saas.priceRound >= tiers.length - 1) return;
 
   state.saas.priceRound++;
-  state.saas.price = tiers[state.saas.priceRound];
-
-  // Demand shock: price hike applies negative pressure on satisfaction + retention
-  // TODO: tune shock magnitudes via CONSTANTS once balancing pass runs
-  state.saas.satisfaction = Math.max(0.1, state.saas.satisfaction - 0.2);
-  state.saas.retention    = Math.max(0.1, state.saas.retention    - 0.2);
+  state.saas.price        = tiers[state.saas.priceRound];
+  // Demand shock: flat negative pressure on satisfaction and retention
+  state.saas.satisfaction = Math.max(0.1, state.saas.satisfaction - CONSTANTS.Saas_Price_Shock_Satisfaction);
+  state.saas.retention    = Math.max(0.1, state.saas.retention    - CONSTANTS.Saas_Price_Shock_Retention);
   state.saas.mrr          = state.saas.price * state.saas.customers;
 
   renderSaasProduct(state);
