@@ -124,6 +124,30 @@ Format it as a markdown block so Théo can paste it directly into the GitHub PR 
 
 ---
 
-## What is not yet implemented (Phase 3 onwards)
+## Backlog (one feature branch per item)
 
 All `// TODO` stubs in `tick.js`, the tab render functions in `src/tabs/`, and the analytics event emission in `src/engine/save.js` are intentional placeholders. Do not fill them in incidentally while working on something else — each is its own feature branch.
+
+### Pending items
+
+- **KPI histograms — daily deltas** (`feature/kpi-histograms`)
+  Replace cumulative lifetime snapshots with per-day deltas so bars fluctuate meaningfully.
+  - `earned` bar → money earned that day
+  - `rcu` bar → RCU acquired that day (clicks + passive)
+  - `mrr` bar → net subscriptions gained that day (new acquisitions + renewals − churn), displayed under MRR
+  `history` in state needs a `prev` shadow object to compute deltas at snapshot time.
+
+- **Milestone checks** (`feature/milestones`)
+  Wire up `checkMilestones()` in `tick.js`:
+  - `Freelance_RCU_T1/T2/T3` → freelance tier upgrades (junior → senior → lead → 10x)
+  - `Price_Round_T1/T2` (lifetime money earned) → subscription price rounds
+  - `Lab_Money_T1–T9` → Frontier Lab agent unlocks
+
+- **Frontier Lab tab** (`feature/frontier-lab`)
+  AI agents, plan tiers, daily billing, dark visual style.
+
+- **post_on_x tab** (`feature/post-on-x`)
+  Once-per-day action, compounds `reputation.multiplier` by ×1.05.
+
+- **Win condition** (`feature/win`)
+  `$1B retire` button appears when `state.moneyLifetime >= WIN_CONDITION`.

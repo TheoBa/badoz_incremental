@@ -37,7 +37,10 @@ function renderKpi(state) {
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
   set('k-sat',    state.saas.satisfaction.toFixed(2));
   set('k-ret',    state.saas.retention.toFixed(2));
-  set('k-mkt',    fmtN(state.saas.marketingStream) + '/d');
+  const investBoost = Array.isArray(state.investments)
+    ? 0
+    : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
+  set('k-mkt', fmtN(state.saas.marketingStream + investBoost) + '/d');
 
   renderHistogram(document.getElementById('hist-earned'), state.history.earned, '#1D9E75');
   renderHistogram(document.getElementById('hist-rcu'),    state.history.rcu,    '#888');

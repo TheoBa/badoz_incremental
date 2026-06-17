@@ -15,6 +15,19 @@ if (state.freelance.missions.length === 0) {
   state.freelance.missions = generateMissions(state.freelance.tier);
 }
 
+// Migrate investments shape: old saves have investments as [] instead of an object
+if (Array.isArray(state.investments)) {
+  state.investments = { active: [], productHuntUsed: false, pressUsesRemaining: CONSTANTS.Invest_Press_Uses };
+}
+// Initialise press coverage uses if not yet set
+if (state.investments.pressUsesRemaining == null) {
+  state.investments.pressUsesRemaining = CONSTANTS.Invest_Press_Uses;
+}
+// Initialise hardware sub-object if missing (old saves)
+if (!state.investments.hardware) {
+  state.investments.hardware = { gearLevel: 0, laptopLevel: 0, cpuPurchased: false, gpuPurchased: false };
+}
+
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {

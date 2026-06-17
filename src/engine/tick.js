@@ -28,6 +28,9 @@ function tick(state) {
     pushHistorySnapshot(state);
   }
 
+  // Tick down active investment boosts
+  tickInvestments(state);
+
   // Post on X cooldown
   if (state.reputation.postCooldownTicks > 0) {
     state.reputation.postCooldownTicks--;
@@ -53,10 +56,11 @@ function applyDailyRevenue(state) {
 // ── Daily customer acquisition ─────────────────────────────────
 function applyDailyAcquisition(state) {
   if (state.saas.price === 0) return;
-  // Base: 1 organic visitor/day minimum, boosted by marketingStream
-  const visitors   = 1 + state.saas.marketingStream;
-  const conversion = 0.05 * state.saas.satisfaction; // 5% base conversion rate
-  const gained     = visitors * conversion;
+  // Effective marketing stream = permanent value + sum of active investment boosts
+  const investBoost = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
+  const visitors    = 1 + state.saas.marketingStream + investBoost;
+  const conversion  = 0.05 * state.saas.satisfaction; // 5% base conversion rate
+  const gained      = visitors * conversion;
   state.saas.customers += gained;
   state.saas.mrr        = state.saas.price * state.saas.customers;
 }
@@ -89,6 +93,13 @@ function pushHistorySnapshot(state) {
   push(h.rcu,     state.rcuLifetime);
   push(h.mrr,     state.saas.mrr);
   push(h.burn,    state.labSpendLifetime); // rough burn proxy until billing is implemented
+}
+
+// ── Investment boost timers ────────────────────────────────────
+function tickInvestments(state) {
+  state.investments.active = state.investments.active
+    .map(b => ({ ...b, ticksRemaining: b.ticksRemaining - 1 }))
+    .filter(b => b.ticksRemaining > 0);
 }
 
 // ── Milestone checks ───────────────────────────────────────────
