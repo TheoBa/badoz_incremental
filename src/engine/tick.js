@@ -2,7 +2,7 @@
 // Fires every TICK_RATE real seconds = 1 in-game hour.
 // Every 24 ticks = 1 in-game day.
 
-import { CONSTANTS } from './state.js';
+import { CONSTANTS, LAB_PLANS, calcCoderRcuPerHour } from './state.js';
 import { generateMissions } from './missions.js';
 
 export function startTick(state, onTick) {
@@ -41,7 +41,15 @@ function tick(state) {
 
 // ── Agent passive effects ──────────────────────────────────────
 function applyLabAgents(state) {
-  // TODO: per-agent RCU/h based on tier and modelLevel
+  const coder = state.lab.agents.ai_coder;
+  if (!coder.unlocked || coder.tier === 'free') return;  // free plan = idle
+
+  const plan       = LAB_PLANS[coder.tier];
+  const rcuPerHour = calcCoderRcuPerHour(coder) * plan.multiplier;
+
+  // 1 tick = 1 in-game hour, so add rcuPerHour directly
+  state.rcu         += rcuPerHour;
+  state.rcuLifetime += rcuPerHour;
 }
 
 // ── Daily revenue ──────────────────────────────────────────────
@@ -76,8 +84,24 @@ function applyDailyChurn(state) {
 
 // ── Daily Lab billing ──────────────────────────────────────────
 function applyDailyLabBilling(state) {
-  // TODO: deduct daily cost of each active agent tier from wallet + labSpendLifetime
-  // Plan changes set on a previous day take effect here (tick % 24 === 0)
+  // Apply plan changes queued from previous day
+  for (const agent of Object.values(state.lab.agents)) {
+    if (agent.pendingTier != null) {
+      agent.tier        = agent.pendingTier;
+      agent.pendingTier = null;
+    }
+  }
+  // Deduct daily plan costs
+  let totalCost = 0;
+  for (const agent of Object.values(state.lab.agents)) {
+    if (!agent.unlocked) continue;
+    const plan = LAB_PLANS[agent.tier];
+    if (plan && plan.dailyCost > 0) totalCost += plan.dailyCost;
+  }
+  if (totalCost > 0) {
+    state.wallet           -= totalCost;
+    state.labSpendLifetime += totalCost;
+  }
 }
 
 // ── Freelance mission refresh ──────────────────────────────────

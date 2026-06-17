@@ -96,7 +96,41 @@ export const CONSTANTS = {
   PostOnX_Rep_Delta: 0.01,   // reputation.multiplier += delta per post
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
 
+  // ── Frontier Lab ───────────────────────────────────────────────
+  Lab_Unlock_Money: 100,           // moneyLifetime threshold before tab becomes active
+
+  // Agent unlock costs (RCU). null = not yet tuned.
+  Lab_Support_Unlock_RCU:  null,
+  Lab_Marketer_Unlock_RCU: null,
+
+  // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
+  // Formula: floor(Minor_RCU_Base × Minor_Scale^totalMinorIncrements)
+  Lab_Model_Minor_RCU_Base: 20,   // base RCU cost for first minor increment
+  Lab_Model_Minor_Scale:    1.3,  // exponential scale per total minor increment
+
+  // Model version — major release (vX.9 → v(X+1).0) costs money
+  // Formula: floor(Major_Money_Base × Major_Money_Scale^(modelMajor - 1))
+  Lab_Model_Major_Money_Base:  500,  // money cost for first major release (v1.9 → v2.0)
+  Lab_Model_Major_Money_Scale: 2.5,  // exponential scale per subsequent major release
+
+  // AI Coder passive RCU/h
+  // Formula: Coder_RCU_Base + totalMinorIncrements × Coder_RCU_Delta
+  // Then multiplied by the active plan multiplier (free plan = idle, no output)
+  Lab_Coder_RCU_Base:  1,  // RCU/h at v1.0 with plan mult 1×
+  Lab_Coder_RCU_Delta: 1,  // additional RCU/h per minor increment
+
   WIN_CONDITION: 1_000_000_000,
+};
+
+// ── Frontier Lab plan definitions ──────────────────────────────
+// plan_multiplier is the base boost multiplier at this plan tier.
+// effective_boost = plan_multiplier × agent.modelLevel
+export const LAB_PLANS = {
+  free:     { dailyCost: 0,   multiplier: 1,   label: 'free'     },
+  hobbyist: { dailyCost: 5,   multiplier: 1.5, label: 'hobbyist' },
+  growth:   { dailyCost: 25,  multiplier: 4,   label: 'growth'   },
+  scale:    { dailyCost: 100, multiplier: 12,  label: 'scale'    },
+  infernal: { dailyCost: 500, multiplier: 40,  label: 'infernal' },
 };
 
 // ── Derived helpers ────────────────────────────────────────────
@@ -117,6 +151,46 @@ export function calcRcuPerClick(state) {
   const gpuMult     = 1 + (hw.gpuLevel ?? 0) * CONSTANTS.Hardware_GPU_Delta;
 
   return Math.floor((1 + gearBonus + laptopBonus) * cpuMult * gpuMult);
+}
+
+// ── Frontier Lab model helpers ─────────────────────────────────
+
+/**
+ * Total minor increments purchased across all major versions.
+ * v1.0 = 0, v1.5 = 5, v2.0 = 9, v2.3 = 12, v3.0 = 18, …
+ * Major releases consume 9 minor slots each (x.0 → x.9, then money bump).
+ */
+export function calcModelTotalMinorIncrements(agent) {
+  return (agent.modelMajor - 1) * 9 + agent.modelMinor;
+}
+
+/**
+ * RCU cost for the next minor increment on this agent.
+ * Formula: floor(Minor_RCU_Base × Minor_Scale^totalMinorIncrements)
+ */
+export function calcModelMinorUpgradeCost(agent) {
+  const n = calcModelTotalMinorIncrements(agent);
+  return Math.floor(CONSTANTS.Lab_Model_Minor_RCU_Base * Math.pow(CONSTANTS.Lab_Model_Minor_Scale, n));
+}
+
+/**
+ * Money cost for the next major version release (only at minor === 9).
+ * Formula: floor(Major_Money_Base × Major_Money_Scale^(modelMajor - 1))
+ */
+export function calcModelMajorUpgradeCost(agent) {
+  return Math.floor(
+    CONSTANTS.Lab_Model_Major_Money_Base * Math.pow(CONSTANTS.Lab_Model_Major_Money_Scale, agent.modelMajor - 1)
+  );
+}
+
+/**
+ * Base passive RCU/h for this agent before plan multiplier.
+ * Formula: Coder_RCU_Base + totalMinorIncrements × Coder_RCU_Delta
+ * Multiply by plan.multiplier in tick/render (free plan = idle = 0 output).
+ */
+export function calcCoderRcuPerHour(agent) {
+  const n = calcModelTotalMinorIncrements(agent);
+  return CONSTANTS.Lab_Coder_RCU_Base + n * CONSTANTS.Lab_Coder_RCU_Delta;
 }
 
 // ── Initial state factory ──────────────────────────────────────
@@ -157,9 +231,9 @@ export function initState() {
     // Frontier Lab
     lab: {
       agents: {
-        ai_coder:    { unlocked: true,  tier: 'free', modelLevel: 1 },
-        ai_support:  { unlocked: false, tier: 'free', modelLevel: 1 },
-        ai_marketer: { unlocked: false, tier: 'free', modelLevel: 1 },
+        ai_coder:    { unlocked: true,  tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ai_support:  { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ai_marketer: { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
       },
     },
 

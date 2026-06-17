@@ -8,6 +8,7 @@ import { renderInvestment }  from '../tabs/investment.js';
 import { renderFrontierLab } from '../tabs/frontier_lab.js';
 import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderHistogram }   from './histograms.js';
+import { LAB_PLANS, calcCoderRcuPerHour } from '../engine/state.js';
 
 export function render(state) {
   renderHeader(state);
@@ -86,8 +87,10 @@ export function fmtN(n) {
 }
 
 function calcRcuPerHour(state) {
-  // TODO: sum passive RCU/h from agents
-  return 0;
+  const coder = state.lab?.agents?.ai_coder;
+  if (!coder?.unlocked || coder.tier === 'free') return 0;
+  const plan = LAB_PLANS[coder.tier];
+  return calcCoderRcuPerHour(coder) * plan.multiplier;
 }
 
 function calcBurnPerHour(state) {
@@ -95,6 +98,7 @@ function calcBurnPerHour(state) {
 }
 
 function calcBurnPerDay(state) {
-  // TODO: sum active agent tier daily costs
-  return 0;
+  return Object.values(state.lab.agents)
+    .filter(a => a.unlocked)
+    .reduce((sum, a) => sum + (LAB_PLANS[a.tier]?.dailyCost ?? 0), 0);
 }
