@@ -66,7 +66,7 @@ tick.js mutates state → render.js reads state → DOM updates
 ## Naming & style conventions
 
 - **snake_case everywhere in the UI** — tab names, property names, button labels. This is intentional: the game has a nerdy dev aesthetic.
-- **Tab identifiers**: `write_code`, `ship_feature`, `freelance`, `investment`, `frontier_lab`, `post_on_x`.
+- **Tab identifiers**: `write_code`, `saas_product`, `freelance`, `investment`, `frontier_lab`, `post_on_x`. (`ship_feature` was folded into `saas_product`.)
 - **CONSTANTS keys** use `PascalCase_with_underscores` (e.g. `Freelance_RCU_T1`) — this matches the GDD vocabulary so balancing discussions map directly to code.
 - **`null` constants are not yet tuned** — do not invent values. Leave them `null` until a balancing pass sets them deliberately.
 

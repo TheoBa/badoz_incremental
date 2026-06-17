@@ -36,8 +36,13 @@ export const CONSTANTS = {
   Lab_Money_T8: null,       // → Growth loops
   Lab_Money_T9: null,       // → AI CEO mode
 
-  Price_Round_T1: null,     // lifetime earned milestone → first price raise
-  Price_Round_T2: null,     // → second price raise
+  // Subscription price tiers (auto-set on saas_product tab discovery; one-way raises)
+  Saas_Price_T1: 1,         // initial price, set on first tab visit
+  Saas_Price_T2: 10,        // unlocks at Price_Round_T1 milestone
+  Saas_Price_T3: 100,       // unlocks at Price_Round_T2 milestone
+
+  Price_Round_T1: null,     // lifetime earned milestone → raise to T2
+  Price_Round_T2: null,     // lifetime earned milestone → raise to T3
 
   WIN_CONDITION: 1_000_000_000,
 };

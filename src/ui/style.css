@@ -245,3 +245,39 @@ body {
 .price-opt:hover { border-color: var(--teal); color: var(--teal); }
 .price-opt.on { background: #e2f5ee; border-color: var(--teal); color: #0d6e4e; font-weight: 500; }
 .price-hint { font-size: 10px; color: var(--text3); margin-top: 6px; font-style: italic; }
+
+/* ── saas_product tab ────────────────────────────────────────── */
+.sp-section {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 0.5px solid var(--border);
+}
+.sp-section:last-child { border-bottom: none; }
+.sp-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.sp-raise-btn {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-family: var(--mono);
+  background: transparent;
+  border: 0.5px solid var(--teal);
+  color: var(--teal);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 6px;
+}
+.sp-raise-btn:disabled {
+  border-color: var(--border);
+  color: var(--text3);
+  cursor: not-allowed;
+}
+.sp-hint { font-size: 10px; color: var(--text3); font-style: italic; }
+.sp-coming-soon { font-size: 11px; color: var(--text3); padding: 6px 0; }

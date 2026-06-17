@@ -1,11 +1,11 @@
 // main.js — entry point
 // Boots the game: loads state, wires tab switching, starts the tick loop.
 
-import { initState }     from './engine/state.js';
-import { startTick }     from './engine/tick.js';
-import { load, save }    from './engine/save.js';
-import { render }        from './ui/render.js';
-import { generateMissions } from './engine/missions.js';
+import { initState, CONSTANTS } from './engine/state.js';
+import { startTick }            from './engine/tick.js';
+import { load, save }           from './engine/save.js';
+import { render }               from './ui/render.js';
+import { generateMissions }     from './engine/missions.js';
 
 // ── Load or initialise state ───────────────────────────────────
 const state = load() ?? initState();
@@ -15,12 +15,6 @@ if (state.freelance.missions.length === 0) {
   state.freelance.missions = generateMissions(state.freelance.tier);
 }
 
-// Prompt for product name on very first boot
-if (!state.productName) {
-  const name = prompt('name your product (snake_case):') ?? 'my_saas';
-  state.productName = name.toLowerCase().replace(/\s+/g, '_') || 'my_saas';
-}
-
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -28,6 +22,13 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
     btn.classList.add('on');
     document.getElementById('panel-' + btn.dataset.tab)?.classList.add('on');
+
+    // saas_product discovery: auto-set initial price on first visit
+    if (btn.dataset.tab === 'saas_product' && state.saas.price === 0) {
+      state.saas.price      = CONSTANTS.Saas_Price_T1;
+      state.saas.priceRound = 0;
+    }
+
     render(state);
   });
 });
