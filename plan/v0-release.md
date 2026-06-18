@@ -1,128 +1,129 @@
-# Plan — v0 online release (run submission + leaderboard)
+# Plan — v0 online release (run submission + leaderboard + post-game analytics)
 
-Goal: ship DEVRUN so friends play it in a browser, and a completed run posts a
-summary to the Mac Mini that powers per-player analytics and a fastest-run
-leaderboard.
+Goal: ship DEVRUN so friends play it in a browser, and a completed run posts its
+data to the Mac Mini to power (a) a fastest-run leaderboard and (b) AoE-style
+post-game analytics.
 
 ## Decisions (locked)
 
 - **Completed run = the $1B win only.** No partial/give-up submissions in v0.
-- **Leaderboard metric = in-game time (`ticksElapsed`), ascending.** Deterministic,
-  tied to efficient play, immune to tab-backgrounding (ticks pause when the tab
-  is hidden, so wall-clock would diverge). We still *store* real seconds for later
-  analysis, but never rank on it.
-- **Exposure = Cloudflare Tunnel** (`cloudflared`) → `localhost:3000`. No port
-  forwarding, no home IP exposure, free TLS.
-- **Identity = a handle** entered once, stored in `localStorage`. No accounts.
+- **Leaderboard metric = in-game time (`total_elapsed_ticks`), ascending.**
+  Deterministic, tied to efficient play, immune to tab-backgrounding.
+- **Identity = a `player_name`** entered once, stored in `localStorage`. No accounts.
+- **Hosting is done** — already live behind a Cloudflare Tunnel at
+  `http://incremental.badoz.org` → `localhost:3000`. No app/infra work here.
+- **Analytics series are all cumulative** (money earned, RCU generated, lab tokens
+  burned) — AoE "resources gathered" style, monotonic and comparable on one axis.
+- **Minimal payload** — only what the board + the 3 graphs + price markers need.
+  No final-build snapshot in v0 (easy to add later, it's just a JSON blob).
 
 ## Hard dependency / risk
 
 Because only a win submits, **the win must be reachable and roughly tuned** or the
 leaderboard never populates. Today `feature/win` is unbuilt and several balancing
-constants are `null`. v0 therefore includes a playtest pass that confirms at least
-one honest run reaches `WIN_CONDITION`. `devMode` (the backtick dev panel) can be
-used to validate the submit pipeline before balance is final, but those runs must
-be flagged (`devModeUsed: true`) and excluded from the public board.
+constants are `null`. v0 therefore includes a playtest pass confirming at least one
+honest run reaches `WIN_CONDITION`. `devMode` runs can validate the pipeline before
+balance is final, but are flagged (`dev_mode = 1`) and excluded from the board.
 
-Trust model: friends only, no anti-cheat beyond the dev-mode flag and basic
+Trust model: friends only. No anti-cheat beyond the dev-mode flag and basic
 server-side sanity bounds (reject negative/absurd values).
 
 ## Run lifecycle
 
-1. **Run start** — `initState()` sets `runStartedAt = Date.now()`. A new run after a
-   win re-stamps it.
-2. **Splits** — when `checkMilestones()` first fires a milestone, record the tick:
-   `state.splits[stepId] = state.ticksElapsed`. (New `splits: {}` field in state;
-   depends on `feature/milestones` being wired.)
-3. **Win** — when `moneyLifetime >= CONSTANTS.WIN_CONDITION`, show a win screen with
-   the run summary, then POST it once. A `runSubmitted` flag prevents double-posts.
-4. After submit, offer "new run" (reset to `initState`, `runCount++`).
+1. **Run start** — `initState()` sets `runStartedAt = Date.now()` and an empty
+   `series` buffer + `events` array. A new run after a win re-stamps/clears them.
+2. **Sampling** — every `CONSTANTS.Sample_Every_Ticks` (= 24, one in-game day) the
+   tick loop appends the current tick + cumulative `moneyLifetime`, `rcuLifetime`,
+   `labSpendLifetime` into `state.series`.
+3. **Price-raise events** — price only ever changes via a manual player raise on
+   the `saas_product` tab. On each raise, push `{ tick, type:'raise_price', from, to }`
+   onto `state.events`. (`Saas_Price_Shock_*` computes the conversion/retention
+   penalty of the raise — it is not a separate event.)
+4. **Win** — when `moneyLifetime >= CONSTANTS.WIN_CONDITION`, show a win screen with
+   the summary + graphs, then POST once. A `runSubmitted` flag prevents double-posts.
+5. After submit, offer "new run" (reset to `initState`, `runCount++`).
 
 ## Data model
 
-Extend the existing `runs` table — keep indexed columns for the board, add one blob:
+One `runs` table replaces the current `runs`/`events` split (the standalone
+`events` table folds into a per-run blob; `saves` is unchanged). Pre-release with no
+real data → just rewrite `schema.sql` and regenerate the `.db.bin`; no migration.
 
 ```sql
-ALTER TABLE runs ADD COLUMN handle        TEXT;
-ALTER TABLE runs ADD COLUMN ticks_elapsed INTEGER;  -- leaderboard sort key
-ALTER TABLE runs ADD COLUMN money_lifetime INTEGER;
-ALTER TABLE runs ADD COLUMN dev_mode      INTEGER DEFAULT 0;
-ALTER TABLE runs ADD COLUMN summary_json  TEXT;      -- full payload below
+CREATE TABLE IF NOT EXISTS runs (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_name         TEXT    NOT NULL,
+  saas_name           TEXT,
+  total_elapsed_ticks INTEGER NOT NULL,   -- leaderboard sort key (ASC)
+  submitted_at        INTEGER NOT NULL,   -- "date" on the board
+  won                 INTEGER DEFAULT 1,
+  dev_mode            INTEGER DEFAULT 0,
+  client_version      TEXT,
+  series_json         TEXT,               -- the 3 cumulative time series
+  events_json         TEXT                -- timeline markers (price raises)
+);
 ```
 
-`events` table stays unused in v0 (per-event streaming is out of scope).
+Rationale: a run's series is only ever fetched whole to chart one run — never
+aggregated across runs in SQL — so JSON blobs beat a normalized `samples` table.
+Leaderboard stays a flat indexed query; analytics is a single-row read.
+
+**Payload sizing:** a ~4-hour run is ~14,400 ticks = 600 in-game days. At one
+sample/day (`Sample_Every_Ticks = 24`) that's ~600 samples × 4 numbers ≈ 20 KB JSON
+per run — trivial to sample, store, transmit, and chart. No downsampling needed;
+the constant is the knob if runs ever get much longer.
 
 ### Submit payload — `POST /api/runs/complete`
 
 ```jsonc
 {
-  "handle": "theo",
-  "productName": "...",
+  "player_name": "theo",
+  "saas_name": "...",
+  "total_elapsed_ticks": 0,
   "won": true,
-  "clientVersion": "0.1.0",
-  "devModeUsed": false,
-  "timing":  { "ticksElapsed": 0, "inGameDays": 0, "durationRealS": 0 },
-  "economy": { "moneyLifetime": 0, "rcuLifetime": 0,
-               "labSpendLifetime": 0, "mrrPeak": 0 },
-  "build": {
-    "freelanceTier": "tenmx",
-    "reputationMult": 1.0,
-    "numberOfPosts": 0,
-    "hardware": { "gearLevel": 0, "laptopLevel": 0, "cpuLevel": 0, "gpuLevel": 0 },
-    "labAgents": { "ai_coder": { "tier": "scale", "model": "v3.2" } },
-    "upgradeCounts": { "conversion": 0, "retention": 0, "marketingStream": 0 }
+  "dev_mode": false,
+  "client_version": "0.1.0",
+  "series": {
+    "sampleEveryTicks": 24,
+    "t":       [0, 24, 48],
+    "money":   [],      // cumulative moneyLifetime
+    "rcu":     [],      // cumulative rcuLifetime
+    "labBurn": []       // cumulative labSpendLifetime
   },
-  "milestonesClaimed": ["..."],
-  "splits": { "freelance_senior": 1234, "price_round_1": 2200, "ai_support": 800 }
+  "events": [
+    { "tick": 2200, "type": "raise_price", "from": 1,  "to": 10  },
+    { "tick": 5400, "type": "raise_price", "from": 10, "to": 100 }
+  ]
 }
 ```
 
-Server validates, computes nothing it can't trust, writes indexed columns +
-`summary_json`, sets `won=1`, `ended_at=now`, `duration_s` from `durationRealS`.
+Server sets `submitted_at = now`, validates sanity bounds, writes flat columns +
+`series_json`/`events_json`.
 
-### Read — `GET /api/runs/leaderboard?limit=20`
+### Reads
 
-Returns top N where `won=1 AND dev_mode=0`, ordered by `ticks_elapsed ASC`.
-Each row: `{ rank, handle, productName, ticksElapsed, inGameDays, moneyLifetime, date }`.
+- `GET /api/runs/leaderboard?limit=20`
+  `WHERE dev_mode=0 ORDER BY total_elapsed_ticks ASC`, returns
+  `{ rank, player_name, saas_name, total_elapsed_ticks, submitted_at }` per row.
+- `GET /api/runs/:id` — one run's `series_json` + `events_json` for the post-game view.
 
 ## Frontend
 
-- **Handle prompt** — first load with no stored handle asks for one, saves to
-  `localStorage`, sends with the run.
-- **Win screen** — overlay showing the summary + the player's splits, a "submitted"
-  confirmation, and a "new run" button.
+- **Name prompt** — first load with no stored `player_name` asks for one.
+- **Win screen** — summary + the post-game graphs (3 cumulative series with
+  `raise_price` markers overlaid on the timeline), submit confirmation, "new run".
 - **Leaderboard view** — a `leaderboard` tab (snake_case, default text styling)
-  that fetches `/api/runs/leaderboard` and renders rank / handle / in-game time.
-  Could also surface "your best run" vs the board.
-
-## Hosting (Cloudflare Tunnel)
-
-On the Mac Mini:
-
-```bash
-brew install cloudflared
-cloudflared tunnel login                       # auth a domain in Cloudflare
-cloudflared tunnel create devrun
-# route a hostname (e.g. devrun.<yourdomain>) to the tunnel, then:
-cloudflared tunnel run --url http://localhost:3000 devrun
-```
-
-The Node server already serves the frontend and API on :3000, so the tunnel can
-point straight at it; nginx becomes optional. Run `cloudflared` and the server as
-background services (pm2 for node, `cloudflared service install` for the tunnel) so
-they survive reboots. A named tunnel needs a domain for a stable URL; a quick
-tunnel works for testing but the URL changes on restart.
+  fetching `/api/runs/leaderboard`; rows clickable through to the post-game graphs.
 
 ## Build sequence (one feature branch each, branched from `dev`)
 
 1. `feature/win` — win condition, win screen, `runStartedAt`, new-run reset.
-   *(Prereq: `feature/milestones` for splits, or stub splits as `{}` for now.)*
-2. `feature/run-submit` — state→payload builder, `POST /api/runs/complete`, schema
-   migration, server-side sanity bounds.
-3. `feature/leaderboard` — `GET /api/runs/leaderboard` + the leaderboard tab.
-4. `feature/deploy-tunnel` — `cloudflared` config, pm2/service setup, deploy notes
-   (no app code — infra + docs).
+2. `feature/run-series` — `series` buffer + sampler in `tick.js`, and `raise_price`
+   event emission on manual price raises (`saas_product` tab).
+3. `feature/run-submit` — state→payload builder, `POST /api/runs/complete`,
+   `schema.sql` rewrite, server-side sanity bounds.
+4. `feature/leaderboard` — `GET /api/runs/leaderboard` + `GET /api/runs/:id`,
+   leaderboard tab, post-game graph view.
 5. Balance/playtest pass — confirm an honest run reaches `WIN_CONDITION`.
 
-Each branch PRs back to `dev`; `dev` → `main` for the release. Théo runs
-`git push` and the Cloudflare/pm2 setup on the Mac Mini himself.
+Each branch PRs back to `dev`; `dev` → `main` for the release. Théo runs `git push`.
