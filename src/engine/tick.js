@@ -137,11 +137,18 @@ function refreshFreelanceMissions(state) {
 // ── Histogram snapshots (one per in-game day) ──────────────────
 function pushHistorySnapshot(state) {
   const h = state.history;
+  const p = h.prev;
   const push = (arr, val) => { arr.push(val); if (arr.length > 7) arr.shift(); };
-  push(h.earned,  state.moneyLifetime);
-  push(h.rcu,     state.rcuLifetime);
-  push(h.mrr,     state.saas.mrr);
-  push(h.burn,    state.labSpendLifetime); // rough burn proxy until billing is implemented
+
+  push(h.earned, state.moneyLifetime    - p.earned);
+  push(h.rcu,    state.rcuLifetime      - p.rcu);
+  push(h.mrr,    state.saas.mrr         - p.mrr);
+  push(h.burn,   state.labSpendLifetime - p.burn);
+
+  p.earned = state.moneyLifetime;
+  p.rcu    = state.rcuLifetime;
+  p.mrr    = state.saas.mrr;
+  p.burn   = state.labSpendLifetime;
 }
 
 // ── Investment boost timers ────────────────────────────────────
