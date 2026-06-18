@@ -37,9 +37,10 @@ function renderKpi(state) {
   set('k-rcu',    fmtN(state.rcuLifetime));
   set('k-mrr',    fmt(state.saas.mrr));
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
-  const conversionRate = (0.05 * state.saas.conversion * state.reputation.multiplier * 100).toFixed(2);
+  const conversionRate = progressive_wall(state.saas.conversion * state.reputation.multiplier, 100, 2);
   set('k-sat',    conversionRate + '%');
-  set('k-ret',    state.saas.retention.toFixed(2));
+  const retentionPct = progressive_wall(state.saas.retention, 100, 5);
+  set('k-ret',    retentionPct + '%');
   const investBoost = Array.isArray(state.investments)
     ? 0
     : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
@@ -102,4 +103,8 @@ function calcBurnPerDay(state) {
   return Object.values(state.lab.agents)
     .filter(a => a.unlocked)
     .reduce((sum, a) => sum + (LAB_PLANS[a.tier]?.dailyCost ?? 0), 0);
+}
+
+export function progressive_wall(x, wall_value, half_life) {
+  return ((wall_value * x) / (x + half_life)).toFixed(2);
 }
