@@ -46,13 +46,13 @@ export const CONSTANTS = {
 
   // ── Ship feature upgrade curves ───────────────────────────────
   // Base RCU cost of the first upgrade in each track
-  Ship_Satisfaction_Base_Cost: 10,
+  Ship_Conversion_Base_Cost: 10,
   Ship_Retention_Base_Cost:    10,
   Ship_Marketing_Base_Cost:    15,
   // Each subsequent upgrade costs baseCost × Scale^level
   Ship_Cost_Scale: 2,
   // Stat gain per upgrade purchased
-  Ship_Satisfaction_Delta: 0.1,   // added to satisfaction multiplier
+  Ship_Conversion_Delta: 0.1,   // added to conversion multiplier
   Ship_Retention_Delta:    0.1,   // added to retention multiplier
   Ship_Marketing_Delta:    1,     // additional visitors/day
 
@@ -97,7 +97,7 @@ export const CONSTANTS = {
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
 
   // ── Price shock (applied when player manually raises price) ───
-  Saas_Price_Shock_Satisfaction: 0.2,  // flat decrease to satisfaction
+  Saas_Price_Shock_Conversion: 0.2,  // flat decrease to conversion
   Saas_Price_Shock_Retention:    0.1,  // flat decrease to retention
 
   // ── Frontier Lab ───────────────────────────────────────────────
@@ -264,7 +264,7 @@ export function initState() {
       mrr: 0,
       mrrPeak: 0,       // highest MRR ever reached this run (used for milestones)
       customers: 0,
-      satisfaction: 1.0,
+      conversion: 1.0,
       retention: 1.0,
       marketingStream: 0,
       price: 0,
