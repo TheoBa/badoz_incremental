@@ -14,34 +14,6 @@
 import { CONSTANTS } from '../engine/state.js';
 import { fmt, fmtN } from '../ui/render.js';
 
-// ── Upgrade name pools (one per track, in purchase order) ──────
-const UPGRADE_NAMES = {
-  satisfaction: [
-    'add_user_onboarding_flow',
-    'implement_in_app_tutorials',
-    'add_live_chat_support',
-    'launch_knowledge_base',
-    'redesign_ux',
-    'add_satisfaction_surveys',
-  ],
-  retention: [
-    'add_weekly_email_digest',
-    'implement_usage_analytics',
-    'add_api_access',
-    'build_integrations_hub',
-    'implement_feature_flags',
-    'add_team_collaboration',
-  ],
-  marketingStream: [
-    'write_landing_page_copy',
-    'add_seo_meta_tags',
-    'launch_blog',
-    'open_source_a_component',
-    'add_product_demo_video',
-    'submit_to_directories',
-  ],
-};
-
 // ── Track metadata (colors match CLAUDE.md color coding) ───────
 const TRACKS = [
   {
@@ -135,9 +107,6 @@ export function renderSaasProduct(state) {
 
   // Wire upgrade buttons
   TRACKS.forEach(t => {
-    const level  = state.upgrades[t.key].length;
-    const names  = UPGRADE_NAMES[t.key];
-    if (level >= names.length) return; // max tier reached
     const btn = document.getElementById(`sp-upgrade-${t.key}`);
     if (btn && !btn.disabled) {
       btn.addEventListener('click', () => onBuyUpgrade(state, t));
@@ -146,12 +115,10 @@ export function renderSaasProduct(state) {
 }
 
 function upgradeCard(track, state) {
-  const level    = state.upgrades[track.key].length;
-  const names    = UPGRADE_NAMES[track.key];
-  const maxed    = level >= names.length;
-  const cost     = maxed ? 0 : upgradeCost(track, level);
-  const canAfford = !maxed && state.rcu >= cost;
-  const current  = state.saas[track.stateKey];
+  const level     = state.upgrades[track.key].length;
+  const cost      = upgradeCost(track, level);
+  const canAfford = state.rcu >= cost;
+  const current   = state.saas[track.stateKey];
 
   return `
     <div class="sf-card">
@@ -159,21 +126,18 @@ function upgradeCard(track, state) {
         <span class="sf-track-name" style="color:${track.color}">${track.label}</span>
         <span class="sf-track-val">${track.fmt(current)}</span>
       </div>
-      ${maxed
-        ? `<div class="sf-card-name" style="color:var(--text3)">max_tier_reached</div>`
-        : `<div class="sf-card-name">${names[level]}</div>
-           <div class="sf-card-sub">
-             cost <b style="color:${track.color}">${fmtN(cost)} RCU</b>
-             · +${track.fmt(track.delta())}
-             · lvl ${level + 1}/${names.length}
-           </div>
-           <button
-             id="sp-upgrade-${track.key}"
-             class="sf-btn"
-             style="border-color:${track.color};color:${track.color}"
-             ${canAfford ? '' : 'disabled'}>
-             ship_feature()
-           </button>`}
+      <div class="sf-card-name">lv. ${level + 1}</div>
+      <div class="sf-card-sub">
+        cost <b style="color:${track.color}">${fmtN(cost)} RCU</b>
+        · +${track.fmt(track.delta())}
+      </div>
+      <button
+        id="sp-upgrade-${track.key}"
+        class="sf-btn"
+        style="border-color:${track.color};color:${track.color}"
+        ${canAfford ? '' : 'disabled'}>
+        ship_feature()
+      </button>
     </div>`;
 }
 
