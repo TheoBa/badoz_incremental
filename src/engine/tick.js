@@ -10,6 +10,7 @@ import {
   calcMarketerRepPerDay,
 } from './state.js';
 import { generateMissions } from './missions.js';
+import { MILESTONE_TRACKS } from './milestones.js';
 
 export function startTick(state, onTick) {
   setInterval(() => {
@@ -162,7 +163,16 @@ function tickInvestments(state) {
 
 // ── Milestone checks ───────────────────────────────────────────
 function checkMilestones(state) {
-  // TODO: Freelance_RCU_T1/T2/T3 → freelance tier upgrades
-  // TODO: Lab_Money_T1–T9 → agent unlocks
-  // TODO: Price_Round_T1/T2 (lifetime money earned) → subscription price rounds
+  for (const track of MILESTONE_TRACKS) {
+    const val = track.getValue(state);
+    for (const step of track.steps) {
+      if (step.autoClaim) continue;
+      if (step.threshold === null) continue;
+      if (state.milestones.claimed[step.id]) continue;
+      if (val >= step.threshold) {
+        if (step.onClaim) step.onClaim(state);
+        state.milestones.claimed[step.id] = true;
+      }
+    }
+  }
 }
