@@ -84,7 +84,7 @@ function applyDailyAcquisition(state) {
   const investBoost    = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   const marketerBoost  = calcMarketerMarketingBonus(state);
   const visitors       = 1 + state.saas.marketingStream + investBoost + marketerBoost;
-  const conversion     = 0.05 * state.saas.satisfaction; // 5% base conversion rate
+  const conversion     = 0.05 * state.saas.satisfaction * state.reputation.multiplier; // 5% base, scaled by reputation
   const gained         = visitors * conversion;
   state.saas.customers += gained;
   state.saas.mrr        = state.saas.price * state.saas.customers;
