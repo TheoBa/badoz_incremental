@@ -48,6 +48,15 @@ if (state.saas.mrrPeak == null) state.saas.mrrPeak = state.saas.mrr;
 // Migrate: add milestones object (old saves)
 if (!state.milestones)         state.milestones         = { claimed: {} };
 if (!state.milestones.claimed) state.milestones.claimed = {};
+// Migrate: add history.prev for delta-based histograms (old saves)
+if (!state.history.prev) {
+  state.history.prev = {
+    earned: state.moneyLifetime,
+    rcu:    state.rcuLifetime,
+    mrr:    state.saas.mrr,
+    burn:   state.labSpendLifetime,
+  };
+}
 // Migrate: init RCU/h sliding window (old saves)
 if (!Array.isArray(state.rcuHistory)) state.rcuHistory = new Array(10).fill(0);
 if (state._rcuThisTick == null)       state._rcuThisTick = 0;

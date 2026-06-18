@@ -321,6 +321,7 @@ export function initState() {
 
     // KPI histogram snapshots — last 7 in-game days, oldest first
     history: {
+      prev: { earned: 0, rcu: 0, mrr: 0, burn: 0 },
       earned: [0, 0, 0, 0, 0, 0, 0],
       rcu:    [0, 0, 0, 0, 0, 0, 0],
       mrr:    [0, 0, 0, 0, 0, 0, 0],
