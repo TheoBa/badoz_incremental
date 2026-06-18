@@ -55,6 +55,7 @@ function tick(state) {
 
 // ── Agent passive effects ──────────────────────────────────────
 function applyLabAgents(state) {
+  if (state.moneyLifetime < CONSTANTS.Lab_Unlock_Money) return;
   const coder = state.lab.agents.ai_coder;
   if (!coder.unlocked) return;
 

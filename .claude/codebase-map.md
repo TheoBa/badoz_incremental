@@ -30,7 +30,7 @@ user action / setInterval
 | File | Role |
 |---|---|
 | `index.html` | Shell: tab buttons (`.tab[data-tab]`), panels (`#panel-<id>`), KPI sidebar, header bar |
-| `src/main.js` | Boot: `load() ?? initState()`, seeds missions, applies save migrations, wires tab-click events, starts tick loop |
+| `src/main.js` | Boot: `load() ?? initState()`, seeds missions, applies save migrations, wires tab-click events, calls `initDevPanel(state, render)`, starts tick loop |
 
 ### Engine
 
@@ -49,6 +49,7 @@ user action / setInterval
 | `src/ui/render.js` | `render(state)` — calls `renderHeader`, `renderKpi`, `renderActiveTab`. Dispatches to active tab renderer. Exports `fmt` (money) and `fmtN` (integer). |
 | `src/ui/histograms.js` | `renderHistogram(el, dataArr, color)` — draws 7-bar KPI chart. |
 | `src/ui/style.css` | All styles. Scoped lab theme: `#panel-frontier_lab` + `.lab-*`. |
+| `src/ui/dev.js` | `initDevPanel(state, renderFn)` — dev-only overlay (fixed bottom-right, toggle with `` ` ``). Give money, give RCU, reset run. Self-contained: injects its own `<style>` tag. |
 
 ### Tabs
 
