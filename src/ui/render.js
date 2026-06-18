@@ -9,7 +9,7 @@ import { renderFrontierLab } from '../tabs/frontier_lab.js';
 import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderMilestones }  from '../tabs/milestones.js';
 import { renderHistogram }   from './histograms.js';
-import { LAB_PLANS } from '../engine/state.js';
+import { CONSTANTS, LAB_PLANS } from '../engine/state.js';
 
 export function render(state) {
   renderHeader(state);
@@ -37,7 +37,8 @@ function renderKpi(state) {
   set('k-rcu',    fmtN(state.rcuLifetime));
   set('k-mrr',    fmt(state.saas.mrr));
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
-  set('k-sat',    state.saas.satisfaction.toFixed(2));
+  const conversionRate = (0.05 * state.saas.conversion * state.reputation.multiplier).toFixed(4);
+  set('k-sat',    conversionRate);
   set('k-ret',    state.saas.retention.toFixed(2));
   const investBoost = Array.isArray(state.investments)
     ? 0
