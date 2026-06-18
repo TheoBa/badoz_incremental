@@ -20,6 +20,9 @@ export function startTick(state, onTick) {
 }
 
 function tick(state) {
+  // Once the run is won, the game freezes — no more economy or time progression.
+  if (state.won) return;
+
   state.ticksElapsed++;
 
   // Passive RCU generation (AI Coder agent)
@@ -45,6 +48,7 @@ function tick(state) {
   }
 
   checkMilestones(state);
+  checkWin(state);
 
   // Sliding window for RCU/h display — push this tick's total, keep last 10
   if (!Array.isArray(state.rcuHistory)) state.rcuHistory = new Array(10).fill(0);
@@ -160,6 +164,17 @@ function tickInvestments(state) {
     .filter(b => b.ticksRemaining > 0);
   if (state.investments.newsletterCooldownTicks > 0) state.investments.newsletterCooldownTicks--;
   if (state.investments.pressCooldownTicks > 0)      state.investments.pressCooldownTicks--;
+}
+
+// ── Win condition ──────────────────────────────────────────────
+// The run is won the moment lifetime earnings reach WIN_CONDITION ($1B exit).
+function checkWin(state) {
+  if (state.won) return;
+  if (state.moneyLifetime >= CONSTANTS.WIN_CONDITION) {
+    state.won        = true;
+    state.winTick    = state.ticksElapsed;
+    state.runEndedAt = Date.now();
+  }
 }
 
 // ── Milestone checks ───────────────────────────────────────────

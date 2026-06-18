@@ -7,6 +7,7 @@ import { load, save }           from './engine/save.js';
 import { render }               from './ui/render.js';
 import { generateMissions }     from './engine/missions.js';
 import { initDevPanel }         from './ui/dev.js';
+import { initWinScreen }        from './ui/win.js';
 
 // ── Load or initialise state ───────────────────────────────────
 const state = load() ?? initState();
@@ -86,6 +87,11 @@ if (state.history.satisfaction && !state.history.conversion) {
   state.history.conversion = state.history.satisfaction;
   delete state.history.satisfaction;
 }
+// Migrate: run lifecycle fields (old saves predate the win condition)
+if (state.runStartedAt == null) state.runStartedAt = Date.now();
+if (!('runEndedAt' in state))   state.runEndedAt   = null;
+if (typeof state.won !== 'boolean') state.won       = false;
+if (!('winTick' in state))      state.winTick      = null;
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
@@ -108,12 +114,21 @@ document.querySelectorAll('.tab').forEach(btn => {
 // ── Dev panel (toggle with ` key) ─────────────────────────────
 initDevPanel(state, render);
 
+// ── Win screen (shown when state.won) ─────────────────────────
+initWinScreen(state, render);
+
 // ── Initial render ─────────────────────────────────────────────
 render(state);
 
 // ── Tick loop ──────────────────────────────────────────────────
 startTick(state, (s) => {
   render(s);
-  // Auto-save every 60 ticks (1 in-game hour)
-  if (s.ticksElapsed % 60 === 0) save(s);
+  if (s.won) {
+    // Save once on the winning frame so a reload keeps the run resolved,
+    // then stop autosaving (the tick loop is frozen anyway).
+    if (!s._winSaved) { s._winSaved = true; save(s); }
+  } else if (s.ticksElapsed % 60 === 0) {
+    // Auto-save every 60 ticks (1 in-game hour)
+    save(s);
+  }
 });
