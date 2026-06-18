@@ -6,6 +6,7 @@ import { startTick }            from './engine/tick.js';
 import { load, save }           from './engine/save.js';
 import { render }               from './ui/render.js';
 import { generateMissions }     from './engine/missions.js';
+import { initDevPanel }         from './ui/dev.js';
 
 // ── Load or initialise state ───────────────────────────────────
 const state = load() ?? initState();
@@ -103,6 +104,9 @@ document.querySelectorAll('.tab').forEach(btn => {
     render(state);
   });
 });
+
+// ── Dev panel (toggle with ` key) ─────────────────────────────
+initDevPanel(state, render);
 
 // ── Initial render ─────────────────────────────────────────────
 render(state);
