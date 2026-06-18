@@ -250,6 +250,12 @@ export function initState() {
     runCount: 0,
     productName: null,
 
+    // Run lifecycle
+    runStartedAt: Date.now(),  // real epoch ms when this run began
+    runEndedAt:   null,        // real epoch ms when the win fired
+    won:          false,       // true once WIN_CONDITION is reached
+    winTick:      null,        // ticksElapsed at the moment of the win
+
     // Time
     ticksElapsed: 0,
 

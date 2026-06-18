@@ -88,6 +88,22 @@
 
   </div>
 
+  <!-- ── Win screen overlay (shown when state.won) ──────────────── -->
+  <div id="win-screen">
+    <div class="win-card">
+      <div class="win-kicker">run_complete</div>
+      <div class="win-title">$1B exit</div>
+      <div class="win-product" id="win-product">—</div>
+      <div class="win-stats">
+        <div class="win-stat"><span>time</span><b id="win-time">0d 0h</b></div>
+        <div class="win-stat"><span>lifetime_earned</span><b class="money" id="win-earned">$0</b></div>
+        <div class="win-stat"><span>lifetime_rcu</span><b id="win-rcu">0</b></div>
+        <div class="win-stat"><span>lab_burn</span><b class="burn" id="win-burn">$0</b></div>
+      </div>
+      <button id="win-new-run" class="win-btn">new_run</button>
+    </div>
+  </div>
+
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

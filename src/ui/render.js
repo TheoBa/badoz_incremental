@@ -9,12 +9,14 @@ import { renderFrontierLab } from '../tabs/frontier_lab.js';
 import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderMilestones }  from '../tabs/milestones.js';
 import { renderHistogram }   from './histograms.js';
+import { renderWinScreen }   from './win.js';
 import { CONSTANTS, LAB_PLANS } from '../engine/state.js';
 
 export function render(state) {
   renderHeader(state);
   renderKpi(state);
   renderActiveTab(state);
+  renderWinScreen(state);
 }
 
 // ── Header ─────────────────────────────────────────────────────

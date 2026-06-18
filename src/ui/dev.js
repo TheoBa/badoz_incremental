@@ -1,14 +1,4 @@
-import { initState }        from '../engine/state.js';
-import { generateMissions } from '../engine/missions.js';
-import { save }             from '../engine/save.js';
-
-function resetRun(state) {
-  const nextRunCount = state.runCount + 1;
-  Object.assign(state, initState());
-  state.runCount = nextRunCount;
-  state.freelance.missions = generateMissions(state.freelance.tier);
-  save(state);
-}
+import { newRun } from '../engine/run.js';
 
 export function initDevPanel(state, renderFn) {
   // Inject styles
@@ -73,7 +63,7 @@ export function initDevPanel(state, renderFn) {
   });
 
   document.getElementById('dev-reset-run').addEventListener('click', () => {
-    resetRun(state);
+    newRun(state);
     renderFn(state);
   });
 }
