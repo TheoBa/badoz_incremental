@@ -39,7 +39,8 @@ function renderKpi(state) {
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
   const conversionRate = (0.05 * state.saas.conversion * state.reputation.multiplier * 100).toFixed(2);
   set('k-sat',    conversionRate + '%');
-  set('k-ret',    state.saas.retention.toFixed(2));
+  const retentionPct = ((1 - 0.02 / state.saas.retention) * 100).toFixed(2);
+  set('k-ret',    retentionPct + '%');
   const investBoost = Array.isArray(state.investments)
     ? 0
     : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);

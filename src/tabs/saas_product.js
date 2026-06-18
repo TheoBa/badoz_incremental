@@ -22,7 +22,7 @@ const TRACKS = [
     label:    'conversion',
     color:    '#1D9E75',
     baseCost: () => CONSTANTS.Ship_Conversion_Base_Cost,
-    delta:    () => CONSTANTS.Ship_Conversion_Delta,
+    delta:    (level) => CONSTANTS.Ship_Conversion_Delta * Math.pow(CONSTANTS.Ship_Delta_Scale, level),
     fmt:      v  => v.toFixed(2) + '×',
   },
   {
@@ -31,7 +31,7 @@ const TRACKS = [
     label:    'retention',
     color:    '#378ADD',
     baseCost: () => CONSTANTS.Ship_Retention_Base_Cost,
-    delta:    () => CONSTANTS.Ship_Retention_Delta,
+    delta:    (level) => CONSTANTS.Ship_Retention_Delta * Math.pow(CONSTANTS.Ship_Delta_Scale, level),
     fmt:      v  => v.toFixed(2) + '×',
   },
   {
@@ -40,7 +40,7 @@ const TRACKS = [
     label:    'marketing_stream',
     color:    '#BA7517',
     baseCost: () => CONSTANTS.Ship_Marketing_Base_Cost,
-    delta:    () => CONSTANTS.Ship_Marketing_Delta,
+    delta:    (level) => CONSTANTS.Ship_Marketing_Delta * Math.pow(CONSTANTS.Ship_Delta_Scale, level),
     fmt:      v  => fmtN(v) + '/d',
   },
 ];
@@ -129,7 +129,7 @@ function upgradeCard(track, state) {
       <div class="sf-card-name">lv. ${level + 1}</div>
       <div class="sf-card-sub">
         cost <b style="color:${track.color}">${fmtN(cost)} RCU</b>
-        · +${track.fmt(track.delta())}
+        · +${track.fmt(track.delta(level))}
       </div>
       <button
         id="sp-upgrade-${track.key}"
@@ -162,7 +162,7 @@ function onBuyUpgrade(state, track) {
   if (state.rcu < cost) return;
 
   state.rcu                   -= cost;
-  state.saas[track.stateKey]  += track.delta();
+  state.saas[track.stateKey]  += track.delta(level);
   state.upgrades[track.key].push(level);
 
   // Immediate header update

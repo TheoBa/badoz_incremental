@@ -55,6 +55,7 @@ export const CONSTANTS = {
   Ship_Conversion_Delta: 0.1,   // added to conversion multiplier
   Ship_Retention_Delta:    0.1,   // added to retention multiplier
   Ship_Marketing_Delta:    1,     // additional visitors/day
+  Ship_Delta_Scale: 1.15,         // bonus grows 15% per level; cost scale is 2× for comparison
 
   // ── Investment costs & effects ────────────────────────────────
   Invest_ColdOutreach_Cost:    50,   // money
@@ -97,8 +98,8 @@ export const CONSTANTS = {
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
 
   // ── Price shock (applied when player manually raises price) ───
-  Saas_Price_Shock_Conversion: 0.2,  // flat decrease to conversion
-  Saas_Price_Shock_Retention:    0.1,  // flat decrease to retention
+  Saas_Price_Shock_Conversion: 0.5,  // flat decrease to conversion
+  Saas_Price_Shock_Retention:    0.3,  // flat decrease to retention
 
   // ── Frontier Lab ───────────────────────────────────────────────
   Lab_Unlock_Money: 100,           // moneyLifetime threshold before tab becomes active
