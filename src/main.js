@@ -65,6 +65,26 @@ if (state.reputation.numberOfPosts == null) {
   state.reputation.numberOfPosts = state.reputation.postsThisRun ?? 0;
   delete state.reputation.postsThisRun;
 }
+// Migrate: upgrades.satisfaction → upgrades.conversion (old saves)
+if (!state.upgrades) state.upgrades = {};
+if (state.upgrades.satisfaction && !state.upgrades.conversion) {
+  state.upgrades.conversion = state.upgrades.satisfaction;
+  delete state.upgrades.satisfaction;
+}
+// Ensure all upgrade tracks exist
+if (!state.upgrades.conversion) state.upgrades.conversion = [];
+if (!state.upgrades.retention) state.upgrades.retention = [];
+if (!state.upgrades.marketingStream) state.upgrades.marketingStream = [];
+// Migrate: saas.satisfaction → saas.conversion (old saves)
+if (state.saas.satisfaction != null && state.saas.conversion == null) {
+  state.saas.conversion = state.saas.satisfaction;
+  delete state.saas.satisfaction;
+}
+// Migrate: history.satisfaction → history.conversion (old saves)
+if (state.history.satisfaction && !state.history.conversion) {
+  state.history.conversion = state.history.satisfaction;
+  delete state.history.satisfaction;
+}
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
