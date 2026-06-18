@@ -17,12 +17,12 @@ import { fmt, fmtN } from '../ui/render.js';
 // ── Track metadata (colors match CLAUDE.md color coding) ───────
 const TRACKS = [
   {
-    key:      'satisfaction',
-    stateKey: 'satisfaction',
-    label:    'satisfaction',
+    key:      'conversion',
+    stateKey: 'conversion',
+    label:    'conversion',
     color:    '#1D9E75',
-    baseCost: () => CONSTANTS.Ship_Satisfaction_Base_Cost,
-    delta:    () => CONSTANTS.Ship_Satisfaction_Delta,
+    baseCost: () => CONSTANTS.Ship_Conversion_Base_Cost,
+    delta:    () => CONSTANTS.Ship_Conversion_Delta,
     fmt:      v  => v.toFixed(2) + '×',
   },
   {
@@ -64,7 +64,7 @@ export function renderSaasProduct(state) {
   const milestoneOk = claimId !== null && !!state.milestones?.claimed?.[claimId];
   const canRaise   = nextPrice !== null && milestoneOk;
 
-  const shockSat = CONSTANTS.Saas_Price_Shock_Satisfaction;
+  const shockSat = CONSTANTS.Saas_Price_Shock_Conversion;
   const shockRet = CONSTANTS.Saas_Price_Shock_Retention;
 
   panel.innerHTML = `
@@ -85,7 +85,7 @@ export function renderSaasProduct(state) {
       <div class="sp-hint sp-raise-warning">
         ${!milestoneOk
           ? `<span class="sp-hint-lock">locked · claim money_earned milestone in milestones tab first</span>`
-          : `<span class="sp-hint-warn">⚠ demand shock: −${shockSat.toFixed(1)} satisfaction · −${shockRet.toFixed(1)} retention</span>`}
+          : `<span class="sp-hint-warn">⚠ demand shock: −${shockSat.toFixed(1)} conversion · −${shockRet.toFixed(1)} retention</span>`}
       </div>
     </div>` : `
     <div class="sp-section">
@@ -148,8 +148,8 @@ function onRaisePrice(state) {
 
   state.saas.priceRound++;
   state.saas.price        = tiers[state.saas.priceRound];
-  // Demand shock: flat negative pressure on satisfaction and retention
-  state.saas.satisfaction = Math.max(0.1, state.saas.satisfaction - CONSTANTS.Saas_Price_Shock_Satisfaction);
+  // Demand shock: flat negative pressure on conversion and retention
+  state.saas.conversion   = Math.max(0.1, state.saas.conversion - CONSTANTS.Saas_Price_Shock_Conversion);
   state.saas.retention    = Math.max(0.1, state.saas.retention    - CONSTANTS.Saas_Price_Shock_Retention);
   state.saas.mrr          = state.saas.price * state.saas.customers;
 
