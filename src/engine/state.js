@@ -5,6 +5,36 @@
 export const CLIENT_VERSION = '0.1.1';
 
 // ── Balancing constants ────────────────────────────────────────
+export const MILESTONES = {
+  money_tiers: {       // lifetime earned
+    t1: 100,           // → investment tab unlocked
+    t2: 500_000,       // → raise to $100/mo
+    t3: 10_000_000,    // → raise to $1000/mo
+  },
+  freelance_tiers: { // freelance missions completed
+    t1: 21,          // → Senior tier
+    t2: 100,         // → Lead tier
+    t3: 500,         // → 10x tier
+  },
+  rcu_tiers: {         // lifetime RCU
+    t1: 1_000,         // → frontier_lab tab unlocked
+    t2: 10_000,        // → ai_support unlocked
+    t3: 100_000,       // → ai_product_manager unlocked
+  },
+  lab_spend_tiers: {    // lifetime Lab spend (burn) (TODO: include a pay per use plan)
+    t1: 100,            // → unlock hobbyist plan
+    t2: 1_000,          // → unlock growth plan
+    t3: 10_000,         // → unlock scale plan
+    t4: 50_000,         // → unlock infernal plan
+    t5: 100_000,        // → unlock PR Bot agent
+  },
+  mrr_peak_tiers: {
+    t1: 100,          // MRR peak → seo_push + press_coverage investment unlock
+    t2: 10_000,       // → launch_product_hunt investment unlock
+    t3: 100_000,      // → ai_marketer unlocked
+    t4: 10_000_000,   // → ai_ceo unlocked
+  }
+}
 export const CONSTANTS = {
   TICK_RATE: 1,             // real seconds per in-game hour
 
@@ -148,11 +178,11 @@ export const CONSTANTS = {
 // plan_multiplier is the base boost multiplier at this plan tier.
 // effective_boost = plan_multiplier × agent.modelLevel
 export const LAB_PLANS = {
-  free:     { dailyCost: 0,   multiplier: 1,   label: 'free'     },
-  hobbyist: { dailyCost: 5,   multiplier: 1.5, label: 'hobbyist' },
-  growth:   { dailyCost: 25,  multiplier: 4,   label: 'growth'   },
-  scale:    { dailyCost: 100, multiplier: 12,  label: 'scale'    },
-  infernal: { dailyCost: 500, multiplier: 40,  label: 'infernal' },
+  free:     { dailyCost: 5,   multiplier: 1,   label: 'free'     },
+  hobbyist: { dailyCost: 10,   multiplier: 1.5, label: 'hobbyist' },
+  growth:   { dailyCost: 50,  multiplier: 4,   label: 'growth'   },
+  scale:    { dailyCost: 200, multiplier: 12,  label: 'scale'    },
+  infernal: { dailyCost: 1000, multiplier: 40,  label: 'infernal' },
 };
 
 // ── Derived helpers ────────────────────────────────────────────
