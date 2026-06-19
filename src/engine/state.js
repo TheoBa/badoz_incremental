@@ -1,6 +1,9 @@
 // state.js — canonical game state
 // All game values live here. Nothing else stores state.
 
+// Bumped when the run payload shape changes; stored with every submitted run.
+export const CLIENT_VERSION = '0.1.0';
+
 // ── Balancing constants ────────────────────────────────────────
 export const CONSTANTS = {
   TICK_RATE: 1,             // real seconds per in-game hour
@@ -254,6 +257,7 @@ export function initState() {
     // Meta
     runCount: 0,
     productName: null,
+    devModeUsed: false,   // true if dev tools touched this run; excluded from board
 
     // Run lifecycle
     runStartedAt: Date.now(),  // real epoch ms when this run began

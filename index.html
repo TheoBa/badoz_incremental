@@ -88,6 +88,24 @@
 
   </div>
 
+  <!-- ── Start screen overlay (shown until the product is named) ── -->
+  <div id="start-screen">
+    <form class="start-card" id="start-form">
+      <div class="win-kicker">new_run</div>
+      <div class="start-title">DEVRUN</div>
+      <div class="start-sub">solo dev → $1B exit. fastest run wins.</div>
+      <div class="start-field" id="start-handle-row">
+        <label for="start-handle">your_handle</label>
+        <input id="start-handle" type="text" maxlength="64" autocomplete="off" placeholder="e.g. theo">
+      </div>
+      <div class="start-field">
+        <label for="start-product">product_name</label>
+        <input id="start-product" type="text" maxlength="64" autocomplete="off" placeholder="name your SaaS">
+      </div>
+      <button type="submit" class="win-btn">start_run()</button>
+    </form>
+  </div>
+
   <!-- ── Win screen overlay (shown when state.won) ──────────────── -->
   <div id="win-screen">
     <div class="win-card">
@@ -100,6 +118,7 @@
         <div class="win-stat"><span>lifetime_rcu</span><b id="win-rcu">0</b></div>
         <div class="win-stat"><span>lab_burn</span><b class="burn" id="win-burn">$0</b></div>
       </div>
+      <div class="win-status" id="win-submit-status"></div>
       <button id="win-new-run" class="win-btn">new_run</button>
     </div>
   </div>

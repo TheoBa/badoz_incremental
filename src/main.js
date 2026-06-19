@@ -8,6 +8,7 @@ import { render }               from './ui/render.js';
 import { generateMissions }     from './engine/missions.js';
 import { initDevPanel }         from './ui/dev.js';
 import { initWinScreen }        from './ui/win.js';
+import { initStartScreen }      from './ui/start.js';
 
 // ── Load or initialise state ───────────────────────────────────
 const state = load() ?? initState();
@@ -100,6 +101,8 @@ if (!state.series || !Array.isArray(state.series.t)) {
   };
 }
 if (!Array.isArray(state.events)) state.events = [];
+// Migrate: dev-mode taint flag (old saves predate run submission)
+if (typeof state.devModeUsed !== 'boolean') state.devModeUsed = false;
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
@@ -124,6 +127,9 @@ initDevPanel(state, render);
 
 // ── Win screen (shown when state.won) ─────────────────────────
 initWinScreen(state, render);
+
+// ── Start screen (handle + product name; gates the run start) ──
+initStartScreen(state, render);
 
 // ── Initial render ─────────────────────────────────────────────
 render(state);

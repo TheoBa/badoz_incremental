@@ -32,3 +32,6 @@ logs/
 # Runtime
 *.pid
 *.seed
+
+# Local SQLite database (regenerated from schema.sql on first run)
+server/db/*.db.bin
