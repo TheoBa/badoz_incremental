@@ -17,7 +17,6 @@ import {
   calcCoderRcuPerHour,
   calcSupportRetentionBonus,
   calcMarketerMarketingBonus,
-  calcMarketerRepPerDay,
 } from '../engine/state.js';
 
 // ── Plan display order + MRR gates ────────────────────────────
@@ -211,8 +210,7 @@ function activeCardHTML(cfg, agent, state) {
     boostLine = `retention_bonus: <b class="blue">+${bonus.toFixed(2)}</b>`;
   } else if (cfg.id === 'ai_marketer') {
     const mkt = calcMarketerMarketingBonusForAgent(agent);
-    const rep = calcMarketerRepPerDayForAgent(agent);
-    boostLine = `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b> · rep: <b>+${rep.toFixed(3)}/d</b>`;
+    boostLine = `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b>`;
   } else {
     boostLine = `boost: ${cfg.boost}`;
   }
@@ -276,11 +274,6 @@ function calcMarketerMarketingBonusForAgent(agent) {
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
   const n = (agent.modelMajor - 1) * 9 + agent.modelMinor;
   return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
-}
-
-function calcMarketerRepPerDayForAgent(agent) {
-  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  return CONSTANTS.Lab_Marketer_Rep_Per_Day * plan.multiplier;
 }
 
 function fmtMoney(n) {

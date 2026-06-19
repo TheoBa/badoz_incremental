@@ -7,7 +7,6 @@ import {
   calcCoderRcuPerHour,
   calcSupportRetentionBonus,
   calcMarketerMarketingBonus,
-  calcMarketerRepPerDay,
 } from './state.js';
 import { generateMissions } from './missions.js';
 import { MILESTONE_TRACKS } from './milestones.js';
@@ -34,7 +33,6 @@ function tick(state) {
     applyDailyAcquisition(state);
     applyDailyChurn(state);
     applyDailyRevenue(state);
-    applyDailyMarketerRep(state);
     applyDailyLabBilling(state);
     refreshFreelanceMissions(state);
     pushHistorySnapshot(state);
@@ -111,12 +109,6 @@ function applyDailyChurn(state) {
   const churnRate          = 0.02 / effectiveRetention;
   state.saas.customers     = Math.max(0, state.saas.customers - state.saas.customers * churnRate);
   state.saas.mrr           = state.saas.price * state.saas.customers;
-}
-
-// ── Daily ai_marketer reputation ───────────────────────────────
-function applyDailyMarketerRep(state) {
-  const repGain = calcMarketerRepPerDay(state);
-  if (repGain > 0) state.reputation.multiplier += repGain;
 }
 
 // ── Daily Lab billing ──────────────────────────────────────────
