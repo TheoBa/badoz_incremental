@@ -299,16 +299,6 @@ export function renderInvestment(state) {
       ${activeBoost > 0 ? `<div class="inv-stat-row"><span>active_boost</span><b class="amber">+${fmtN(activeBoost)} mkt/d</b></div>` : ''}
     </div>
 
-    ${state.investments.active.length > 0 ? `
-    <div class="inv-section">
-      <div class="inv-label">active_campaigns</div>
-      ${state.investments.active.map(b => `
-        <div class="inv-active-row">
-          <span>${b.label}</span>
-          <span class="inv-ticks">${ticksToLabel(b.ticksRemaining)}</span>
-        </div>`).join('')}
-    </div>` : ''}
-
     ${CATEGORIES.map(cat => categorySection(cat, state)).join('')}`;
 
   // Wire click handlers for every buy button

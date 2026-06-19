@@ -12,7 +12,7 @@ import { renderLeaderboard } from '../tabs/leaderboard.js';
 import { renderHistogram }   from './histograms.js';
 import { renderWinScreen }   from './win.js';
 import { renderStartScreen } from './start.js';
-import { CONSTANTS, LAB_PLANS } from '../engine/state.js';
+import { CONSTANTS, LAB_PLANS, calcSupportRetentionBonus, calcMarketerMarketingBonus } from '../engine/state.js';
 
 export function render(state) {
   renderHeader(state);
@@ -38,18 +38,23 @@ function renderHeader(state) {
 
 // ── KPI sidebar ────────────────────────────────────────────────
 function renderKpi(state) {
-  set('k-earned', fmt(state.moneyLifetime));
-  set('k-rcu',    fmtN(state.rcuLifetime));
+  const lastEarned = state.history.earned.at(-1) ?? 0;
+  const lastRcu    = state.history.rcu.at(-1)    ?? 0;
+  set('k-earned', fmt(lastEarned) + '/d');
+  set('k-rcu',    fmtN(lastRcu)  + '/d');
   set('k-mrr',    fmt(state.saas.mrr));
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
-  const conversionRate = progressive_wall(state.saas.conversion * state.reputation.multiplier, 100, 2);
+  const conversionRate = progressive_wall(state.saas.conversion, 100, 2);
   set('k-sat',    conversionRate + '%');
-  const retentionPct = progressive_wall(state.saas.retention, 100, 5);
+  const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state);
+  const retentionPct = progressive_wall(effectiveRetention, 100, 5);
   set('k-ret',    retentionPct + '%');
   const investBoost = Array.isArray(state.investments)
     ? 0
     : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
-  set('k-mkt', fmtN(state.saas.marketingStream + investBoost) + '/d');
+  const marketerBoost = calcMarketerMarketingBonus(state);
+  const effectiveMkt = (state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
+  set('k-mkt', fmtN(effectiveMkt) + '/d');
   set('k-rep', state.reputation.multiplier.toFixed(2) + '×');
 
   renderHistogram(document.getElementById('hist-earned'), state.history.earned, '#1D9E75');

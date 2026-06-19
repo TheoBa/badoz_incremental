@@ -126,7 +126,7 @@ function upgradeCard(track, state) {
         <span class="sf-track-name" style="color:${track.color}">${track.label}</span>
         <span class="sf-track-val">${track.fmt(current)}</span>
       </div>
-      <div class="sf-card-name">lv. ${level + 1}</div>
+      <div class="sf-card-name">lv. ${level}</div>
       <div class="sf-card-sub">
         cost <b style="color:${track.color}">${fmtN(cost)} RCU</b>
         · +${track.fmt(track.delta(level))}

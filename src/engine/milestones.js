@@ -25,8 +25,6 @@ function fmtRcu(n) {
 //   threshold     — value at which this step becomes claimable (null = not yet set)
 //   effect        — human-readable reward string (null = always show ???)
 //   onClaim       — function(state) → mutates state; null = not yet implemented
-//   autoClaim     — if true, status derived from isAutoClaimed() instead of claimed map
-//   isAutoClaimed — function(state) → bool, only when autoClaim: true
 //   hideThreshold — if true, show ??? for the threshold in locked rows
 
 export const MILESTONE_TRACKS = [
@@ -39,12 +37,10 @@ export const MILESTONE_TRACKS = [
     barColor: '#1D9E75',
     steps: [
       {
-        id:           'lab_unlock',
-        threshold:    CONSTANTS.Lab_Unlock_Money,
-        effect:       'frontier_lab unlocked',
-        autoClaim:    true,
-        isAutoClaimed: (state) => state.moneyLifetime >= CONSTANTS.Lab_Unlock_Money,
-        onClaim:      null,
+        id:        'lab_unlock',
+        threshold: CONSTANTS.Lab_Unlock_Money,
+        effect:    'frontier_lab unlocked',
+        onClaim:   () => {},
       },
       {
         id:        'price_t1',
@@ -179,9 +175,6 @@ export const MILESTONE_TRACKS = [
 // ── Status helper ──────────────────────────────────────────────
 // Returns 'claimed' | 'claimable' | 'locked'
 export function getStepStatus(track, step, state) {
-  if (step.autoClaim) {
-    return step.isAutoClaimed(state) ? 'claimed' : 'locked';
-  }
   if (state.milestones?.claimed?.[step.id]) return 'claimed';
   if (step.threshold === null) return 'locked';
   if (track.getValue(state) >= step.threshold) return 'claimable';
@@ -199,7 +192,6 @@ export function getProgressTarget(track, state) {
   return track.steps.find(s =>
     getStepStatus(track, s, state) === 'locked' &&
     s.threshold !== null &&
-    !s.hideThreshold &&
-    !s.autoClaim
+    !s.hideThreshold
   ) ?? null;
 }

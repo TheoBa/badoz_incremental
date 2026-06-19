@@ -7,10 +7,8 @@ import {
   calcCoderRcuPerHour,
   calcSupportRetentionBonus,
   calcMarketerMarketingBonus,
-  calcMarketerRepPerDay,
 } from './state.js';
 import { generateMissions } from './missions.js';
-import { MILESTONE_TRACKS } from './milestones.js';
 
 export function startTick(state, onTick) {
   setInterval(() => {
@@ -34,7 +32,6 @@ function tick(state) {
     applyDailyAcquisition(state);
     applyDailyChurn(state);
     applyDailyRevenue(state);
-    applyDailyMarketerRep(state);
     applyDailyLabBilling(state);
     refreshFreelanceMissions(state);
     pushHistorySnapshot(state);
@@ -53,7 +50,6 @@ function tick(state) {
     state.reputation.postCooldownTicks--;
   }
 
-  checkMilestones(state);
   checkWin(state);
 
   // Sliding window for RCU/h display — push this tick's total, keep last 10
@@ -65,7 +61,7 @@ function tick(state) {
 
 // ── Agent passive effects ──────────────────────────────────────
 function applyLabAgents(state) {
-  if (state.moneyLifetime < CONSTANTS.Lab_Unlock_Money) return;
+  if (!state.milestones?.claimed?.lab_unlock) return;
   const coder = state.lab.agents.ai_coder;
   if (!coder.unlocked) return;
 
@@ -91,12 +87,12 @@ function applyDailyRevenue(state) {
 // ── Daily customer acquisition ─────────────────────────────────
 function applyDailyAcquisition(state) {
   if (state.saas.price === 0) return;
-  // Effective marketing stream = permanent value + active investment boosts + ai_marketer
+  // Effective marketing stream = permanent value + active investment boosts + ai_marketer, scaled by reputation
   const investBoost    = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   const marketerBoost  = calcMarketerMarketingBonus(state);
-  const visitors       = 1 + state.saas.marketingStream + investBoost + marketerBoost;
-  const conversion     = 0.05 * state.saas.conversion * state.reputation.multiplier; // 5% base, scaled by reputation
-  const gained         = visitors * conversion;
+  const visitors       = (1 + state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
+  const conversionRate = progressive_wall(state.saas.conversion, 1, 2);
+  const gained         = visitors * conversionRate;
   state.saas.customers += gained;
   state.saas.mrr        = state.saas.price * state.saas.customers;
   // Track peak MRR for milestones (MRR can fluctuate due to churn)
@@ -111,12 +107,6 @@ function applyDailyChurn(state) {
   const churnRate          = 0.02 / effectiveRetention;
   state.saas.customers     = Math.max(0, state.saas.customers - state.saas.customers * churnRate);
   state.saas.mrr           = state.saas.price * state.saas.customers;
-}
-
-// ── Daily ai_marketer reputation ───────────────────────────────
-function applyDailyMarketerRep(state) {
-  const repGain = calcMarketerRepPerDay(state);
-  if (repGain > 0) state.reputation.multiplier += repGain;
 }
 
 // ── Daily Lab billing ──────────────────────────────────────────
@@ -199,18 +189,8 @@ function sampleSeries(state) {
   s.labBurn.push(state.labSpendLifetime);
 }
 
-// ── Milestone checks ───────────────────────────────────────────
-function checkMilestones(state) {
-  for (const track of MILESTONE_TRACKS) {
-    const val = track.getValue(state);
-    for (const step of track.steps) {
-      if (step.autoClaim) continue;
-      if (step.threshold === null) continue;
-      if (state.milestones.claimed[step.id]) continue;
-      if (val >= step.threshold) {
-        if (step.onClaim) step.onClaim(state);
-        state.milestones.claimed[step.id] = true;
-      }
-    }
-  }
+
+// ── Helpers ────────────────────────────────────────────────────
+export function progressive_wall(x, wall_value, half_life) {
+  return ((wall_value * x) / (x + half_life)).toFixed(2);
 }
