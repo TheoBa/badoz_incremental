@@ -9,6 +9,7 @@ import { generateMissions }     from './engine/missions.js';
 import { initDevPanel }         from './ui/dev.js';
 import { initWinScreen }        from './ui/win.js';
 import { initStartScreen }      from './ui/start.js';
+import { refreshLeaderboard }   from './tabs/leaderboard.js';
 
 // ── Load or initialise state ───────────────────────────────────
 const state = load() ?? initState();
@@ -117,6 +118,9 @@ document.querySelectorAll('.tab').forEach(btn => {
       state.saas.price      = CONSTANTS.Saas_Price_T1;
       state.saas.priceRound = 0;
     }
+
+    // leaderboard: refetch fresh standings each time the tab is opened
+    if (btn.dataset.tab === 'leaderboard') refreshLeaderboard();
 
     render(state);
   });

@@ -712,3 +712,68 @@ body {
   border-radius: var(--radius);
 }
 .start-field input:focus { outline: none; border-color: var(--teal); }
+
+/* ── leaderboard tab ─────────────────────────────────────────── */
+.lb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.lb-title { font-size: 12px; font-weight: 600; letter-spacing: .5px; }
+.lb-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 0.5px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.lb-btn:hover { border-color: var(--teal); color: var(--teal); }
+.lb-empty { font-size: 12px; color: var(--text3); padding: 16px 0; font-style: italic; }
+
+.lb-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.lb-table thead th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text2);
+  font-weight: 500;
+  padding: 6px 8px;
+  border-bottom: 0.5px solid var(--border);
+}
+.lb-row { cursor: pointer; border-bottom: 0.5px solid var(--border); }
+.lb-row:hover { background: var(--bg3); }
+.lb-row td { padding: 8px; }
+.lb-rank { color: var(--text2); width: 28px; }
+.lb-name { font-weight: 500; }
+.lb-saas { color: var(--text2); }
+.lb-time { color: var(--teal); font-weight: 500; white-space: nowrap; }
+.lb-date { color: var(--text3); text-align: right; white-space: nowrap; }
+.lb-me { background: #e2f5ee; }
+.lb-me:hover { background: #d6efe5; }
+
+.lb-detail-head { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
+.lb-detail-title { font-size: 14px; font-weight: 600; }
+.lb-detail-by { font-size: 11px; color: var(--text2); font-weight: 400; }
+.lb-detail-meta { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+.lb-chart { margin-bottom: 18px; }
+.lb-chart-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.lb-chart-svg {
+  width: 100%;
+  height: 140px;
+  display: block;
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+}

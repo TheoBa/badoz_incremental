@@ -63,3 +63,61 @@ router.post('/complete', async (req, res) => {
   const id = r[0]?.values[0][0] ?? null;
   res.json({ ok: true, id });
 });
+
+// ── Leaderboard: fastest won runs (dev runs excluded) ──────────
+// NOTE: must be declared before '/:id' so 'leaderboard' isn't captured as an id.
+router.get('/leaderboard', async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
+  const db = await getDb();
+  const result = db.exec(
+    `SELECT id, player_name, saas_name, total_elapsed_ticks, submitted_at, dev_mode
+       FROM runs
+      ORDER BY total_elapsed_ticks ASC
+      LIMIT ${limit}`
+  );
+  const rows = result[0]
+    ? result[0].values.map((v, i) => ({
+        rank: i + 1,
+        id: v[0],
+        player_name: v[1],
+        saas_name: v[2],
+        total_elapsed_ticks: v[3],
+        submitted_at: v[4],
+        dev_mode: v[5],
+      }))
+    : [];
+  res.json({ leaderboard: rows });
+});
+
+// ── Single run detail: series + events for the post-game charts ─
+router.get('/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'bad id' });
+
+  const db = await getDb();
+  const result = db.exec(
+    `SELECT id, player_name, saas_name, total_elapsed_ticks, submitted_at,
+            dev_mode, client_version, series_json, events_json
+       FROM runs WHERE id = ${id}`
+  );
+  const v = result[0]?.values[0];
+  if (!v) return res.status(404).json({ error: 'not found' });
+
+  res.json({
+    run: {
+      id: v[0],
+      player_name: v[1],
+      saas_name: v[2],
+      total_elapsed_ticks: v[3],
+      submitted_at: v[4],
+      dev_mode: v[5],
+      client_version: v[6],
+      series: safeParse(v[7], {}),
+      events: safeParse(v[8], []),
+    },
+  });
+});
+
+function safeParse(json, fallback) {
+  try { return JSON.parse(json); } catch { return fallback; }
+}
