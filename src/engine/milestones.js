@@ -1,9 +1,9 @@
 // milestones.js — milestone track definitions + status helpers
-// Three tracks: money_earned, rcu_gained, lab_burn.
+// Five tracks: money_earned, freelance_missions, rcu_gained, lab_spend, mrr_peak.
 // Each step has a threshold and an optional onClaim() mutator.
 // Status is derived on-the-fly — nothing is stored except state.milestones.claimed[id].
 
-import { CONSTANTS } from './state.js';
+import { MILESTONES, CONSTANTS } from './state.js';
 
 // ── Local formatters (no render.js import — avoids circular deps) ──
 function fmtMoney(n) {
@@ -17,6 +17,10 @@ function fmtRcu(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M RCU';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K RCU';
   return Math.floor(n) + ' RCU';
+}
+
+function fmtMissions(n) {
+  return Math.floor(n) + ' missions';
 }
 
 // ── Milestone track definitions ────────────────────────────────
@@ -37,27 +41,61 @@ export const MILESTONE_TRACKS = [
     barColor: '#1D9E75',
     steps: [
       {
-        id:        'lab_unlock',
-        threshold: CONSTANTS.Lab_Unlock_Money,
-        effect:    'frontier_lab unlocked',
+        id:        'investment_unlock',
+        threshold: MILESTONES.money_tiers.t1,
+        effect:    'investment tab unlocked',
         onClaim:   () => {},
       },
       {
         id:        'price_t1',
-        threshold: CONSTANTS.Price_Round_T1,
+        threshold: MILESTONES.money_tiers.t2,
         effect:    `raise_price → $${CONSTANTS.Saas_Price_T2}/mo unlocked`,
         onClaim:   () => {},  // raise_price is a manual button in saas_product tab
       },
       {
         id:        'price_t2',
-        threshold: CONSTANTS.Price_Round_T2,
+        threshold: MILESTONES.money_tiers.t3,
         effect:    `raise_price → $${CONSTANTS.Saas_Price_T3}/mo unlocked`,
         onClaim:   () => {},  // raise_price is a manual button in saas_product tab
       },
     ],
   },
 
+  // ── freelance_missions ─────────────────────────────────────
+  // Tracks missions completed (rush counts as 2). Drives tier upgrades.
+  {
+    id:       'freelance_missions',
+    label:    'freelance_missions',
+    getValue: (state) => state.freelance?.missionsCompleted ?? 0,
+    fmtValue: fmtMissions,
+    barColor: '#888',
+    steps: [
+      {
+        id:        'freelance_t1',
+        threshold: MILESTONES.freelance_tiers.t1,
+        effect:    'freelance: senior + rush_mode unlocked',
+        onClaim:   (state) => {
+          state.freelance.tier         = 'senior';
+          state.freelance.rushUnlocked = true;
+        },
+      },
+      {
+        id:        'freelance_t2',
+        threshold: MILESTONES.freelance_tiers.t2,
+        effect:    'freelance: lead',
+        onClaim:   (state) => { state.freelance.tier = 'lead'; },
+      },
+      {
+        id:        'freelance_t3',
+        threshold: MILESTONES.freelance_tiers.t3,
+        effect:    'freelance: 10x',
+        onClaim:   (state) => { state.freelance.tier = 'tenmx'; },
+      },
+    ],
+  },
+
   // ── rcu_gained ─────────────────────────────────────────────
+  // Drives lab unlock and ai_support unlock.
   {
     id:       'rcu_gained',
     label:    'rcu_gained',
@@ -66,30 +104,74 @@ export const MILESTONE_TRACKS = [
     barColor: '#888',
     steps: [
       {
-        id:        'freelance_t1',
-        threshold: CONSTANTS.Freelance_RCU_T1,
-        effect:    'freelance: senior',
-        onClaim:   (state) => { state.freelance.tier = 'senior'; },
+        id:        'lab_unlock',
+        threshold: MILESTONES.rcu_tiers.t1,
+        effect:    'frontier_lab unlocked',
+        onClaim:   () => {},
       },
       {
-        id:        'freelance_t2',
-        threshold: CONSTANTS.Freelance_RCU_T2,
-        effect:    'freelance: lead',
-        onClaim:   (state) => { state.freelance.tier = 'lead'; },
+        id:        'ai_support_unlock',
+        threshold: MILESTONES.rcu_tiers.t2,
+        effect:    'ai_support unlocked',
+        onClaim:   (state) => { state.lab.agents.ai_support.unlocked = true; },
       },
       {
-        id:        'freelance_t3',
-        threshold: CONSTANTS.Freelance_RCU_T3,
-        effect:    'freelance: 10x',
-        onClaim:   (state) => { state.freelance.tier = 'tenmx'; },
+        id:            'ai_product_manager',
+        threshold:     MILESTONES.rcu_tiers.t3,
+        hideThreshold: true,
+        effect:        null,    // TBD — teaser
+        onClaim:       null,
       },
     ],
   },
 
-  // ── mrr ────────────────────────────────────────────────────
-  // getValue uses mrrPeak (highest MRR reached) so churn can't un-qualify a milestone
+  // ── lab_spend ─────────────────────────────────────────────
+  // Drives lab plan unlocks. Free plan ($5/d) naturally accumulates labSpendLifetime.
   {
-    id:       'mrr',
+    id:       'lab_spend',
+    label:    'lab_spend',
+    getValue: (state) => state.labSpendLifetime,
+    fmtValue: fmtMoney,
+    barColor: '#c94040',
+    steps: [
+      {
+        id:        'hobbyist_unlock',
+        threshold: MILESTONES.lab_spend_tiers.t1,
+        effect:    'hobbyist plan unlocked',
+        onClaim:   () => {},
+      },
+      {
+        id:        'growth_unlock',
+        threshold: MILESTONES.lab_spend_tiers.t2,
+        effect:    'growth plan unlocked',
+        onClaim:   () => {},
+      },
+      {
+        id:        'scale_unlock',
+        threshold: MILESTONES.lab_spend_tiers.t3,
+        effect:    'scale plan unlocked',
+        onClaim:   () => {},
+      },
+      {
+        id:        'infernal_unlock',
+        threshold: MILESTONES.lab_spend_tiers.t4,
+        effect:    'infernal plan unlocked',
+        onClaim:   () => {},
+      },
+      {
+        id:            'pr_bot',
+        threshold:     MILESTONES.lab_spend_tiers.t5,
+        hideThreshold: true,
+        effect:        null,    // TBD — teaser
+        onClaim:       null,
+      },
+    ],
+  },
+
+  // ── mrr_peak ───────────────────────────────────────────────
+  // getValue uses mrrPeak so churn can't un-qualify a milestone.
+  {
+    id:       'mrr_peak',
     label:    'mrr_peak',
     getValue: (state) => state.saas.mrrPeak ?? state.saas.mrr,
     fmtValue: fmtMoney,
@@ -97,76 +179,28 @@ export const MILESTONE_TRACKS = [
     steps: [
       {
         id:        'mrr_t1',
-        threshold: 50,
-        effect:    'seo_push + dual_monitor + lab hobbyist plan unlocked',
-        onClaim:   () => {},   // gates checked in investment/frontier_lab via milestones.claimed
+        threshold: MILESTONES.mrr_peak_tiers.t1,
+        effect:    'seo_push + press_coverage unlocked',
+        onClaim:   () => {},
       },
       {
         id:        'mrr_t2',
-        threshold: 200,
-        effect:    'press_coverage + ergonomic_workstation + lab growth plan unlocked',
+        threshold: MILESTONES.mrr_peak_tiers.t2,
+        effect:    'launch_on_product_hunt unlocked',
         onClaim:   () => {},
       },
       {
-        id:        'mrr_t3',
-        threshold: 1_000,
-        effect:    'product_hunt + macbook_pro + lab scale plan unlocked',
-        onClaim:   () => {},
-      },
-      {
-        id:        'mrr_t4',
-        threshold: 5_000,
-        effect:    'mac_studio + lab infernal plan unlocked',
-        onClaim:   () => {},
-      },
-      {
-        id:        'mrr_t5',
-        threshold: 20_000,
-        effect:    'cpu_upgrade + gpu_rig unlocked',
-        onClaim:   () => {},
-      },
-    ],
-  },
-
-  // ── lab_burn ───────────────────────────────────────────────
-  {
-    id:       'lab_burn',
-    label:    'lab_burn',
-    getValue: (state) => state.labSpendLifetime,
-    fmtValue: fmtMoney,
-    barColor: '#c94040',
-    steps: [
-      {
-        id:        'lab_m1',
-        threshold: CONSTANTS.Lab_Money_T1,
-        effect:    'ai_support unlocked',
-        onClaim:   (state) => { state.lab.agents.ai_support.unlocked = true; },
-      },
-      {
-        id:        'lab_m2',
-        threshold: CONSTANTS.Lab_Money_T2,
+        id:        'ai_marketer_unlock',
+        threshold: MILESTONES.mrr_peak_tiers.t3,
         effect:    'ai_marketer unlocked',
         onClaim:   (state) => { state.lab.agents.ai_marketer.unlocked = true; },
       },
       {
-        id:        'lab_m3',
-        threshold: CONSTANTS.Lab_Money_T3,
-        effect:    null,    // TBD — teaser
-        onClaim:   null,
-      },
-      {
-        id:             'lab_m4',
-        threshold:      CONSTANTS.Lab_Money_T4,
-        hideThreshold:  true,
-        effect:         null,
-        onClaim:        null,
-      },
-      {
-        id:             'lab_m5',
-        threshold:      CONSTANTS.Lab_Money_T5,
-        hideThreshold:  true,
-        effect:         null,
-        onClaim:        null,
+        id:            'ai_ceo',
+        threshold:     MILESTONES.mrr_peak_tiers.t4,
+        hideThreshold: true,
+        effect:        null,    // TBD — teaser
+        onClaim:       null,
       },
     ],
   },

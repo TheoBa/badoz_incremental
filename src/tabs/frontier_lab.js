@@ -12,6 +12,7 @@
 import {
   LAB_PLANS,
   CONSTANTS,
+  MILESTONES,
   calcModelMinorUpgradeCost,
   calcModelMajorUpgradeCost,
   calcCoderRcuPerHour,
@@ -20,19 +21,19 @@ import {
   calcAgentTieredBonus,
 } from '../engine/state.js';
 
-// ── Plan display order + MRR gates ────────────────────────────
+// ── Plan display order + lab_spend gates ──────────────────────
 const PLAN_ORDER = ['free', 'hobbyist', 'growth', 'scale', 'infernal'];
-// Each paid plan is locked until the corresponding MRR milestone is claimed.
+// Each paid plan is locked until the corresponding lab_spend milestone is claimed.
 const PLAN_GATES = {
-  free:     null,       // always available
-  hobbyist: 'mrr_t1',  // $50 MRR
-  growth:   'mrr_t2',  // $200 MRR
-  scale:    'mrr_t3',  // $1K MRR
-  infernal: 'mrr_t4',  // $5K MRR
+  free:     null,               // always available
+  hobbyist: 'hobbyist_unlock',  // $100 lab spend
+  growth:   'growth_unlock',    // $1K lab spend
+  scale:    'scale_unlock',     // $10K lab spend
+  infernal: 'infernal_unlock',  // $50K lab spend
 };
 
 // ── Agent display config ───────────────────────────────────────
-// Agents are unlocked via the milestones tab (lab_burn track).
+// Agents are unlocked via the milestones tab (rcu_gained / mrr_peak tracks).
 const AGENTS = [
   {
     id:           'ai_coder',
@@ -82,7 +83,7 @@ export function renderFrontierLab(state) {
 
   if (!active) {
     gate.innerHTML =
-      `<div class="lab-locked">claim the $${CONSTANTS.Lab_Unlock_Money} milestone to unlock</div>`;
+      `<div class="lab-locked">claim the ${fmtN(MILESTONES.rcu_tiers.t1)} RCU milestone to unlock</div>`;
     catalog.innerHTML = '';
     document.getElementById('lab-burn').textContent = '';
     return;
@@ -94,6 +95,33 @@ export function renderFrontierLab(state) {
     const agent = state.lab.agents[cfg.id];
     return agentCardHTML(cfg, agent, state);
   }).join('');
+
+  // Pay-per-use section (visible only when constants are balanced)
+  const payPerUseEl = document.getElementById('lab-pay-per-use');
+  if (CONSTANTS.Lab_PayPerUse_Cost !== null && CONSTANTS.Lab_PayPerUse_RCU !== null) {
+    if (!payPerUseEl) {
+      const el = document.createElement('div');
+      el.id        = 'lab-pay-per-use';
+      el.className = 'lab-pay-per-use';
+      catalog.after(el);
+    }
+    const canAfford = state.wallet >= CONSTANTS.Lab_PayPerUse_Cost;
+    document.getElementById('lab-pay-per-use').innerHTML = `
+      <div class="lab-pay-label">pay_per_use</div>
+      <div class="lab-pay-desc">one-shot compute burst · no subscription needed</div>
+      <button class="lab-btn" id="lab-ppu-btn" ${canAfford ? '' : 'disabled'}>
+        [ buy ${fmtN(CONSTANTS.Lab_PayPerUse_RCU)} RCU — ${fmtMoney(CONSTANTS.Lab_PayPerUse_Cost)} ]
+      </button>`;
+    const ppuBtn = document.getElementById('lab-ppu-btn');
+    if (ppuBtn && !ppuBtn.disabled) {
+      ppuBtn.addEventListener('click', () => {
+        onBuyCompute(state);
+        renderFrontierLab(state);
+      });
+    }
+  } else if (payPerUseEl) {
+    payPerUseEl.remove();
+  }
 
   // Wire buttons after innerHTML is set
   AGENTS.forEach(cfg => {
@@ -142,7 +170,7 @@ function lockedCardHTML(cfg, agent, state) {
       </div>
       <div class="lab-agent-desc">${cfg.desc}</div>
       <div class="lab-agent-boost">boost: ${cfg.boost}</div>
-      <div class="lab-pending-note">unlock via lab_burn milestones</div>
+      <div class="lab-pending-note">unlock via milestones</div>
     </div>`;
 }
 
@@ -248,6 +276,17 @@ function onMinorUpgrade(state, agentId) {
   if (state.rcu < cost) return;
   state.rcu -= cost;
   agent.modelMinor++;
+}
+
+function onBuyCompute(state) {
+  const cost = CONSTANTS.Lab_PayPerUse_Cost;
+  const rcu  = CONSTANTS.Lab_PayPerUse_RCU;
+  if (cost === null || rcu === null) return;
+  if (state.wallet < cost) return;
+  state.wallet           -= cost;
+  state.rcu              += rcu;
+  state.rcuLifetime      += rcu;
+  state.labSpendLifetime += cost;
 }
 
 function onMajorUpgrade(state, agentId) {

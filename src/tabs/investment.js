@@ -8,7 +8,7 @@
 // Architecture note: timed boosts do NOT mutate state.saas.marketingStream.
 // tick.js sums active boosts at acquisition time so expiry is a clean array filter.
 
-import { CONSTANTS, calcRcuPerClick } from '../engine/state.js';
+import { CONSTANTS, MILESTONES, calcRcuPerClick } from '../engine/state.js';
 import { fmt, fmtN } from '../ui/render.js';
 
 // ── Category definitions ───────────────────────────────────────
@@ -90,8 +90,8 @@ const CATEGORIES = [
       {
         id:           'press',
         label:        'press_coverage',
-        gate:         (state) => !!state.milestones?.claimed?.mrr_t2,
-        gateLabel:    'mrr_t2',
+        gate:         (state) => !!state.milestones?.claimed?.mrr_t1,
+        gateLabel:    'mrr_t1',
         desc:         'a journalist actually replied · large rep spike',
         cost:         () => CONSTANTS.Invest_Press_Cost,
         effect:       () => `+${CONSTANTS.Invest_Press_Rep.toFixed(2)} rep · permanent`,
@@ -112,8 +112,8 @@ const CATEGORIES = [
       {
         id:        'product_hunt',
         label:     'launch_on_product_hunt',
-        gate:      (state) => !!state.milestones?.claimed?.mrr_t3,
-        gateLabel: 'mrr_t3',
+        gate:      (state) => !!state.milestones?.claimed?.mrr_t2,
+        gateLabel: 'mrr_t2',
         desc:      '#1 product of the day · massive one-time event',
         cost:      () => CONSTANTS.Invest_ProductHunt_Cost,
         effect:    () => `+${CONSTANTS.Invest_ProductHunt_Rep.toFixed(2)} rep · permanent`,
@@ -154,8 +154,6 @@ const CATEGORIES = [
       {
         id:        'gear_t2',
         label:     'dual_monitor_setup',
-        gate:      (state) => !!state.milestones?.claimed?.mrr_t1,
-        gateLabel: 'mrr_t1',
         desc:      'one screen for code, one for docs you never read',
         cost:      () => CONSTANTS.Hardware_Gear_T2_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Gear_T2_RCU} RCU/click`,
@@ -172,8 +170,6 @@ const CATEGORIES = [
       {
         id:        'gear_t3',
         label:     'ergonomic_workstation',
-        gate:      (state) => !!state.milestones?.claimed?.mrr_t2,
-        gateLabel: 'mrr_t2',
         desc:      'standing desk, Herman Miller, the works',
         cost:      () => CONSTANTS.Hardware_Gear_T3_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Gear_T3_RCU} RCU/click`,
@@ -191,8 +187,6 @@ const CATEGORIES = [
       {
         id:        'laptop_t1',
         label:     'macbook_pro_upgrade',
-        gate:      (state) => !!state.milestones?.claimed?.mrr_t3,
-        gateLabel: 'mrr_t3',
         desc:      'M-series chip, finally compiles in under a minute',
         cost:      () => CONSTANTS.Hardware_Laptop_T1_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Laptop_T1_RCU} RCU/click`,
@@ -209,8 +203,6 @@ const CATEGORIES = [
       {
         id:        'laptop_t2',
         label:     'mac_studio',
-        gate:      (state) => !!state.milestones?.claimed?.mrr_t4,
-        gateLabel: 'mrr_t4',
         desc:      'desktop-class silicon · no thermal throttling ever',
         cost:      () => CONSTANTS.Hardware_Laptop_T2_Cost,
         effect:    () => `+${CONSTANTS.Hardware_Laptop_T2_RCU} RCU/click`,
@@ -240,8 +232,6 @@ const CATEGORIES = [
         badge:     (state) => state.investments.hardware.cpuLevel > 0
           ? `lv.${state.investments.hardware.cpuLevel}`
           : null,
-        gate:      (state) => !!state.milestones?.claimed?.mrr_t5,
-        gateLabel: 'mrr_t5',
         available: () => true,
         buy: (state) => {
           const cost = Math.floor(
@@ -268,8 +258,6 @@ const CATEGORIES = [
         badge:     (state) => state.investments.hardware.gpuLevel > 0
           ? `lv.${state.investments.hardware.gpuLevel}`
           : null,
-        gate:      (state) => !!state.milestones?.claimed?.mrr_t5,
-        gateLabel: 'mrr_t5',
         available: () => true,
         buy: (state) => {
           const cost = Math.floor(
@@ -287,7 +275,13 @@ const CATEGORIES = [
 
 // ── Renderer ───────────────────────────────────────────────────
 export function renderInvestment(state) {
-  const panel       = document.getElementById('panel-investment');
+  const panel = document.getElementById('panel-investment');
+
+  if (!state.milestones?.claimed?.investment_unlock) {
+    panel.innerHTML = `<div class="inv-locked">earn $${MILESTONES.money_tiers.t1} lifetime to unlock investments</div>`;
+    return;
+  }
+
   const activeBoost = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   const rcuPerClick = calcRcuPerClick(state);
 
