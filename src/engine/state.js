@@ -280,8 +280,8 @@ export function initState() {
       mrr: 0,
       mrrPeak: 0,       // highest MRR ever reached this run (used for milestones)
       customers: 0,
-      conversion: 1.0,
-      retention: 1.0,
+      conversion: 0,
+      retention: 0,
       marketingStream: 0,
       price: 0,
       priceRound: 0,

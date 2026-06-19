@@ -42,7 +42,7 @@ function renderKpi(state) {
   set('k-rcu',    fmtN(state.rcuLifetime));
   set('k-mrr',    fmt(state.saas.mrr));
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
-  const conversionRate = progressive_wall(state.saas.conversion * state.reputation.multiplier, 100, 2);
+  const conversionRate = progressive_wall(state.saas.conversion, 100, 2);
   set('k-sat',    conversionRate + '%');
   const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state);
   const retentionPct = progressive_wall(effectiveRetention, 100, 5);
@@ -51,7 +51,8 @@ function renderKpi(state) {
     ? 0
     : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   const marketerBoost = calcMarketerMarketingBonus(state);
-  set('k-mkt', fmtN(state.saas.marketingStream + investBoost + marketerBoost) + '/d');
+  const effectiveMkt = (state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
+  set('k-mkt', fmtN(effectiveMkt) + '/d');
   set('k-rep', state.reputation.multiplier.toFixed(2) + '×');
 
   renderHistogram(document.getElementById('hist-earned'), state.history.earned, '#1D9E75');

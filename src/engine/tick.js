@@ -87,12 +87,12 @@ function applyDailyRevenue(state) {
 // ── Daily customer acquisition ─────────────────────────────────
 function applyDailyAcquisition(state) {
   if (state.saas.price === 0) return;
-  // Effective marketing stream = permanent value + active investment boosts + ai_marketer
+  // Effective marketing stream = permanent value + active investment boosts + ai_marketer, scaled by reputation
   const investBoost    = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   const marketerBoost  = calcMarketerMarketingBonus(state);
-  const visitors       = 1 + state.saas.marketingStream + investBoost + marketerBoost;
-  const conversion     = 0.05 * state.saas.conversion * state.reputation.multiplier; // 5% base, scaled by reputation
-  const gained         = visitors * conversion;
+  const visitors       = (1 + state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
+  const conversionRate = progressive_wall(state.saas.conversion, 1, 2);
+  const gained         = visitors * conversionRate;
   state.saas.customers += gained;
   state.saas.mrr        = state.saas.price * state.saas.customers;
   // Track peak MRR for milestones (MRR can fluctuate due to churn)
@@ -189,3 +189,8 @@ function sampleSeries(state) {
   s.labBurn.push(state.labSpendLifetime);
 }
 
+
+// ── Helpers ────────────────────────────────────────────────────
+export function progressive_wall(x, wall_value, half_life) {
+  return ((wall_value * x) / (x + half_life)).toFixed(2);
+}
