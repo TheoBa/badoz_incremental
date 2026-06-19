@@ -20,8 +20,9 @@ export function startTick(state, onTick) {
 }
 
 function tick(state) {
-  // Once the run is won, the game freezes — no more economy or time progression.
-  if (state.won) return;
+  // Frozen until the product is named on the start screen (run hasn't begun),
+  // and again once the run is won — no economy or time progression either way.
+  if (state.won || !state.productName) return;
 
   state.ticksElapsed++;
 

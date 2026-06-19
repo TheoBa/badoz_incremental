@@ -52,6 +52,7 @@ export function initDevPanel(state, renderFn) {
     const amt = Number(document.getElementById('dev-money-amt').value) || 0;
     state.wallet        += amt;
     state.moneyLifetime += amt;
+    state.devModeUsed    = true;  // taint the run so it stays off the leaderboard
     renderFn(state);
   });
 
@@ -59,6 +60,7 @@ export function initDevPanel(state, renderFn) {
     const amt = Number(document.getElementById('dev-rcu-amt').value) || 0;
     state.rcu        += amt;
     state.rcuLifetime += amt;
+    state.devModeUsed  = true;
     renderFn(state);
   });
 

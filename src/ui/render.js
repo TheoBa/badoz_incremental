@@ -10,6 +10,7 @@ import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderMilestones }  from '../tabs/milestones.js';
 import { renderHistogram }   from './histograms.js';
 import { renderWinScreen }   from './win.js';
+import { renderStartScreen } from './start.js';
 import { CONSTANTS, LAB_PLANS } from '../engine/state.js';
 
 export function render(state) {
@@ -17,6 +18,7 @@ export function render(state) {
   renderKpi(state);
   renderActiveTab(state);
   renderWinScreen(state);
+  renderStartScreen(state);
 }
 
 // ── Header ─────────────────────────────────────────────────────

@@ -661,3 +661,54 @@ body {
   letter-spacing: .5px;
 }
 .win-btn:active { opacity: .6; }
+.win-status { font-size: 11px; color: var(--text2); margin-bottom: 12px; min-height: 14px; }
+
+/* ── Start screen overlay ────────────────────────────────────── */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 20, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 10000;
+}
+#start-screen.on { display: flex; }
+.start-card {
+  background: var(--bg);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  width: 340px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+}
+.start-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin: 4px 0 2px;
+}
+.start-sub { font-size: 11px; color: var(--text2); margin-bottom: 20px; }
+.start-field { text-align: left; margin-bottom: 14px; }
+.start-field label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text2);
+  margin-bottom: 5px;
+}
+.start-field input {
+  width: 100%;
+  padding: 9px 11px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+}
+.start-field input:focus { outline: none; border-color: var(--teal); }
