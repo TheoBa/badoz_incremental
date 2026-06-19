@@ -39,6 +39,11 @@ function tick(state) {
     pushHistorySnapshot(state);
   }
 
+  // Analytics sampler — cumulative snapshot every Sample_Every_Ticks
+  if (state.ticksElapsed % CONSTANTS.Sample_Every_Ticks === 0) {
+    sampleSeries(state);
+  }
+
   // Tick down active investment boosts
   tickInvestments(state);
 
@@ -174,7 +179,23 @@ function checkWin(state) {
     state.won        = true;
     state.winTick    = state.ticksElapsed;
     state.runEndedAt = Date.now();
+    // Capture a closing sample so the curves end exactly at the win moment,
+    // even if it fell between daily sampling boundaries.
+    sampleSeries(state);
   }
+}
+
+// ── Analytics series sampler ───────────────────────────────────
+// Appends one cumulative snapshot (tick + lifetime money/RCU/lab-burn).
+// Dedupes on tick so a win landing on a sampling boundary isn't double-counted.
+function sampleSeries(state) {
+  const s = state.series;
+  if (!s) return;
+  if (s.t[s.t.length - 1] === state.ticksElapsed) return;
+  s.t.push(state.ticksElapsed);
+  s.money.push(state.moneyLifetime);
+  s.rcu.push(state.rcuLifetime);
+  s.labBurn.push(state.labSpendLifetime);
 }
 
 // ── Milestone checks ───────────────────────────────────────────

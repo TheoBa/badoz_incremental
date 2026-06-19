@@ -92,6 +92,14 @@ if (state.runStartedAt == null) state.runStartedAt = Date.now();
 if (!('runEndedAt' in state))   state.runEndedAt   = null;
 if (typeof state.won !== 'boolean') state.won       = false;
 if (!('winTick' in state))      state.winTick      = null;
+// Migrate: analytics series + events (old saves predate run-series)
+if (!state.series || !Array.isArray(state.series.t)) {
+  state.series = {
+    sampleEveryTicks: CONSTANTS.Sample_Every_Ticks,
+    t: [0], money: [0], rcu: [0], labBurn: [0],
+  };
+}
+if (!Array.isArray(state.events)) state.events = [];
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
