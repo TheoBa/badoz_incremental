@@ -153,6 +153,18 @@ export const CONSTANTS = {
   Lab_Marketer_Marketing_Base:  2,     // visitors/d at v1.0 on hobbyist
   Lab_Marketer_Marketing_Delta: 1,     // additional visitors/d per minor increment
 
+  // AI Product Manager: output multiplier applied to all 3 existing agents
+  // Formula: 1 + (Mult_Base + totalMinorIncrements × Mult_Delta) × plan.multiplier
+  Lab_ProductMgr_Minor_RCU_Base: 2000,  // unlocks at MILESTONES.rcu_tiers.t3
+  Lab_ProductMgr_Mult_Base:      0.1,   // +10% to all 3 agents at v1.0, free plan
+  Lab_ProductMgr_Mult_Delta:     0.02,  // +2% per minor increment
+
+  // AI CEO: daily reputation gain
+  // Formula: (Rep_Base + totalMinorIncrements × Rep_Delta) × plan.multiplier
+  Lab_Ceo_Minor_RCU_Base: 10000,  // unlocks at MILESTONES.mrr_peak_tiers.t4
+  Lab_Ceo_Rep_Base:        0.01,  // +0.01 reputation/d at v1.0, free plan
+  Lab_Ceo_Rep_Delta:       0.005, // +0.005 rep/d per minor increment
+
   WIN_CONDITION: 1_000_000_000,
 
   // ── Analytics sampling ─────────────────────────────────────────
@@ -268,6 +280,30 @@ export function calcMarketerMarketingBonus(state) {
   return calcAgentTieredBonus(agent, CONSTANTS.Lab_Marketer_Marketing_Base, CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
 }
 
+// ── AI Product Manager helper ──────────────────────────────────
+/**
+ * Output multiplier applied to all 3 existing agents (coder RCU, support retention, marketer marketing).
+ * Returns 1 (no effect) when not unlocked.
+ */
+export function calcProductManagerMultiplier(state) {
+  const agent = state.lab?.agents?.ai_product_manager;
+  if (!agent?.unlocked) return 1;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  return 1 + calcAgentTieredBonus(agent, CONSTANTS.Lab_ProductMgr_Mult_Base, CONSTANTS.Lab_ProductMgr_Mult_Delta) * plan.multiplier;
+}
+
+// ── AI CEO helper ──────────────────────────────────────────────
+/**
+ * Daily reputation.multiplier increment added by ai_ceo.
+ * Returns 0 when not unlocked.
+ */
+export function calcCeoReputationGain(state) {
+  const agent = state.lab?.agents?.ai_ceo;
+  if (!agent?.unlocked) return 0;
+  const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Ceo_Rep_Base, CONSTANTS.Lab_Ceo_Rep_Delta) * plan.multiplier;
+}
+
 // ── Initial state factory ──────────────────────────────────────
 export function initState() {
   return {
@@ -315,9 +351,11 @@ export function initState() {
     // Frontier Lab
     lab: {
       agents: {
-        ai_coder:    { unlocked: true,  tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
-        ai_support:  { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
-        ai_marketer: { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ai_coder:           { unlocked: true,  tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ai_support:         { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ai_marketer:        { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ai_product_manager: { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ai_ceo:             { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
       },
     },
 

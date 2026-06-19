@@ -116,11 +116,10 @@ export const MILESTONE_TRACKS = [
         onClaim:   (state) => { state.lab.agents.ai_support.unlocked = true; },
       },
       {
-        id:            'ai_product_manager',
-        threshold:     MILESTONES.rcu_tiers.t3,
-        hideThreshold: true,
-        effect:        null,    // TBD — teaser
-        onClaim:       null,
+        id:        'ai_product_manager',
+        threshold: MILESTONES.rcu_tiers.t3,
+        effect:    'ai_product_manager unlocked',
+        onClaim:   (state) => { state.lab.agents.ai_product_manager.unlocked = true; },
       },
     ],
   },
@@ -196,11 +195,10 @@ export const MILESTONE_TRACKS = [
         onClaim:   (state) => { state.lab.agents.ai_marketer.unlocked = true; },
       },
       {
-        id:            'ai_ceo',
-        threshold:     MILESTONES.mrr_peak_tiers.t4,
-        hideThreshold: true,
-        effect:        null,    // TBD — teaser
-        onClaim:       null,
+        id:        'ai_ceo',
+        threshold: MILESTONES.mrr_peak_tiers.t4,
+        effect:    'ai_ceo unlocked',
+        onClaim:   (state) => { state.lab.agents.ai_ceo.unlocked = true; },
       },
     ],
   },
