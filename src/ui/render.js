@@ -8,6 +8,7 @@ import { renderInvestment }  from '../tabs/investment.js';
 import { renderFrontierLab } from '../tabs/frontier_lab.js';
 import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderMilestones }  from '../tabs/milestones.js';
+import { renderLeaderboard } from '../tabs/leaderboard.js';
 import { renderHistogram }   from './histograms.js';
 import { renderWinScreen }   from './win.js';
 import { renderStartScreen } from './start.js';
@@ -72,6 +73,7 @@ function renderActiveTab(state) {
     case 'frontier_lab': renderFrontierLab(state); break;
     case 'post_on_x':    renderPostOnX(state);     break;
     case 'milestones':   renderMilestones(state);  break;
+    case 'leaderboard':  renderLeaderboard();       break;
   }
 }
 
