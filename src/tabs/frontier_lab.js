@@ -17,6 +17,7 @@ import {
   calcCoderRcuPerHour,
   calcSupportRetentionBonus,
   calcMarketerMarketingBonus,
+  calcAgentTieredBonus,
 } from '../engine/state.js';
 
 // ── Plan display order + MRR gates ────────────────────────────
@@ -34,25 +35,28 @@ const PLAN_GATES = {
 // Agents are unlocked via the milestones tab (lab_burn track).
 const AGENTS = [
   {
-    id:      'ai_coder',
-    label:   'ai_coder',
-    desc:    'Writes code so you don\'t have to. Mostly correct.',
-    boost:   'passive_rcu/h',
-    showRcu: true, // display live passive_rcu/h on card
+    id:           'ai_coder',
+    label:        'ai_coder',
+    desc:         'Writes code so you don\'t have to. Mostly correct.',
+    boost:        'passive_rcu/h',
+    showRcu:      true,
+    minorRcuBase: CONSTANTS.Lab_Coder_Minor_RCU_Base,
   },
   {
-    id:      'ai_support',
-    label:   'ai_support',
-    desc:    'Handles tickets. Rarely gaslights customers.',
-    boost:   'customer_retention',
-    showRcu: false,
+    id:           'ai_support',
+    label:        'ai_support',
+    desc:         'Handles tickets. Rarely gaslights customers.',
+    boost:        'customer_retention',
+    showRcu:      false,
+    minorRcuBase: CONSTANTS.Lab_Support_Minor_RCU_Base,
   },
   {
-    id:      'ai_marketer',
-    label:   'ai_marketer',
-    desc:    'Posts everywhere simultaneously. Results may include virality. Or controversy.',
-    boost:   'marketing_stream + reputation/d',
-    showRcu: false,
+    id:           'ai_marketer',
+    label:        'ai_marketer',
+    desc:         'Posts everywhere simultaneously. Results may include virality. Or controversy.',
+    boost:        'marketing_stream + reputation/d',
+    showRcu:      false,
+    minorRcuBase: CONSTANTS.Lab_Marketer_Minor_RCU_Base,
   },
 ];
 
@@ -153,7 +157,7 @@ function activeCardHTML(cfg, agent, state) {
   let upgradeHTML;
   if (!atMajorGate) {
     // Minor increment: RCU cost
-    const cost       = calcModelMinorUpgradeCost(agent);
+    const cost       = calcModelMinorUpgradeCost(agent, cfg.minorRcuBase);
     const canAfford  = state.rcu >= cost;
     const nextMinor  = `v${agent.modelMajor}.${agent.modelMinor + 1}`;
     upgradeHTML = `
@@ -239,7 +243,8 @@ function onSetPlan(state, agentId, planId) {
 function onMinorUpgrade(state, agentId) {
   const agent = state.lab.agents[agentId];
   if (agent.modelMinor >= 9) return;  // use major upgrade instead
-  const cost = calcModelMinorUpgradeCost(agent);
+  const cfg  = AGENTS.find(a => a.id === agentId);
+  const cost = calcModelMinorUpgradeCost(agent, cfg.minorRcuBase);
   if (state.rcu < cost) return;
   state.rcu -= cost;
   agent.modelMinor++;
@@ -266,14 +271,12 @@ function calcDailyBurn(state) {
 // Free plan uses multiplier 1, providing the baseline floor.
 function calcSupportRetentionBonusForAgent(agent) {
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const n = (agent.modelMajor - 1) * 9 + agent.modelMinor;
-  return (CONSTANTS.Lab_Support_Retention_Base + n * CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
+  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Support_Retention_Base, CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
 }
 
 function calcMarketerMarketingBonusForAgent(agent) {
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const n = (agent.modelMajor - 1) * 9 + agent.modelMinor;
-  return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
+  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Marketer_Marketing_Base, CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
 }
 
 function fmtMoney(n) {

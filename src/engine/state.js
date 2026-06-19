@@ -108,9 +108,12 @@ export const CONSTANTS = {
   Lab_Unlock_Money: 100,           // moneyLifetime threshold before tab becomes active
 
   // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
-  // Formula: floor(Minor_RCU_Base × Minor_Scale^totalMinorIncrements)
-  Lab_Model_Minor_RCU_Base: 20,   // base RCU cost for first minor increment
-  Lab_Model_Minor_Scale:    1.3,  // exponential scale per total minor increment
+  // Formula: floor(agentMinorRcuBase × Minor_Scale^totalMinorIncrements)
+  // Each agent has its own base cost — later-unlocking agents start more expensive.
+  Lab_Coder_Minor_RCU_Base:    20,   // ai_coder — available from run start
+  Lab_Support_Minor_RCU_Base:  100,  // ai_support — unlocks after Lab_Money_T1
+  Lab_Marketer_Minor_RCU_Base: 500,  // ai_marketer — unlocks after Lab_Money_T2
+  Lab_Model_Minor_Scale:       1.3,  // exponential scale per total minor increment
 
   // Model version — major release (vX.9 → v(X+1).0) costs money
   // Formula: floor(Major_Money_Base × Major_Money_Scale^(modelMajor - 1))
@@ -185,11 +188,24 @@ export function calcModelTotalMinorIncrements(agent) {
 
 /**
  * RCU cost for the next minor increment on this agent.
- * Formula: floor(Minor_RCU_Base × Minor_Scale^totalMinorIncrements)
+ * Formula: floor(minorRcuBase × Minor_Scale^totalMinorIncrements)
+ * minorRcuBase differs per agent (Lab_Coder/Support/Marketer_Minor_RCU_Base).
  */
-export function calcModelMinorUpgradeCost(agent) {
+export function calcModelMinorUpgradeCost(agent, minorRcuBase) {
   const n = calcModelTotalMinorIncrements(agent);
-  return Math.floor(CONSTANTS.Lab_Model_Minor_RCU_Base * Math.pow(CONSTANTS.Lab_Model_Minor_Scale, n));
+  return Math.floor(minorRcuBase * Math.pow(CONSTANTS.Lab_Model_Minor_Scale, n));
+}
+
+/**
+ * Per-minor-increment output bonus with major-version doubling.
+ * The effective delta per minor doubles with each major: delta × 2^(major-1).
+ * Completed major versions contribute their full 9 increments at that era's delta.
+ * Formula: base + 9×delta×(2^(major-1) − 1) + minor×delta×2^(major-1)
+ */
+export function calcAgentTieredBonus(agent, base, delta) {
+  const majorMult  = Math.pow(2, agent.modelMajor - 1);
+  const prevMajors = 9 * delta * (majorMult - 1);
+  return base + prevMajors + agent.modelMinor * delta * majorMult;
 }
 
 /**
@@ -208,8 +224,7 @@ export function calcModelMajorUpgradeCost(agent) {
  * Multiply by plan.multiplier in tick/render. Free plan (mult 1) gives the baseline floor.
  */
 export function calcCoderRcuPerHour(agent) {
-  const n = calcModelTotalMinorIncrements(agent);
-  return CONSTANTS.Lab_Coder_RCU_Base + n * CONSTANTS.Lab_Coder_RCU_Delta;
+  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Coder_RCU_Base, CONSTANTS.Lab_Coder_RCU_Delta);
 }
 
 // ── AI Support helper ──────────────────────────────────────────
@@ -221,8 +236,7 @@ export function calcSupportRetentionBonus(state) {
   const agent = state.lab?.agents?.ai_support;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const n    = calcModelTotalMinorIncrements(agent);
-  return (CONSTANTS.Lab_Support_Retention_Base + n * CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
+  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Support_Retention_Base, CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
 }
 
 // ── AI Marketer helpers ────────────────────────────────────────
@@ -234,8 +248,7 @@ export function calcMarketerMarketingBonus(state) {
   const agent = state.lab?.agents?.ai_marketer;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const n    = calcModelTotalMinorIncrements(agent);
-  return (CONSTANTS.Lab_Marketer_Marketing_Base + n * CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
+  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Marketer_Marketing_Base, CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
 }
 
 // ── Initial state factory ──────────────────────────────────────
