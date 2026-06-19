@@ -133,6 +133,11 @@ export const CONSTANTS = {
   Lab_Marketer_Rep_Per_Day:     0.001, // reputation.multiplier += this per day (× plan.mult)
 
   WIN_CONDITION: 1_000_000_000,
+
+  // ── Analytics sampling ─────────────────────────────────────────
+  // How often (in ticks) the run-series sampler records a cumulative snapshot.
+  // 24 = once per in-game day. ~600 samples for a ~4h run (~20 KB payload).
+  Sample_Every_Ticks: 24,
 };
 
 // ── Frontier Lab plan definitions ──────────────────────────────
@@ -339,6 +344,21 @@ export function initState() {
     milestones: {
       claimed: {},  // { [stepId]: true } for every claimed step
     },
+
+    // Post-game analytics — cumulative time series, sampled every
+    // Sample_Every_Ticks. Seeded with a t=0 origin point so charts start clean.
+    // Submitted whole at run completion (see plan/v0-release.md).
+    series: {
+      sampleEveryTicks: CONSTANTS.Sample_Every_Ticks,
+      t:       [0],
+      money:   [0],
+      rcu:     [0],
+      labBurn: [0],
+    },
+
+    // Timeline event markers overlaid on the analytics charts.
+    // v0: only manual raise_price events { tick, type, from, to }.
+    events: [],
 
     // RCU/h sliding window — last 10 ticks (1 tick = 1 in-game hour)
     // Each entry = total RCU gained that tick (passive + clicks).

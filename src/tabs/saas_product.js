@@ -146,8 +146,16 @@ function onRaisePrice(state) {
   const tiers = PRICE_TIERS();
   if (state.saas.priceRound >= tiers.length - 1) return;
 
+  const fromPrice = tiers[state.saas.priceRound];
   state.saas.priceRound++;
   state.saas.price        = tiers[state.saas.priceRound];
+  // Analytics: record the manual raise as a timeline marker for the post-game charts
+  (state.events ??= []).push({
+    tick: state.ticksElapsed,
+    type: 'raise_price',
+    from: fromPrice,
+    to:   state.saas.price,
+  });
   // Demand shock: flat negative pressure on conversion and retention
   state.saas.conversion   = Math.max(0.1, state.saas.conversion - CONSTANTS.Saas_Price_Shock_Conversion);
   state.saas.retention    = Math.max(0.1, state.saas.retention    - CONSTANTS.Saas_Price_Shock_Retention);
