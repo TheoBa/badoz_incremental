@@ -7,6 +7,8 @@ import {
   calcCoderRcuPerHour,
   calcSupportRetentionBonus,
   calcMarketerMarketingBonus,
+  calcProductManagerMultiplier,
+  calcCeoReputationGain,
 } from './state.js';
 import { generateMissions } from './missions.js';
 
@@ -33,6 +35,7 @@ function tick(state) {
     applyDailyChurn(state);
     applyDailyRevenue(state);
     applyDailyLabBilling(state);
+    applyDailyCeoReputation(state);
     refreshFreelanceMissions(state);
     pushHistorySnapshot(state);
   }
@@ -67,7 +70,8 @@ function applyLabAgents(state) {
 
   // Free plan (multiplier 1) provides the baseline floor; paid plans scale above that
   const plan       = LAB_PLANS[coder.tier] ?? LAB_PLANS.free;
-  const rcuPerHour = calcCoderRcuPerHour(coder) * plan.multiplier;
+  const pmMult     = calcProductManagerMultiplier(state);
+  const rcuPerHour = calcCoderRcuPerHour(coder) * plan.multiplier * pmMult;
 
   // 1 tick = 1 in-game hour
   state.rcu            += rcuPerHour;
@@ -89,7 +93,7 @@ function applyDailyAcquisition(state) {
   if (state.saas.price === 0) return;
   // Effective marketing stream = permanent value + active investment boosts + ai_marketer, scaled by reputation
   const investBoost    = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
-  const marketerBoost  = calcMarketerMarketingBonus(state);
+  const marketerBoost  = calcMarketerMarketingBonus(state) * calcProductManagerMultiplier(state);
   const visitors       = (1 + state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
   const conversionRate = progressive_wall(state.saas.conversion, 1, 2);
   const gained         = visitors * conversionRate;
@@ -102,8 +106,8 @@ function applyDailyAcquisition(state) {
 // ── Daily churn ────────────────────────────────────────────────
 function applyDailyChurn(state) {
   if (state.saas.customers < 1) return;
-  // 2% daily base churn, reduced by retention (+ ai_support bonus)
-  const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state);
+  // 2% daily base churn, reduced by retention (+ ai_support bonus scaled by PM)
+  const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state) * calcProductManagerMultiplier(state);
   const churnRate          = 0.02 / effectiveRetention;
   state.saas.customers     = Math.max(0, state.saas.customers - state.saas.customers * churnRate);
   state.saas.mrr           = state.saas.price * state.saas.customers;
@@ -111,6 +115,7 @@ function applyDailyChurn(state) {
 
 // ── Daily Lab billing ──────────────────────────────────────────
 function applyDailyLabBilling(state) {
+  if (!state.milestones?.claimed?.lab_unlock) return;
   // Apply plan changes queued from previous day
   for (const agent of Object.values(state.lab.agents)) {
     if (agent.pendingTier != null) {
@@ -129,6 +134,12 @@ function applyDailyLabBilling(state) {
     state.wallet           -= totalCost;
     state.labSpendLifetime += totalCost;
   }
+}
+
+// ── Daily CEO reputation gain ──────────────────────────────────
+function applyDailyCeoReputation(state) {
+  const gain = calcCeoReputationGain(state);
+  if (gain > 0) state.reputation.multiplier += gain;
 }
 
 // ── Freelance mission refresh ──────────────────────────────────

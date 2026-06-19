@@ -18,6 +18,8 @@ import {
   calcCoderRcuPerHour,
   calcSupportRetentionBonus,
   calcMarketerMarketingBonus,
+  calcProductManagerMultiplier,
+  calcCeoReputationGain,
   calcAgentTieredBonus,
 } from '../engine/state.js';
 
@@ -58,6 +60,22 @@ const AGENTS = [
     boost:        'marketing_stream + reputation/d',
     showRcu:      false,
     minorRcuBase: CONSTANTS.Lab_Marketer_Minor_RCU_Base,
+  },
+  {
+    id:           'ai_product_manager',
+    label:        'ai_product_manager',
+    desc:         'Syncs all agents into a single coherent vision. Occasionally.',
+    boost:        'all_agent_output ×mult',
+    showRcu:      false,
+    minorRcuBase: CONSTANTS.Lab_ProductMgr_Minor_RCU_Base,
+  },
+  {
+    id:           'ai_ceo',
+    label:        'ai_ceo',
+    desc:         'Sets the vision. Attends the offsites. Ships the deck.',
+    boost:        'reputation/d',
+    showRcu:      false,
+    minorRcuBase: CONSTANTS.Lab_Ceo_Minor_RCU_Base,
   },
 ];
 
@@ -243,6 +261,12 @@ function activeCardHTML(cfg, agent, state) {
   } else if (cfg.id === 'ai_marketer') {
     const mkt = calcMarketerMarketingBonusForAgent(agent);
     boostLine = `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b>`;
+  } else if (cfg.id === 'ai_product_manager') {
+    const mult = calcProductManagerMultiplier(state);
+    boostLine = `all_agents: <b class="teal">×${mult.toFixed(2)}</b>`;
+  } else if (cfg.id === 'ai_ceo') {
+    const rep = calcCeoReputationGain(state);
+    boostLine = `reputation/d: <b class="teal">+${rep.toFixed(3)}</b>`;
   } else {
     boostLine = `boost: ${cfg.boost}`;
   }
