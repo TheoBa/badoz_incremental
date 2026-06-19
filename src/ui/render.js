@@ -12,7 +12,7 @@ import { renderLeaderboard } from '../tabs/leaderboard.js';
 import { renderHistogram }   from './histograms.js';
 import { renderWinScreen }   from './win.js';
 import { renderStartScreen } from './start.js';
-import { CONSTANTS, LAB_PLANS } from '../engine/state.js';
+import { CONSTANTS, LAB_PLANS, calcSupportRetentionBonus, calcMarketerMarketingBonus } from '../engine/state.js';
 
 export function render(state) {
   renderHeader(state);
@@ -44,12 +44,14 @@ function renderKpi(state) {
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
   const conversionRate = progressive_wall(state.saas.conversion * state.reputation.multiplier, 100, 2);
   set('k-sat',    conversionRate + '%');
-  const retentionPct = progressive_wall(state.saas.retention, 100, 5);
+  const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state);
+  const retentionPct = progressive_wall(effectiveRetention, 100, 5);
   set('k-ret',    retentionPct + '%');
   const investBoost = Array.isArray(state.investments)
     ? 0
     : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
-  set('k-mkt', fmtN(state.saas.marketingStream + investBoost) + '/d');
+  const marketerBoost = calcMarketerMarketingBonus(state);
+  set('k-mkt', fmtN(state.saas.marketingStream + investBoost + marketerBoost) + '/d');
   set('k-rep', state.reputation.multiplier.toFixed(2) + '×');
 
   renderHistogram(document.getElementById('hist-earned'), state.history.earned, '#1D9E75');
