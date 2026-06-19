@@ -38,8 +38,10 @@ function renderHeader(state) {
 
 // ── KPI sidebar ────────────────────────────────────────────────
 function renderKpi(state) {
-  set('k-earned', fmt(state.moneyLifetime));
-  set('k-rcu',    fmtN(state.rcuLifetime));
+  const lastEarned = state.history.earned.at(-1) ?? 0;
+  const lastRcu    = state.history.rcu.at(-1)    ?? 0;
+  set('k-earned', fmt(lastEarned) + '/d');
+  set('k-rcu',    fmtN(lastRcu)  + '/d');
   set('k-mrr',    fmt(state.saas.mrr));
   set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
   const conversionRate = progressive_wall(state.saas.conversion, 100, 2);
