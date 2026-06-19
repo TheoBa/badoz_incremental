@@ -9,7 +9,6 @@ import {
   calcMarketerMarketingBonus,
 } from './state.js';
 import { generateMissions } from './missions.js';
-import { MILESTONE_TRACKS } from './milestones.js';
 
 export function startTick(state, onTick) {
   setInterval(() => {
@@ -51,7 +50,6 @@ function tick(state) {
     state.reputation.postCooldownTicks--;
   }
 
-  checkMilestones(state);
   checkWin(state);
 
   // Sliding window for RCU/h display — push this tick's total, keep last 10
@@ -63,7 +61,7 @@ function tick(state) {
 
 // ── Agent passive effects ──────────────────────────────────────
 function applyLabAgents(state) {
-  if (state.moneyLifetime < CONSTANTS.Lab_Unlock_Money) return;
+  if (!state.milestones?.claimed?.lab_unlock) return;
   const coder = state.lab.agents.ai_coder;
   if (!coder.unlocked) return;
 
@@ -191,18 +189,3 @@ function sampleSeries(state) {
   s.labBurn.push(state.labSpendLifetime);
 }
 
-// ── Milestone checks ───────────────────────────────────────────
-function checkMilestones(state) {
-  for (const track of MILESTONE_TRACKS) {
-    const val = track.getValue(state);
-    for (const step of track.steps) {
-      if (step.autoClaim) continue;
-      if (step.threshold === null) continue;
-      if (state.milestones.claimed[step.id]) continue;
-      if (val >= step.threshold) {
-        if (step.onClaim) step.onClaim(state);
-        state.milestones.claimed[step.id] = true;
-      }
-    }
-  }
-}

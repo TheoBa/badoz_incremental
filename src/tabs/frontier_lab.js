@@ -72,13 +72,13 @@ export function renderFrontierLab(state) {
     panel._built = true;
   }
 
-  const active  = state.moneyLifetime >= CONSTANTS.Lab_Unlock_Money;
+  const active  = !!state.milestones?.claimed?.lab_unlock;
   const gate    = document.getElementById('lab-gate');
   const catalog = document.getElementById('lab-catalog');
 
   if (!active) {
     gate.innerHTML =
-      `<div class="lab-locked">unlocked at ${fmtMoney(CONSTANTS.Lab_Unlock_Money)} earned</div>`;
+      `<div class="lab-locked">claim the $${CONSTANTS.Lab_Unlock_Money} milestone to unlock</div>`;
     catalog.innerHTML = '';
     document.getElementById('lab-burn').textContent = '';
     return;
