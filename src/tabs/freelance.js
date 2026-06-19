@@ -3,11 +3,9 @@
 // Accepting a mission costs RCU and pays money instantly.
 //
 // Rush mechanic:
-//   - Available only after claiming the freelance_t1 milestone (senior tier)
-//   - One-time unlock costs Freelance_RCU_T1 RCU (from current pool)
-//   - When unlocked: "rush ×2" button accepts mission at 2× RCU cost for 2× reward
+//   - Unlocks automatically when the freelance_t1 milestone is claimed (senior tier)
+//   - "rush ×2" button accepts at 2× RCU cost for 2× reward; counts as 2 missions completed
 
-import { CONSTANTS } from '../engine/state.js';
 import { fmtN, fmt } from '../ui/render.js';
 
 export function renderFreelance(state) {
@@ -30,7 +28,7 @@ export function renderFreelance(state) {
       ${state.freelance.missions.map(m => missionCard(m, state, seniorClaimed, rushUnlocked)).join('')}
     </div>
 
-    ${seniorClaimed && !rushUnlocked ? rushUnlockSection(state) : ''}`;
+    `;
 
   // Wire accept buttons
   state.freelance.missions.forEach(m => {
@@ -55,14 +53,6 @@ export function renderFreelance(state) {
     }
   });
 
-  // Wire rush unlock button
-  const unlockBtn = document.getElementById('fl-rush-unlock-btn');
-  if (unlockBtn && !unlockBtn.disabled) {
-    unlockBtn.addEventListener('click', () => {
-      onUnlockRush(state);
-      renderFreelance(state);
-    });
-  }
 }
 
 function missionCard(m, state, seniorClaimed, rushUnlocked) {
@@ -103,20 +93,6 @@ function missionCard(m, state, seniorClaimed, rushUnlocked) {
     </div>`;
 }
 
-function rushUnlockSection(state) {
-  const cost      = CONSTANTS.Freelance_RCU_T1;
-  const canAfford = state.rcu >= cost;
-  return `
-    <div class="fl-rush-unlock">
-      <div class="fl-rush-label">rush_mode</div>
-      <div class="fl-rush-desc">one-time unlock · doubles reward and RCU cost on any mission</div>
-      <button id="fl-rush-unlock-btn" class="fl-btn fl-btn-rush-unlock" ${canAfford ? '' : 'disabled'}>
-        [ unlock rush — ${fmtN(cost)} RCU ]
-      </button>
-      ${!canAfford ? `<div class="fl-rush-hint">need ${fmtN(cost)} RCU · current: ${fmtN(state.rcu)}</div>` : ''}
-    </div>`;
-}
-
 // ── Action handlers ────────────────────────────────────────────
 function onAcceptMission(state, missionId, isRush) {
   const mission = state.freelance.missions.find(m => m.id === missionId);
@@ -130,16 +106,9 @@ function onAcceptMission(state, missionId, isRush) {
   state.wallet        += reward;
   state.moneyLifetime += reward;
   mission.accepted     = true;
+  state.freelance.missionsCompleted = (state.freelance.missionsCompleted ?? 0) + (isRush ? 2 : 1);
 
   // Immediate header updates
   document.getElementById('h-rcu').textContent    = fmtN(state.rcu);
   document.getElementById('h-wallet').textContent = fmt(state.wallet);
-}
-
-function onUnlockRush(state) {
-  const cost = CONSTANTS.Freelance_RCU_T1;
-  if (state.rcu < cost || state.freelance.rushUnlocked) return;
-  state.rcu -= cost;
-  state.freelance.rushUnlocked = true;
-  document.getElementById('h-rcu').textContent = fmtN(state.rcu);
 }

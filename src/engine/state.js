@@ -54,28 +54,17 @@ export const CONSTANTS = {
   Freelance_Money_Mult_T3: 8,
   Freelance_Money_Mult_T4: 10,
 
-  // ── Milestone thresholds ─────────────────────────────────────
-  Freelance_RCU_T1: 500,      // lifetime RCU → Senior tier
-  Freelance_RCU_T2: 50_000,    // lifetime RCU → Lead tier
-  Freelance_RCU_T3: 500_000,   // lifetime RCU → 10x tier
-
-  Lab_Money_T1: 100,        // cumulative Lab spend → ai_support unlocked
-  Lab_Money_T2: 1_000,       // → ai_marketer unlocked
-  Lab_Money_T3: 5_000,       // → TBD (teaser)
-  Lab_Money_T4: 10_000,      // → TBD (teaser)
-  Lab_Money_T5: 50_000,      // → TBD (teaser)
-  Lab_Money_T6: 100_000,         // → PR Bot agent
-  Lab_Money_T7: 200_000,         // → Product Manager agent
-  Lab_Money_T8: 500_000,         // → Growth loops
-  Lab_Money_T9: 1_000_000,         // → AI CEO mode
-
   // Subscription price tiers (auto-set on saas_product tab discovery; one-way raises)
   Saas_Price_T1: 10,           // initial price, set on first tab visit
-  Saas_Price_T2: 100,          // unlocks at Price_Round_T1 milestone
-  Saas_Price_T3: 1000,         // unlocks at Price_Round_T2 milestone
+  Saas_Price_T2: 100,          // unlocks at MILESTONES.money_tiers.t2 milestone
+  Saas_Price_T3: 1000,         // unlocks at MILESTONES.money_tiers.t3 milestone
 
-  Price_Round_T1: 50_000,      // lifetime earned → raise to $10/mo
-  Price_Round_T2: 1_000_000,    // lifetime earned → raise to $100/mo
+  // ── Frontier Lab pay-per-use ──────────────────────────────────
+  // One-shot compute purchase available on the free plan.
+  // Deducts money, grants RCU, increments labSpendLifetime.
+  // Leave null until balancing pass sets deliberate values.
+  Lab_PayPerUse_Cost: null,   // money cost per session
+  Lab_PayPerUse_RCU:  null,   // RCU granted per session
 
   // ── Ship feature upgrade curves ───────────────────────────────
   // Base RCU cost of the first upgrade in each track
@@ -135,14 +124,12 @@ export const CONSTANTS = {
   Saas_Price_Shock_Retention:    1.5,  // flat decrease to retention
 
   // ── Frontier Lab ───────────────────────────────────────────────
-  Lab_Unlock_Money: 100,           // moneyLifetime threshold before tab becomes active
-
   // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
   // Formula: floor(agentMinorRcuBase × Minor_Scale^totalMinorIncrements)
   // Each agent has its own base cost — later-unlocking agents start more expensive.
   Lab_Coder_Minor_RCU_Base:    20,   // ai_coder — available from run start
-  Lab_Support_Minor_RCU_Base:  100,  // ai_support — unlocks after Lab_Money_T1
-  Lab_Marketer_Minor_RCU_Base: 500,  // ai_marketer — unlocks after Lab_Money_T2
+  Lab_Support_Minor_RCU_Base:  100,  // ai_support — unlocks at MILESTONES.rcu_tiers.t2
+  Lab_Marketer_Minor_RCU_Base: 500,  // ai_marketer — unlocks at MILESTONES.mrr_peak_tiers.t3
   Lab_Model_Minor_Scale:       1.3,  // exponential scale per total minor increment
 
   // Model version — major release (vX.9 → v(X+1).0) costs money
@@ -319,9 +306,10 @@ export function initState() {
 
     // Freelance
     freelance: {
-      tier: 'junior',       // junior | senior | lead | tenmx
+      tier: 'junior',             // junior | senior | lead | tenmx
       missions: [],
       rushUnlocked: false,
+      missionsCompleted: 0,       // increments on accept (rush counts as 2)
     },
 
     // Frontier Lab
