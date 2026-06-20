@@ -61,13 +61,13 @@
         <div class="hist" id="hist-rcu"></div>
       </div>
 
-      <div class="km">
+      <div class="km" id="km-mrr">
         <div class="km-head"><span class="dot" style="background:#378ADD"></span>MRR</div>
         <div class="km-val" style="color:#378ADD" id="k-mrr">$0</div>
         <div class="hist" id="hist-mrr"></div>
       </div>
 
-      <div class="km">
+      <div class="km" id="km-burn">
         <div class="km-head"><span class="dot" style="background:#c94040"></span>daily burn</div>
         <div class="km-val burn" id="k-burn">$0/d</div>
         <div class="hist" id="hist-burn"></div>
@@ -78,7 +78,11 @@
         <div class="sr"><span class="teal">conversion_rate</span><b id="k-sat">1.00</b></div>
         <div class="sr"><span class="blue">retention</span><b id="k-ret">1.00</b></div>
         <div class="sr"><span class="amber">mkt_stream</span><b id="k-mkt">0/d</b></div>
-        <div class="sr"><span>reputation</span><b id="k-rep">1.00×</b></div>
+      </div>
+
+      <div id="kpi-reputation">
+        <div class="kpi-label" style="margin-top:10px">reputation</div>
+        <div class="sr"><span>multiplier</span><b id="k-rep">1.00×</b></div>
       </div>
 
       <div id="kpi-run-info" style="display:none">

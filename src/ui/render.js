@@ -92,9 +92,19 @@ function renderKpi(state) {
   renderHistogram(document.getElementById('hist-mrr'),    state.history.mrr,    '#378ADD');
   renderHistogram(document.getElementById('hist-burn'),   state.history.burn,   '#c94040');
 
-  // Run info only visible after at least one completed run
+  // Run info only visible once the leaderboard is unlocked (first win)
   document.getElementById('kpi-run-info').style.display =
-    state.runCount > 0 ? 'block' : 'none';
+    state._leaderboardUnlocked ? 'block' : 'none';
+
+  // MRR + saas_properties only once saas_product is unlocked
+  const saasUnlocked = (state.freelance.missionsCompleted ?? 0) >= MILESTONES.freelance_tiers.t0;
+  const saasDisplay  = saasUnlocked ? '' : 'none';
+  document.getElementById('km-mrr').style.display    = saasDisplay;
+  document.getElementById('kpi-props').style.display = saasDisplay;
+
+  // Daily burn only once frontier_lab is unlocked
+  const labUnlocked = !!state.milestones?.claimed?.lab_unlock;
+  document.getElementById('km-burn').style.display = labUnlocked ? '' : 'none';
 }
 
 // ── Tab dispatcher ──────────────────────────────────────────────
