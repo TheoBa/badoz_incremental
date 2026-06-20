@@ -11,7 +11,7 @@
 //   - Each track shows the next purchasable upgrade; costs scale as baseCost × Scale^level
 //   - Buying mutates state.saas.* directly and records purchase in state.upgrades.*
 
-import { CONSTANTS } from '../engine/state.js';
+import { CONSTANTS, MILESTONES } from '../engine/state.js';
 import { fmt, fmtN } from '../ui/render.js';
 
 // ── Track metadata (colors match CLAUDE.md color coding) ───────
@@ -56,6 +56,12 @@ const PRICE_CLAIM_IDS = ['price_t1', 'price_t2'];  // milestone step IDs per rou
 // ── Renderer ───────────────────────────────────────────────────
 export function renderSaasProduct(state) {
   const panel = document.getElementById('panel-saas_product');
+
+  if ((state.freelance.missionsCompleted ?? 0) < MILESTONES.freelance_tiers.t0) {
+    panel.innerHTML = `<div class="locked-msg">// complete ${MILESTONES.freelance_tiers.t0} freelance missions to unlock</div>`;
+    return;
+  }
+
   const tiers = PRICE_TIERS();
   const round = state.saas.priceRound;
 

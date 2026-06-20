@@ -11,9 +11,11 @@ import { save }             from './save.js';
  * initState() stamps a new runStartedAt and clears the won/winTick fields.
  */
 export function newRun(state) {
-  const nextRunCount = state.runCount + 1;
+  const nextRunCount         = state.runCount + 1;
+  const leaderboardUnlocked  = !!state._leaderboardUnlocked;
   Object.assign(state, initState());
-  state.runCount           = nextRunCount;
-  state.freelance.missions = generateMissions(state.freelance.tier);
+  state.runCount             = nextRunCount;
+  state._leaderboardUnlocked = leaderboardUnlocked;
+  state.freelance.missions   = generateMissions(state.freelance.tier);
   save(state);
 }

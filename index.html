@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DEVRUN</title>
+  <title>BDZ_INCREMENTAL</title>
   <link rel="stylesheet" href="src/ui/style.css">
 </head>
 <body>
 
   <!-- ── Header ─────────────────────────────────────────────── -->
   <div id="header">
-    <div id="header-title">DEVRUN</div>
+    <div id="header-title">BDZ_INCREMENTAL</div>
     <div id="header-stats">
       <span>⏱ <b id="h-timer">00:00</b></span>
       <span>wallet <b id="h-wallet" class="money">$0</b></span>
@@ -90,22 +90,31 @@
 
   </div>
 
-  <!-- ── Start screen overlay (shown until the product is named) ── -->
+  <!-- ── Start screen overlay (shown until the run is started) ── -->
   <div id="start-screen">
     <form class="start-card" id="start-form">
       <div class="win-kicker">new_run</div>
-      <div class="start-title">DEVRUN</div>
-      <div class="start-sub">solo dev → $1B exit. fastest run wins.</div>
+      <div class="start-title">BDZ_INCREMENTAL</div>
       <div class="start-field" id="start-handle-row">
         <label for="start-handle">your_handle</label>
         <input id="start-handle" type="text" maxlength="64" autocomplete="off" placeholder="e.g. theo">
       </div>
-      <div class="start-field">
-        <label for="start-product">product_name</label>
-        <input id="start-product" type="text" maxlength="64" autocomplete="off" placeholder="name your SaaS">
-      </div>
       <button type="submit" class="win-btn">start_run()</button>
     </form>
+  </div>
+
+  <!-- ── Lore overlay (one-time tab discovery messages) ─────────── -->
+  <div id="lore-overlay">
+    <div class="lore-card" id="lore-card">
+      <div class="lore-text" id="lore-text"></div>
+      <div class="lore-form" id="lore-form" style="display:none">
+        <div class="start-field">
+          <label for="lore-product-input">product_name</label>
+          <input id="lore-product-input" type="text" maxlength="64" autocomplete="off" placeholder="name your SaaS">
+        </div>
+      </div>
+      <button class="win-btn" id="lore-ok">ok</button>
+    </div>
   </div>
 
   <!-- ── Win screen overlay (shown when state.won) ──────────────── -->

@@ -10,6 +10,7 @@ import { initDevPanel }         from './ui/dev.js';
 import { initWinScreen }        from './ui/win.js';
 import { initStartScreen }      from './ui/start.js';
 import { refreshLeaderboard }   from './tabs/leaderboard.js';
+import { showLore, isTabUnlocked } from './ui/lore.js';
 
 // ── Load or initialise state ───────────────────────────────────
 const state = load() ?? initState();
@@ -104,23 +105,43 @@ if (!state.series || !Array.isArray(state.series.t)) {
 if (!Array.isArray(state.events)) state.events = [];
 // Migrate: dev-mode taint flag (old saves predate run submission)
 if (typeof state.devModeUsed !== 'boolean') state.devModeUsed = false;
+// Migrate: _runStarted (old saves used productName as the tick gate)
+if (state._runStarted == null) state._runStarted = !!state.productName;
+// Migrate: _leaderboardUnlocked (old saves: treat runCount > 0 as "has won before")
+if (state._leaderboardUnlocked == null) state._leaderboardUnlocked = state.runCount > 0;
+// Migrate: tabsDiscovered (old saves with active runs skip lore entirely)
+if (!state.tabsDiscovered) {
+  state.tabsDiscovered = state.productName
+    ? { write_code: true, saas_product: true, freelance: true, investment: true, frontier_lab: true, post_on_x: true, milestones: true }
+    : {};
+}
 
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
+    if (btn.classList.contains('locked')) return;
+
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
     btn.classList.add('on');
     document.getElementById('panel-' + btn.dataset.tab)?.classList.add('on');
 
+    const tab = btn.dataset.tab;
+
+    // Lore: show one-time discovery overlay on first visit (when tab content is accessible)
+    if (isTabUnlocked(tab, state) && !state.tabsDiscovered[tab]) {
+      state.tabsDiscovered[tab] = true;
+      showLore(tab, state, () => render(state));
+    }
+
     // saas_product discovery: auto-set initial price on first visit
-    if (btn.dataset.tab === 'saas_product' && state.saas.price === 0) {
+    if (tab === 'saas_product' && state.saas.price === 0) {
       state.saas.price      = CONSTANTS.Saas_Price_T1;
       state.saas.priceRound = 0;
     }
 
     // leaderboard: refetch fresh standings each time the tab is opened
-    if (btn.dataset.tab === 'leaderboard') refreshLeaderboard();
+    if (tab === 'leaderboard') refreshLeaderboard();
 
     render(state);
   });

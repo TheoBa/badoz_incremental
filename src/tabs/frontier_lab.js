@@ -88,6 +88,7 @@ export function renderFrontierLab(state) {
       <div class="lab-header">
         <div class="lab-title">frontier_lab</div>
         <div class="lab-tagline">We align with your wallet.</div>
+        <div class="lab-tagline">Feel free to make open source contributions.</div>
       </div>
       <div id="lab-gate"></div>
       <div id="lab-catalog"></div>

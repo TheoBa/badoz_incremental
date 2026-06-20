@@ -25,5 +25,5 @@ app.use('/api/state',     stateRouter);
 app.use('/api/runs',      runsRouter);
 
 app.listen(PORT, () => {
-  console.log(`[devrun] server running on http://localhost:${PORT}`);
+  console.log(`[bdz] server running on http://localhost:${PORT}`);
 });

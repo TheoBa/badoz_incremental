@@ -63,7 +63,33 @@ body {
   font-size: 12px;
   white-space: nowrap;
 }
-.tab.on { color: var(--text); border-bottom-color: var(--teal); font-weight: 500; }
+.tab.on     { color: var(--text); border-bottom-color: var(--teal); font-weight: 500; }
+.tab.locked { color: var(--text3); cursor: not-allowed; opacity: 0.45; letter-spacing: 1px; }
+.tab.notif  { color: var(--teal); }
+.tab.notif::after {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--teal);
+  margin-left: 5px;
+  vertical-align: middle;
+  animation: notif-pulse 1.4s ease-in-out infinite;
+}
+@keyframes notif-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.locked-msg {
+  font-size: 11px;
+  color: var(--text2);
+  border: 0.5px dashed var(--border2);
+  padding: 20px;
+  text-align: center;
+  border-radius: var(--radius);
+  margin: 10px 0;
+}
 
 /* ── Body ────────────────────────────────────────────────────── */
 #body {
@@ -712,6 +738,43 @@ body {
   border-radius: var(--radius);
 }
 .start-field input:focus { outline: none; border-color: var(--teal); }
+
+/* ── Lore overlay ────────────────────────────────────────────── */
+#lore-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 20, 20, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 10000;
+}
+#lore-overlay.on { display: flex; }
+.lore-card {
+  background: var(--bg);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  width: 360px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+}
+.lore-card.creepy {
+  border-color: var(--lab-accent);
+  box-shadow: 0 8px 40px rgba(139, 92, 246, 0.18);
+}
+.lore-text p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.lore-text p:first-child { color: var(--text); font-weight: 500; }
+.lore-card.creepy .lore-text p { color: #9d7ee0; }
+.lore-card.creepy .lore-text p:first-child { color: var(--lab-accent); letter-spacing: 1px; }
+.lore-form { margin: 14px 0 4px; }
 
 /* ── leaderboard tab ─────────────────────────────────────────── */
 .lb-head {

@@ -12,14 +12,44 @@ import { renderLeaderboard } from '../tabs/leaderboard.js';
 import { renderHistogram }   from './histograms.js';
 import { renderWinScreen }   from './win.js';
 import { renderStartScreen } from './start.js';
-import { CONSTANTS, LAB_PLANS, calcSupportRetentionBonus, calcMarketerMarketingBonus } from '../engine/state.js';
+import { CONSTANTS, MILESTONES, LAB_PLANS, calcSupportRetentionBonus, calcMarketerMarketingBonus } from '../engine/state.js';
+import { MILESTONE_TRACKS, getStepStatus } from '../engine/milestones.js';
 
 export function render(state) {
   renderHeader(state);
   renderKpi(state);
+  renderTabLocks(state);
+  renderMilestoneNotif(state);
   renderActiveTab(state);
   renderWinScreen(state);
   renderStartScreen(state);
+}
+
+// ── Tab lock display ────────────────────────────────────────────
+const TAB_LOCKS = [
+  { tab: 'saas_product', unlocked: s => (s.freelance.missionsCompleted ?? 0) >= MILESTONES.freelance_tiers.t0 },
+  { tab: 'investment',   unlocked: s => !!s.milestones?.claimed?.investment_unlock },
+  { tab: 'frontier_lab', unlocked: s => !!s.milestones?.claimed?.lab_unlock },
+  { tab: 'leaderboard',  unlocked: s => !!s._leaderboardUnlocked },
+];
+
+function renderMilestoneNotif(state) {
+  const btn = document.querySelector('.tab[data-tab="milestones"]');
+  if (!btn) return;
+  const hasClaimable = MILESTONE_TRACKS.some(track =>
+    track.steps.some(step => getStepStatus(track, step, state) === 'claimable')
+  );
+  btn.classList.toggle('notif', hasClaimable);
+}
+
+function renderTabLocks(state) {
+  for (const { tab, unlocked } of TAB_LOCKS) {
+    const btn = document.querySelector(`.tab[data-tab="${tab}"]`);
+    if (!btn) continue;
+    const isUnlocked = unlocked(state);
+    btn.classList.toggle('locked', !isUnlocked);
+    btn.textContent = isUnlocked ? tab : '???';
+  }
 }
 
 // ── Header ─────────────────────────────────────────────────────
@@ -111,6 +141,7 @@ function calcBurnPerHour(state) {
 }
 
 function calcBurnPerDay(state) {
+  if (!state.milestones?.claimed?.lab_unlock) return 0;
   return Object.values(state.lab.agents)
     .filter(a => a.unlocked)
     .reduce((sum, a) => sum + (LAB_PLANS[a.tier]?.dailyCost ?? 0), 0);

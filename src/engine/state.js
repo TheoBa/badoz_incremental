@@ -12,6 +12,7 @@ export const MILESTONES = {
     t3: 10_000_000,    // → raise to $1000/mo
   },
   freelance_tiers: { // freelance missions completed
+    t0: 5,           // → saas_product tab unlocked
     t1: 21,          // → Senior tier
     t2: 100,         // → Lead tier
     t3: 500,         // → 10x tier
@@ -120,8 +121,8 @@ export const CONSTANTS = {
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
 
   // ── Price shock (applied when player manually raises price) ───
-  Saas_Price_Shock_Conversion: 1.5,  // flat decrease to conversion
-  Saas_Price_Shock_Retention:    1.5,  // flat decrease to retention
+  Saas_Price_Shock_Conversion: 10,  // flat decrease to conversion
+  Saas_Price_Shock_Retention:    10,  // flat decrease to retention
 
   // ── Frontier Lab ───────────────────────────────────────────────
   // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
@@ -310,6 +311,9 @@ export function initState() {
     // Meta
     runCount: 0,
     productName: null,
+    _runStarted: false,          // true once the start screen is submitted (gates the tick)
+    _leaderboardUnlocked: false, // latches true on first win; preserved across newRun()
+    tabsDiscovered: {},          // { [tabName]: true } — which tabs have shown their lore
     devModeUsed: false,   // true if dev tools touched this run; excluded from board
 
     // Run lifecycle

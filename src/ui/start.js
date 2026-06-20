@@ -1,10 +1,10 @@
 // start.js — run start screen
-// Collects the player handle (once, persisted) and the SaaS product name (each run)
-// before play begins. The tick loop is frozen while productName is unset, so the
-// run clock only starts once the player commits a name here.
+// Collects the player handle (once, persisted) before play begins.
+// Product naming moved to the saas_product tab (first visit lore).
 
 import { getPlayerName, setPlayerName } from '../engine/identity.js';
 import { save } from '../engine/save.js';
+import { showLore } from './lore.js';
 
 export function initStartScreen(state, renderFn) {
   const form = document.getElementById('start-form');
@@ -13,35 +13,34 @@ export function initStartScreen(state, renderFn) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const handleInput = document.getElementById('start-handle');
-    const nameInput   = document.getElementById('start-product');
 
-    // Handle is only asked when not already stored.
     if (!getPlayerName()) {
       const h = (handleInput?.value || '').trim();
       if (!h) { handleInput?.focus(); return; }
       setPlayerName(h);
     }
 
-    const p = (nameInput?.value || '').trim();
-    if (!p) { nameInput?.focus(); return; }
-
-    state.productName  = p;
-    state.runStartedAt = Date.now();  // the run truly begins now
-    delete state._runSubmitted;       // fresh run → allow a future submit
+    state._runStarted  = true;
+    state.runStartedAt = Date.now();
+    delete state._runSubmitted;
     delete state._winSaved;
-    if (nameInput) nameInput.value = '';
     save(state);
     renderFn(state);
+
+    // Show write_code lore immediately after the run starts
+    if (!state.tabsDiscovered.write_code) {
+      state.tabsDiscovered.write_code = true;
+      showLore('write_code', state, () => renderFn(state));
+    }
   });
 }
 
-// Reactive toggle (called from render). Idempotent show so it never clobbers
-// what the player is typing; field setup + focus run only on the show transition.
+// Reactive toggle (called from render). Gates on _runStarted instead of productName.
 export function renderStartScreen(state) {
   const overlay = document.getElementById('start-screen');
   if (!overlay) return;
 
-  if (state.productName) {
+  if (state._runStarted) {
     overlay.classList.remove('on');
     return;
   }
@@ -50,8 +49,7 @@ export function renderStartScreen(state) {
   overlay.classList.add('on');
   const handleRow   = document.getElementById('start-handle-row');
   const handleInput = document.getElementById('start-handle');
-  const nameInput   = document.getElementById('start-product');
   const haveHandle  = !!getPlayerName();
   if (handleRow) handleRow.style.display = haveHandle ? 'none' : '';
-  (haveHandle ? nameInput : handleInput)?.focus();
+  handleInput?.focus();
 }

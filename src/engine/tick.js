@@ -20,9 +20,9 @@ export function startTick(state, onTick) {
 }
 
 function tick(state) {
-  // Frozen until the product is named on the start screen (run hasn't begun),
+  // Frozen until the start screen is submitted (_runStarted gates the tick),
   // and again once the run is won — no economy or time progression either way.
-  if (state.won || !state.productName) return;
+  if (state.won || !state._runStarted) return;
 
   state.ticksElapsed++;
 
@@ -123,12 +123,14 @@ function applyDailyLabBilling(state) {
       agent.pendingTier = null;
     }
   }
-  // Deduct daily plan costs
+  // Deduct daily plan costs — only once the frontier_lab is unlocked
   let totalCost = 0;
-  for (const agent of Object.values(state.lab.agents)) {
-    if (!agent.unlocked) continue;
-    const plan = LAB_PLANS[agent.tier];
-    if (plan && plan.dailyCost > 0) totalCost += plan.dailyCost;
+  if (state.milestones?.claimed?.lab_unlock) {
+    for (const agent of Object.values(state.lab.agents)) {
+      if (!agent.unlocked) continue;
+      const plan = LAB_PLANS[agent.tier];
+      if (plan && plan.dailyCost > 0) totalCost += plan.dailyCost;
+    }
   }
   if (totalCost > 0) {
     state.wallet           -= totalCost;
@@ -178,9 +180,10 @@ function tickInvestments(state) {
 function checkWin(state) {
   if (state.won) return;
   if (state.moneyLifetime >= CONSTANTS.WIN_CONDITION) {
-    state.won        = true;
-    state.winTick    = state.ticksElapsed;
-    state.runEndedAt = Date.now();
+    state.won                  = true;
+    state.winTick              = state.ticksElapsed;
+    state.runEndedAt           = Date.now();
+    state._leaderboardUnlocked = true;  // latches permanently; survives newRun()
     // Capture a closing sample so the curves end exactly at the win moment,
     // even if it fell between daily sampling boundaries.
     sampleSeries(state);
