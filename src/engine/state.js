@@ -35,7 +35,170 @@ export const MILESTONES = {
     t3: 100_000,      // → ai_marketer unlocked
     t4: 10_000_000,   // → ai_ceo unlocked
   }
-}
+};
+
+export const FREELANCE = {
+  rcu_cost: {
+    t1: 10,   // junior
+    t2: 50,   // senior
+    t3: 250,  // lead
+    t4: 1250  // 10x
+  },
+  rcu_to_money_mult: { // money = rcuCost × multiplier
+    t1: 5,
+    t2: 6,
+    t3: 8,
+    t4: 10
+  },
+  rcu_stdev: 0.5
+};
+
+export const SAAS = {
+  subscription_price: {
+    t1: 10,    // initial price, set on first tab visit
+    t2: 100,   // unlocks at MILESTONES.money_tiers.t2 milestone
+    t3: 1000,  // unlocks at MILESTONES.money_tiers.t3 milestone
+  },
+  demand_shock: { // flat decrease to conversion/retention on each price raises
+    t2: {
+      conversion: 10,
+      retention: 10
+    },
+    t3: {
+      conversion: 20, 
+      retention: 20
+    },
+  },
+  ship_feature: {
+    conversion: {
+      base_cost: 10,
+      cost_scale: 1.3,
+      base_delta: 0.1,
+      delta_scale: 1.15,
+    },
+    retention: {
+      base_cost: 10,
+      cost_scale: 1.3,
+      base_delta: 0.1,
+      delta_scale: 1.15,
+    },
+    marketing: {
+      base_cost: 15,
+      cost_scale: 1.3,
+      base_delta: 5,
+      delta_scale: 1.15
+    },
+  }
+};
+
+export const LAB = {
+  plans: {
+    free:     {dailyCost: 5,    multiplier: 1,   label: 'free'     },
+    hobbyist: {dailyCost: 10,   multiplier: 1.5, label: 'hobbyist' },
+    growth:   {dailyCost: 50,   multiplier: 4,   label: 'growth'   },
+    scale:    {dailyCost: 200,  multiplier: 12,  label: 'scale'    },
+    infernal: {dailyCost: 1000, multiplier: 40,  label: 'infernal' },
+  },
+  agents: {
+    coder: {
+      minor_base_cost: 20, 
+      minor_cost_scale: 1.3,
+      base_delta: 1, 
+      delta_scale: 1.15,
+      major_base_cost: 800, 
+      major_cost_scale: 2.5, 
+      major_pow: 4,
+    },
+    support: {
+      base_cost: 100, 
+      cost_scale: 1.3, 
+      base_delta: 2, 
+      delta_scale: 1.15,
+      major_base_cost: 4000, 
+      major_cost_scale: 2.5, 
+      major_pow: 4,
+    },
+    marketer: {
+      base_cost: 500, 
+      cost_scale: 1.3, 
+      base_delta: 5, 
+      delta_scale: 1.15,
+      major_base_cost: 20_000, 
+      major_cost_scale: 2.5, 
+      major_pow: 4,
+    },
+    product_manager: {
+      base_cost: 2500, 
+      cost_scale: 1.3, 
+      base_delta: 0.1, 
+      delta_scale: 1.15,
+      major_base_cost: 100_000, 
+      major_cost_scale: 2.5, 
+      major_pow: 4,
+    },
+    ceo: {
+      base_cost: 12_500, 
+      cost_scale: 1.3, 
+      base_delta: 0.005, 
+      delta_scale: 1.05,
+      major_base_cost: 500_000, 
+      major_cost_scale: 2.5, 
+      major_pow: 4,
+    },
+  },
+};
+
+export const INVESTMENTS = {
+  marketing: {
+    cold_outreach_campaign: {
+      label: 'cold_outreach_campaign',
+      cost: 100,
+      boost: 50, 
+      campaign_active: 24
+    },
+    seo_push: {
+      label: 'seo_push',
+      cost: 1000,
+      boost: 50,
+      campaign_active: 168 // 7days * 24ticks = 168
+    },
+  },
+  reputation: {
+    newsletter: {
+      label: "sponsored_newsletter",
+      cost: 250,
+      boost: 0.01,
+      cooldown: 24
+    },
+    press_coverage: {
+      label: "press_coverage",
+      cost: 1000,
+      boost: 0.15,
+      cooldown: 168, // 7 days
+      max_uses: 3
+    },
+    product_hunt: {
+      label: "launch_on_product_hunt",
+      cost: 10_000,
+      boost: 1.0,
+      max_uses: 1
+    },
+  },
+  rcu: {
+    gear: {
+      t1: {label: "mechanical_keyboard", cost: 30, boost: 1},
+      t2: {label: "dual_monitor_setup", cost: 120, boost: 2},
+      t3: {label: "ergonomic_workstation", cost: 350, boost: 3},
+    },
+    laptop: {
+      t1: {label: "macbook_pro", cost: 1000, boost: 10},
+      t2: {label: "mac_studio", cost: 10_000, boost: 100},
+    },
+    cpu: {base_cost: 1500, cost_scale: 1.5, base_mult: 1.1},
+    gpu: {base_cost: 2000, cost_scale: 1.5, base_mult: 1.1},
+  },
+};
+
 export const CONSTANTS = {
   TICK_RATE: 1,             // real seconds per in-game hour
 
