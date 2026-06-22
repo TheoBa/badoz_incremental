@@ -1,7 +1,7 @@
 // main.js — entry point
 // Boots the game: loads state, wires tab switching, starts the tick loop.
 
-import { initState, CONSTANTS } from './engine/state.js';
+import { initState, CONSTANTS , SAAS } from './engine/state.js';
 import { startTick }            from './engine/tick.js';
 import { load, save }           from './engine/save.js';
 import { render }               from './ui/render.js';
@@ -136,7 +136,7 @@ document.querySelectorAll('.tab').forEach(btn => {
 
     // saas_product discovery: auto-set initial price on first visit
     if (tab === 'saas_product' && state.saas.price === 0) {
-      state.saas.price      = CONSTANTS.Saas_Price_T1;
+      state.saas.price      = SAAS.subscription_price.t1;
       state.saas.priceRound = 0;
     }
 

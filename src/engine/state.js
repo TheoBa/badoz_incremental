@@ -202,30 +202,12 @@ export const INVESTMENTS = {
 export const CONSTANTS = {
   TICK_RATE: 1,             // real seconds per in-game hour
 
-  // Subscription price tiers (auto-set on saas_product tab discovery; one-way raises)
-  Saas_Price_T1: 10,           // initial price, set on first tab visit
-  Saas_Price_T2: 100,          // unlocks at MILESTONES.money_tiers.t2 milestone
-  Saas_Price_T3: 1000,         // unlocks at MILESTONES.money_tiers.t3 milestone
-
   // ── Frontier Lab pay-per-use ──────────────────────────────────
   // One-shot compute purchase available on the free plan.
   // Deducts money, grants RCU, increments labSpendLifetime.
   // Leave null until balancing pass sets deliberate values.
   Lab_PayPerUse_Cost: null,   // money cost per session
   Lab_PayPerUse_RCU:  null,   // RCU granted per session
-
-  // ── Ship feature upgrade curves ───────────────────────────────
-  // Base RCU cost of the first upgrade in each track
-  Ship_Conversion_Base_Cost: 10,
-  Ship_Retention_Base_Cost:    10,
-  Ship_Marketing_Base_Cost:    15,
-  // Each subsequent upgrade costs baseCost × Scale^level
-  Ship_Cost_Scale: 1.3,
-  // Stat gain per upgrade purchased
-  Ship_Conversion_Delta: 0.1,   // added to conversion multiplier
-  Ship_Retention_Delta:    0.1,   // added to retention multiplier
-  Ship_Marketing_Delta:    5,     // additional visitors/day
-  Ship_Delta_Scale: 1.15,         // bonus grows 15% per level
 
   // ── Investment costs & effects ────────────────────────────────
   Invest_ColdOutreach_Cost:    100,   // money
