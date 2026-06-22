@@ -202,22 +202,6 @@ export const INVESTMENTS = {
 export const CONSTANTS = {
   TICK_RATE: 1,             // real seconds per in-game hour
 
-  // ── Freelance mission generation ──────────────────────────────
-  // Mean RCU cost per tier (μ in normal distribution)
-  Freelance_RCU_Cost_T1: 10,    // junior
-  Freelance_RCU_Cost_T2: 50,   // senior
-  Freelance_RCU_Cost_T3: 250,   // lead
-  Freelance_RCU_Cost_T4: 1250,  // 10x
-
-  // Std dev as a fraction of the mean (0.3 → ±30% spread)
-  Freelance_RCU_StdDev: 0.5,
-
-  // Money reward = rcuCost × multiplier (higher tiers pay more per RCU)
-  Freelance_Money_Mult_T1: 5,
-  Freelance_Money_Mult_T2: 6,
-  Freelance_Money_Mult_T3: 8,
-  Freelance_Money_Mult_T4: 10,
-
   // Subscription price tiers (auto-set on saas_product tab discovery; one-way raises)
   Saas_Price_T1: 10,           // initial price, set on first tab visit
   Saas_Price_T2: 100,          // unlocks at MILESTONES.money_tiers.t2 milestone
