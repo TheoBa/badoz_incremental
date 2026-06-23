@@ -151,51 +151,64 @@ export const LAB = {
 export const INVESTMENTS = {
   marketing: {
     cold_outreach_campaign: {
-      label: 'cold_outreach_campaign',
-      cost: 100,
-      boost: 50, 
-      campaign_active: 24
+      id:             'cold_outreach',
+      label:          'cold_outreach_campaign',
+      desc:           'blast 500 cold emails · temporary visitor spike',
+      cost:           100,
+      boost:          50,
+      campaign_active: 24,
     },
     seo_push: {
-      label: 'seo_push',
-      cost: 1000,
-      boost: 50,
-      campaign_active: 168 // 7days * 24ticks = 168
+      id:             'seo_push',
+      label:          'seo_push',
+      desc:           'optimise meta tags, schema, backlinks · slow burn',
+      cost:           1000,
+      boost:          50,
+      campaign_active: 168,
+      gate:           'mrr_t1',
     },
   },
   reputation: {
     newsletter: {
-      label: "sponsored_newsletter",
-      cost: 250,
-      boost: 0.01,
-      cooldown: 24
+      id:       'newsletter',
+      label:    'sponsored_newsletter',
+      desc:     'featured in a niche indie-hacker newsletter · instant rep',
+      cost:     250,
+      boost:    0.01,
+      cooldown: 24,
     },
     press_coverage: {
-      label: "press_coverage",
-      cost: 1000,
-      boost: 0.15,
-      cooldown: 168, // 7 days
-      max_uses: 3
+      id:       'press',
+      label:    'press_coverage',
+      desc:     'a journalist actually replied · large rep spike',
+      cost:     300,
+      boost:    0.15,
+      cooldown: 168,
+      max_uses: 3,
+      gate:     'mrr_t1',
     },
     product_hunt: {
-      label: "launch_on_product_hunt",
-      cost: 10_000,
-      boost: 1.0,
-      max_uses: 1
+      id:       'product_hunt',
+      label:    'launch_on_product_hunt',
+      desc:     '#1 product of the day · massive one-time event',
+      cost:     10_000,
+      boost:    1.0,
+      max_uses: 1,
+      gate:     'mrr_t2',
     },
   },
   rcu: {
     gear: {
-      t1: {label: "mechanical_keyboard", cost: 30, boost: 1},
-      t2: {label: "dual_monitor_setup", cost: 120, boost: 2},
-      t3: {label: "ergonomic_workstation", cost: 350, boost: 3},
+      t1: { id: 'gear_t1',   label: 'mechanical_keyboard',   desc: 'tactile feedback, 10% faster typing — or so you tell yourself', cost: 30,    boost: 1   },
+      t2: { id: 'gear_t2',   label: 'dual_monitor_setup',    desc: 'one screen for code, one for docs you never read',              cost: 120,   boost: 2   },
+      t3: { id: 'gear_t3',   label: 'ergonomic_workstation', desc: 'standing desk, Herman Miller, the works',                      cost: 350,   boost: 3   },
     },
     laptop: {
-      t1: {label: "macbook_pro", cost: 1000, boost: 10},
-      t2: {label: "mac_studio", cost: 10_000, boost: 100},
+      t1: { id: 'laptop_t1', label: 'macbook_pro_upgrade',   desc: 'M-series chip, finally compiles in under a minute',            cost: 1_000,  boost: 10  },
+      t2: { id: 'laptop_t2', label: 'mac_studio',            desc: 'desktop-class silicon · no thermal throttling ever',           cost: 10_000, boost: 100 },
     },
-    cpu: {base_cost: 1500, cost_scale: 1.5, base_mult: 1.1},
-    gpu: {base_cost: 2000, cost_scale: 1.5, base_mult: 1.1},
+    cpu: { id: 'cpu_upgrade', label: 'cpu_upgrade', desc: 'faster compilation pipeline · repeatable · cost scales each level',              base_cost: 1500, cost_scale: 1.3, delta: 0.4 },
+    gpu: { id: 'gpu_rig',    label: 'gpu_rig',     desc: 'parallel shader cores for... local model inference, obviously · repeatable',      base_cost: 1000, cost_scale: 1.5, delta: 0.5 },
   },
 };
 
@@ -209,49 +222,9 @@ export const CONSTANTS = {
   Lab_PayPerUse_Cost: null,   // money cost per session
   Lab_PayPerUse_RCU:  null,   // RCU granted per session
 
-  // ── Investment costs & effects ────────────────────────────────
-  Invest_ColdOutreach_Cost:    100,   // money
-  Invest_ColdOutreach_Boost:    50,   // marketing_stream +50 for 1 day (24 ticks)
-
-  Invest_SEO_Cost:            1000,   // money
-  Invest_SEO_Boost:             50,   // marketing_stream +50 for 7 days (168 ticks)
-
-  Invest_Newsletter_Cost:       250,  // money
-  Invest_Newsletter_Rep:       0.01,  // reputation.multiplier +0.01 (instant, permanent)
-  Invest_Newsletter_Cooldown:    24,  // ticks before can buy again (1 day)
-
-  Invest_ProductHunt_Cost:  10_000,  // money (once per run)
-  Invest_ProductHunt_Rep:      1.0,  // reputation.multiplier +1.0 (instant)
-
-  Invest_Press_Cost:           300,  // money per use
-  Invest_Press_Rep:           0.15,  // reputation.multiplier +0.15 (instant)
-  Invest_Press_Uses:             3,  // max uses per run
-  Invest_Press_Cooldown:       168,  // ticks before can buy again (7 days)
-
-  // ── Hardware upgrades (rcu/click) ────────────────────────────
-  // Gear tiers — sequential additive bonus (buy T1 before T2 before T3)
-  Hardware_Gear_T1_Cost:   30,  Hardware_Gear_T1_RCU: 1,  // mechanical keyboard
-  Hardware_Gear_T2_Cost:  120,  Hardware_Gear_T2_RCU: 2,  // dual-monitor setup
-  Hardware_Gear_T3_Cost:  350,  Hardware_Gear_T3_RCU: 3,  // ergonomic workstation
-
-  // Laptop tiers — sequential additive bonus
-  Hardware_Laptop_T1_Cost:  1000, Hardware_Laptop_T1_RCU: 10,  // MacBook Pro
-  Hardware_Laptop_T2_Cost: 10_000, Hardware_Laptop_T2_RCU: 100, // Mac Studio
-
-  // CPU & GPU — infinite repeatable upgrades, scale like ship_feature
-  // Formula: rcu/click = (1 + gearBonus + laptopBonus) × cpuMult × gpuMult
-  //   cpuMult = 1 + cpuLevel × Hardware_CPU_Delta
-  //   gpuMult = 1 + gpuLevel × Hardware_GPU_Delta
-  Hardware_CPU_Base_Cost: 1500, Hardware_CPU_Scale: 1.3,   Hardware_CPU_Delta: 0.4,
-  Hardware_GPU_Base_Cost: 1000, Hardware_GPU_Scale: 1.5,  Hardware_GPU_Delta: 0.5,
-
   // ── post_on_x ─────────────────────────────────────────────────
   PostOnX_Rep_Delta: 0.01,   // reputation.multiplier += delta per post
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
-
-  // ── Price shock (applied when player manually raises price) ───
-  Saas_Price_Shock_Conversion: 10,  // flat decrease to conversion
-  Saas_Price_Shock_Retention:    10,  // flat decrease to retention
 
   // ── Frontier Lab ───────────────────────────────────────────────
   // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
@@ -323,13 +296,12 @@ export const LAB_PLANS = {
  */
 export function calcRcuPerClick(state) {
   const hw = state.investments?.hardware ?? {};
-  const gearTierRCU   = [CONSTANTS.Hardware_Gear_T1_RCU,   CONSTANTS.Hardware_Gear_T2_RCU,   CONSTANTS.Hardware_Gear_T3_RCU];
-  const laptopTierRCU = [CONSTANTS.Hardware_Laptop_T1_RCU, CONSTANTS.Hardware_Laptop_T2_RCU];
+  const { gear, laptop, cpu, gpu } = INVESTMENTS.rcu;
 
-  const gearBonus   = gearTierRCU.slice(0, hw.gearLevel ?? 0).reduce((s, v) => s + v, 0);
-  const laptopBonus = laptopTierRCU.slice(0, hw.laptopLevel ?? 0).reduce((s, v) => s + v, 0);
-  const cpuMult     = 1 + (hw.cpuLevel ?? 0) * CONSTANTS.Hardware_CPU_Delta;
-  const gpuMult     = 1 + (hw.gpuLevel ?? 0) * CONSTANTS.Hardware_GPU_Delta;
+  const gearBonus   = Object.values(gear).slice(0, hw.gearLevel ?? 0).reduce((s, t) => s + t.boost, 0);
+  const laptopBonus = Object.values(laptop).slice(0, hw.laptopLevel ?? 0).reduce((s, t) => s + t.boost, 0);
+  const cpuMult     = 1 + (hw.cpuLevel ?? 0) * cpu.delta;
+  const gpuMult     = 1 + (hw.gpuLevel ?? 0) * gpu.delta;
 
   return Math.floor((1 + gearBonus + laptopBonus) * cpuMult * gpuMult);
 }
@@ -511,16 +483,20 @@ export function initState() {
       // Timed boosts: [{id, label, ticksRemaining, marketingBoost}]
       // marketingStream is NOT mutated — acquisition reads active boosts separately
       active: [],
-      productHuntUsed: false,
-      pressUsesRemaining: null,    // set to Invest_Press_Uses on first run (handled in main.js)
-      pressCooldownTicks: 0,       // ticks until press_coverage can be bought again
-      newsletterCooldownTicks: 0,  // ticks until sponsored_newsletter can be bought again
+      // Cooldown ticks keyed by item id — decremented each tick
+      cooldowns: {},
+      // Remaining uses keyed by item id — auto-populated from INVESTMENTS.max_uses
+      uses: Object.fromEntries(
+        Object.values(INVESTMENTS.reputation)
+          .filter(item => item.max_uses != null)
+          .map(item => [item.id, item.max_uses])
+      ),
       // Hardware upgrades (rcu/click progression)
       hardware: {
-        gearLevel:    0,      // 0–3 gear tiers purchased
-        laptopLevel:  0,      // 0–2 laptop tiers purchased
-        cpuLevel: 0,   // infinite upgrades; cpuMult = 1 + cpuLevel × Hardware_CPU_Delta
-        gpuLevel: 0,   // infinite upgrades; gpuMult = 1 + gpuLevel × Hardware_GPU_Delta
+        gearLevel:   0,   // 0–3 gear tiers purchased
+        laptopLevel: 0,   // 0–2 laptop tiers purchased
+        cpuLevel:    0,   // infinite upgrades; see INVESTMENTS.rcu.cpu
+        gpuLevel:    0,   // infinite upgrades; see INVESTMENTS.rcu.gpu
       },
     },
 
