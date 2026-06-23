@@ -93,59 +93,104 @@ export const SAAS = {
 
 export const LAB = {
   plans: {
-    free:     {dailyCost: 5,    multiplier: 1,   label: 'free'     },
-    hobbyist: {dailyCost: 10,   multiplier: 1.5, label: 'hobbyist' },
-    growth:   {dailyCost: 50,   multiplier: 4,   label: 'growth'   },
-    scale:    {dailyCost: 200,  multiplier: 12,  label: 'scale'    },
-    infernal: {dailyCost: 1000, multiplier: 40,  label: 'infernal' },
+    free:     { dailyCost: 5,    multiplier: 1,   label: 'free'     },
+    hobbyist: { dailyCost: 10,   multiplier: 1.5, label: 'hobbyist' },
+    growth:   { dailyCost: 50,   multiplier: 4,   label: 'growth'   },
+    scale:    { dailyCost: 200,  multiplier: 12,  label: 'scale'    },
+    infernal: { dailyCost: 1000, multiplier: 40,  label: 'infernal' },
   },
   agents: {
     coder: {
-      minor_base_cost: 20, 
+      id:               'ai_coder',
+      label:            'ai_coder',
+      desc:             'Writes code so you don\'t have to. Mostly correct.',
+      boost_label:      'passive_rcu/h',
+      boost_type:       'coder_rcu',
+      showRcu:          true,
+      starts_unlocked:  true,
+      minor_base_cost:  20,
       minor_cost_scale: 1.3,
-      base_delta: 1, 
-      delta_scale: 1.15,
-      major_base_cost: 800, 
-      major_cost_scale: 2.5, 
-      major_pow: 4,
+      base_delta:       1,
+      delta_scale:      1.15,
+      major_base_cost:  800,
+      major_cost_scale: 2.5,
+      major_pow:        4,
+      output_base:      1,
+      output_delta:     1,
     },
     support: {
-      base_cost: 100, 
-      cost_scale: 1.3, 
-      base_delta: 2, 
-      delta_scale: 1.15,
-      major_base_cost: 4000, 
-      major_cost_scale: 2.5, 
-      major_pow: 4,
+      id:               'ai_support',
+      label:            'ai_support',
+      desc:             'Handles tickets. Rarely gaslights customers.',
+      boost_label:      'customer_retention',
+      boost_type:       'support_retention',
+      showRcu:          false,
+      minor_base_cost:  100,
+      minor_cost_scale: 1.3,
+      base_delta:       2,
+      delta_scale:      1.15,
+      major_base_cost:  4_000,
+      major_cost_scale: 2.5,
+      major_pow:        4,
+      output_base:      0.2,
+      output_delta:     0.05,
     },
     marketer: {
-      base_cost: 500, 
-      cost_scale: 1.3, 
-      base_delta: 5, 
-      delta_scale: 1.15,
-      major_base_cost: 20_000, 
-      major_cost_scale: 2.5, 
-      major_pow: 4,
+      id:               'ai_marketer',
+      label:            'ai_marketer',
+      desc:             'Posts everywhere simultaneously. Results may include virality. Or controversy.',
+      boost_label:      'marketing_stream + reputation/d',
+      boost_type:       'marketer_mkt',
+      showRcu:          false,
+      minor_base_cost:  500,
+      minor_cost_scale: 1.3,
+      base_delta:       5,
+      delta_scale:      1.15,
+      major_base_cost:  20_000,
+      major_cost_scale: 2.5,
+      major_pow:        4,
+      output_base:      2,
+      output_delta:     1,
     },
     product_manager: {
-      base_cost: 2500, 
-      cost_scale: 1.3, 
-      base_delta: 0.1, 
-      delta_scale: 1.15,
-      major_base_cost: 100_000, 
-      major_cost_scale: 2.5, 
-      major_pow: 4,
+      id:               'ai_product_manager',
+      label:            'ai_product_manager',
+      desc:             'Syncs all agents into a single coherent vision. Occasionally.',
+      boost_label:      'all_agent_output ×mult',
+      boost_type:       'pm_mult',
+      showRcu:          false,
+      minor_base_cost:  2_000,
+      minor_cost_scale: 1.3,
+      base_delta:       0.1,
+      delta_scale:      1.15,
+      major_base_cost:  100_000,
+      major_cost_scale: 2.5,
+      major_pow:        4,
+      output_base:      0.1,
+      output_delta:     0.02,
     },
     ceo: {
-      base_cost: 12_500, 
-      cost_scale: 1.3, 
-      base_delta: 0.005, 
-      delta_scale: 1.05,
-      major_base_cost: 500_000, 
-      major_cost_scale: 2.5, 
-      major_pow: 4,
+      id:               'ai_ceo',
+      label:            'ai_ceo',
+      desc:             'Sets the vision. Attends the offsites. Ships the deck.',
+      boost_label:      'reputation/d',
+      boost_type:       'ceo_rep',
+      showRcu:          false,
+      minor_base_cost:  10_000,
+      minor_cost_scale: 1.3,
+      base_delta:       0.005,
+      delta_scale:      1.05,
+      major_base_cost:  500_000,
+      major_cost_scale: 2.5,
+      major_pow:        4,
+      output_base:      0.01,
+      output_delta:     0.005,
     },
   },
+  pay_per_use: {
+    money_cost: null,   // money cost per session
+    rcu_granted: null,  // RCU granted per session
+  }
 };
 
 export const INVESTMENTS = {
@@ -215,58 +260,9 @@ export const INVESTMENTS = {
 export const CONSTANTS = {
   TICK_RATE: 1,             // real seconds per in-game hour
 
-  // ── Frontier Lab pay-per-use ──────────────────────────────────
-  // One-shot compute purchase available on the free plan.
-  // Deducts money, grants RCU, increments labSpendLifetime.
-  // Leave null until balancing pass sets deliberate values.
-  Lab_PayPerUse_Cost: null,   // money cost per session
-  Lab_PayPerUse_RCU:  null,   // RCU granted per session
-
   // ── post_on_x ─────────────────────────────────────────────────
   PostOnX_Rep_Delta: 0.01,   // reputation.multiplier += delta per post
   PostOnX_Cooldown:    24,   // ticks before can post again (1 in-game day)
-
-  // ── Frontier Lab ───────────────────────────────────────────────
-  // Model version — minor increments (vX.0 → vX.1 → … → vX.9) cost RCU
-  // Formula: floor(agentMinorRcuBase × Minor_Scale^totalMinorIncrements)
-  // Each agent has its own base cost — later-unlocking agents start more expensive.
-  Lab_Coder_Minor_RCU_Base:    20,   // ai_coder — available from run start
-  Lab_Support_Minor_RCU_Base:  100,  // ai_support — unlocks at MILESTONES.rcu_tiers.t2
-  Lab_Marketer_Minor_RCU_Base: 500,  // ai_marketer — unlocks at MILESTONES.mrr_peak_tiers.t3
-  Lab_Model_Minor_Scale:       1.3,  // exponential scale per total minor increment
-
-  // Model version — major release (vX.9 → v(X+1).0) costs money
-  // Formula: floor(Major_Money_Base × Major_Money_Scale^(modelMajor - 1))
-  Lab_Model_Major_Money_Base:  10000,  // money cost for first major release (v1.9 → v2.0)
-  Lab_Model_Major_Money_Scale: 2.5,  // exponential scale per subsequent major release
-
-  // AI Coder passive RCU/h
-  // Formula: Coder_RCU_Base + totalMinorIncrements × Coder_RCU_Delta
-  // Then multiplied by the active plan multiplier (free plan = idle, no output)
-  Lab_Coder_RCU_Base:  1,  // RCU/h at v1.0 with plan mult 1×
-  Lab_Coder_RCU_Delta: 1,  // additional RCU/h per minor increment
-
-  // AI Support: flat retention bonus (added to effective retention in churn calc)
-  // Formula: (Retention_Base + totalMinorIncrements × Retention_Delta) × plan.multiplier
-  Lab_Support_Retention_Base:  0.2,   // retention bonus at v1.0 on any paid plan
-  Lab_Support_Retention_Delta: 0.05,  // additional per minor increment
-
-  // AI Marketer: marketing visitors/d
-  // Marketing formula: (Marketing_Base + totalMinorIncrements × Marketing_Delta) × plan.multiplier
-  Lab_Marketer_Marketing_Base:  2,     // visitors/d at v1.0 on hobbyist
-  Lab_Marketer_Marketing_Delta: 1,     // additional visitors/d per minor increment
-
-  // AI Product Manager: output multiplier applied to all 3 existing agents
-  // Formula: 1 + (Mult_Base + totalMinorIncrements × Mult_Delta) × plan.multiplier
-  Lab_ProductMgr_Minor_RCU_Base: 2000,  // unlocks at MILESTONES.rcu_tiers.t3
-  Lab_ProductMgr_Mult_Base:      0.1,   // +10% to all 3 agents at v1.0, free plan
-  Lab_ProductMgr_Mult_Delta:     0.02,  // +2% per minor increment
-
-  // AI CEO: daily reputation gain
-  // Formula: (Rep_Base + totalMinorIncrements × Rep_Delta) × plan.multiplier
-  Lab_Ceo_Minor_RCU_Base: 10000,  // unlocks at MILESTONES.mrr_peak_tiers.t4
-  Lab_Ceo_Rep_Base:        0.01,  // +0.01 reputation/d at v1.0, free plan
-  Lab_Ceo_Rep_Delta:       0.005, // +0.005 rep/d per minor increment
 
   WIN_CONDITION: 1_000_000_000,
 
@@ -320,11 +316,11 @@ export function calcModelTotalMinorIncrements(agent) {
 /**
  * RCU cost for the next minor increment on this agent.
  * Formula: floor(minorRcuBase × Minor_Scale^totalMinorIncrements)
- * minorRcuBase differs per agent (Lab_Coder/Support/Marketer_Minor_RCU_Base).
+ * minorRcuBase is LAB.agents[key].minor_base_cost — later-unlocking agents start costlier.
  */
-export function calcModelMinorUpgradeCost(agent, minorRcuBase) {
+export function calcModelMinorUpgradeCost(agent, cfg) {
   const n = calcModelTotalMinorIncrements(agent);
-  return Math.floor(minorRcuBase * Math.pow(CONSTANTS.Lab_Model_Minor_Scale, n));
+  return Math.floor(cfg.minor_base_cost * Math.pow(cfg.minor_cost_scale, n));
 }
 
 /**
@@ -343,9 +339,9 @@ export function calcAgentTieredBonus(agent, base, delta) {
  * Money cost for the next major version release (only at minor === 9).
  * Formula: floor(Major_Money_Base × Major_Money_Scale^(modelMajor - 1))
  */
-export function calcModelMajorUpgradeCost(agent) {
+export function calcModelMajorUpgradeCost(agent, cfg) {
   return Math.floor(
-    CONSTANTS.Lab_Model_Major_Money_Base * Math.pow(CONSTANTS.Lab_Model_Major_Money_Scale, agent.modelMajor - 1)
+    cfg.major_base_cost * Math.pow(cfg.major_cost_scale, agent.modelMajor - 1)
   );
 }
 
@@ -355,7 +351,8 @@ export function calcModelMajorUpgradeCost(agent) {
  * Multiply by plan.multiplier in tick/render. Free plan (mult 1) gives the baseline floor.
  */
 export function calcCoderRcuPerHour(agent) {
-  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Coder_RCU_Base, CONSTANTS.Lab_Coder_RCU_Delta);
+  const cfg = LAB.agents.coder;
+  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta);
 }
 
 // ── AI Support helper ──────────────────────────────────────────
@@ -367,7 +364,8 @@ export function calcSupportRetentionBonus(state) {
   const agent = state.lab?.agents?.ai_support;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Support_Retention_Base, CONSTANTS.Lab_Support_Retention_Delta) * plan.multiplier;
+  const cfg = LAB.agents.support;
+  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
 }
 
 // ── AI Marketer helpers ────────────────────────────────────────
@@ -379,7 +377,8 @@ export function calcMarketerMarketingBonus(state) {
   const agent = state.lab?.agents?.ai_marketer;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Marketer_Marketing_Base, CONSTANTS.Lab_Marketer_Marketing_Delta) * plan.multiplier;
+  const cfg = LAB.agents.marketer;
+  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
 }
 
 // ── AI Product Manager helper ──────────────────────────────────
@@ -391,7 +390,8 @@ export function calcProductManagerMultiplier(state) {
   const agent = state.lab?.agents?.ai_product_manager;
   if (!agent?.unlocked) return 1;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  return 1 + calcAgentTieredBonus(agent, CONSTANTS.Lab_ProductMgr_Mult_Base, CONSTANTS.Lab_ProductMgr_Mult_Delta) * plan.multiplier;
+  const cfg = LAB.agents.product_manager;
+  return 1 + calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
 }
 
 // ── AI CEO helper ──────────────────────────────────────────────
@@ -403,7 +403,8 @@ export function calcCeoReputationGain(state) {
   const agent = state.lab?.agents?.ai_ceo;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  return calcAgentTieredBonus(agent, CONSTANTS.Lab_Ceo_Rep_Base, CONSTANTS.Lab_Ceo_Rep_Delta) * plan.multiplier;
+  const cfg = LAB.agents.ceo;
+  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
 }
 
 // ── Initial state factory ──────────────────────────────────────
@@ -453,15 +454,14 @@ export function initState() {
       missionsCompleted: 0,       // increments on accept (rush counts as 2)
     },
 
-    // Frontier Lab
+    // Frontier Lab — agent runtime state derived from LAB.agents config
     lab: {
-      agents: {
-        ai_coder:           { unlocked: true,  tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
-        ai_support:         { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
-        ai_marketer:        { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
-        ai_product_manager: { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
-        ai_ceo:             { unlocked: false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
-      },
+      agents: Object.fromEntries(
+        Object.values(LAB.agents).map(cfg => [
+          cfg.id,
+          { unlocked: cfg.starts_unlocked ?? false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+        ])
+      ),
     },
 
     // Reputation (post_on_x)
