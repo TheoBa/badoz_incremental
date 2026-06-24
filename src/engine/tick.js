@@ -38,6 +38,18 @@ function tick(state) {
     applyDailyCeoReputation(state);
     refreshFreelanceMissions(state);
     pushHistorySnapshot(state);
+
+    // Weekly summary — trigger every 7 days (168 ticks)
+    if (state.ticksElapsed % 168 === 0) {
+      // Freeze display snapshot BEFORE resetting accumulators
+      state.weekStats.lastWeek = {
+        missionsDone: (state.freelance.missionsCompleted ?? 0) - state.weekStats.missionsAtStart,
+        investSpent:  state.weekStats.investSpent,
+      };
+      state._weeklyPopupPending = true;
+      state.weekStats.investSpent     = 0;
+      state.weekStats.missionsAtStart = state.freelance.missionsCompleted ?? 0;
+    }
   }
 
   // Analytics sampler — cumulative snapshot every Sample_Every_Ticks
@@ -155,15 +167,18 @@ function pushHistorySnapshot(state) {
   const p = h.prev;
   const push = (arr, val) => { arr.push(val); if (arr.length > 7) arr.shift(); };
 
-  push(h.earned, state.moneyLifetime    - p.earned);
-  push(h.rcu,    state.rcuLifetime      - p.rcu);
-  push(h.mrr,    state.saas.mrr         - p.mrr);
-  push(h.burn,   state.labSpendLifetime - p.burn);
+  push(h.earned,    state.moneyLifetime    - p.earned);
+  push(h.rcu,       state.rcuLifetime      - p.rcu);
+  push(h.mrr,       state.saas.mrr         - p.mrr);
+  push(h.burn,      state.labSpendLifetime - p.burn);
+  push(h.customers, state.saas.customers   - p.customers);
+  push(h.wallet,    state.wallet);
 
-  p.earned = state.moneyLifetime;
-  p.rcu    = state.rcuLifetime;
-  p.mrr    = state.saas.mrr;
-  p.burn   = state.labSpendLifetime;
+  p.earned    = state.moneyLifetime;
+  p.rcu       = state.rcuLifetime;
+  p.mrr       = state.saas.mrr;
+  p.burn      = state.labSpendLifetime;
+  p.customers = state.saas.customers;
 }
 
 // ── Investment boost timers ────────────────────────────────────

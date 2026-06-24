@@ -10,8 +10,9 @@ import { renderPostOnX }     from '../tabs/post_on_x.js';
 import { renderMilestones }  from '../tabs/milestones.js';
 import { renderLeaderboard } from '../tabs/leaderboard.js';
 import { renderHistogram }   from './histograms.js';
-import { renderWinScreen }   from './win.js';
-import { renderStartScreen } from './start.js';
+import { renderWinScreen }     from './win.js';
+import { renderStartScreen }   from './start.js';
+import { renderWeeklyOverlay } from './weekly.js';
 import { CONSTANTS, MILESTONES, LAB_PLANS, calcSupportRetentionBonus, calcMarketerMarketingBonus } from '../engine/state.js';
 import { MILESTONE_TRACKS, getStepStatus } from '../engine/milestones.js';
 
@@ -23,6 +24,7 @@ export function render(state) {
   renderActiveTab(state);
   renderWinScreen(state);
   renderStartScreen(state);
+  renderWeeklyOverlay(state);
 }
 
 // ── Tab lock display ────────────────────────────────────────────
