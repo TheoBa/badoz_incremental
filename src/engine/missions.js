@@ -1,8 +1,7 @@
 // missions.js — mission pool definitions and generation
-// Costs are generated per-mission using CONSTANTS as the mean, so tuning
-// Freelance_RCU_Cost_Tx / Freelance_RCU_StdDev in state.js controls all tiers.
+// Costs are generated per-mission
 
-import { CONSTANTS } from './state.js';
+import { FREELANCE } from './state.js';
 
 // ── Name pools (one per tier) ──────────────────────────────────
 const POOLS = {
@@ -44,12 +43,12 @@ const POOLS = {
   ],
 };
 
-// ── Tier → CONSTANTS lookup ────────────────────────────────────
-const TIER_PARAMS = {
-  junior: { costKey: 'Freelance_RCU_Cost_T1', multKey: 'Freelance_Money_Mult_T1' },
-  senior: { costKey: 'Freelance_RCU_Cost_T2', multKey: 'Freelance_Money_Mult_T2' },
-  lead:   { costKey: 'Freelance_RCU_Cost_T3', multKey: 'Freelance_Money_Mult_T3' },
-  tenmx:  { costKey: 'Freelance_RCU_Cost_T4', multKey: 'Freelance_Money_Mult_T4' },
+// ── Tier → state constants lookup ────────────────────────────────────
+const TIER_MAP = {
+  junior: "t1",
+  senior: "t2",
+  lead:   "t3",
+  tenmx:  "t4",
 };
 
 // ── Box-Muller normal distribution ────────────────────────────
@@ -74,10 +73,10 @@ function rand() {
  */
 export function generateMissions(tier) {
   const pool   = POOLS[tier] ?? POOLS.junior;
-  const params = TIER_PARAMS[tier] ?? TIER_PARAMS.junior;
-  const mean   = CONSTANTS[params.costKey];
-  const stdDev = mean * CONSTANTS.Freelance_RCU_StdDev;
-  const mult   = CONSTANTS[params.multKey];
+  const tierKey = TIER_MAP[tier] ?? TIER_MAP.junior;
+  const mean   = FREELANCE.rcu_cost[tierKey];
+  const stdDev = mean * FREELANCE.rcu_stdev;
+  const mult   = FREELANCE.rcu_to_money_mult[tierKey];
 
   const shuffled = [...pool].sort(() => rand() - 0.5);
   return shuffled.slice(0, 3).map((name, i) => {

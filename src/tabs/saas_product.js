@@ -2,7 +2,7 @@
 // Consolidates price management and ship_feature upgrades.
 //
 // Price flow:
-//   - Price is auto-set to Saas_Price_T1 on first tab visit (handled in main.js)
+//   - Price is auto-set to SAAS.subscription_price.t1 on first tab visit (handled in main.js)
 //   - raise_price() unlocks T2 then T3 at lifetime-earned milestones (Price_Round_T1/T2)
 //   - Raises are one-way and apply negative pressure on satisfaction + retention
 //
@@ -11,7 +11,7 @@
 //   - Each track shows the next purchasable upgrade; costs scale as baseCost × Scale^level
 //   - Buying mutates state.saas.* directly and records purchase in state.upgrades.*
 
-import { CONSTANTS, MILESTONES } from '../engine/state.js';
+import { CONSTANTS, MILESTONES, SAAS } from '../engine/state.js';
 import { fmt, fmtN } from '../ui/render.js';
 
 // ── Track metadata (colors match CLAUDE.md color coding) ───────
@@ -21,8 +21,9 @@ const TRACKS = [
     stateKey: 'conversion',
     label:    'conversion',
     color:    '#1D9E75',
-    baseCost: () => CONSTANTS.Ship_Conversion_Base_Cost,
-    delta:    (level) => CONSTANTS.Ship_Conversion_Delta * Math.pow(CONSTANTS.Ship_Delta_Scale, level),
+    baseCost: () => SAAS.ship_feature.conversion.base_cost,
+    costScale: () => SAAS.ship_feature.conversion.cost_scale,
+    delta:    (level) => SAAS.ship_feature.conversion.base_delta * Math.pow(SAAS.ship_feature.conversion.delta_scale, level),
     fmt:      v  => v.toFixed(2) + '×',
   },
   {
@@ -30,8 +31,9 @@ const TRACKS = [
     stateKey: 'retention',
     label:    'retention',
     color:    '#378ADD',
-    baseCost: () => CONSTANTS.Ship_Retention_Base_Cost,
-    delta:    (level) => CONSTANTS.Ship_Retention_Delta * Math.pow(CONSTANTS.Ship_Delta_Scale, level),
+    baseCost: () => SAAS.ship_feature.retention.base_cost,
+    costScale: () => SAAS.ship_feature.retention.cost_scale,
+    delta:    (level) => SAAS.ship_feature.retention.base_delta * Math.pow(SAAS.ship_feature.retention.delta_scale, level),
     fmt:      v  => v.toFixed(2) + '×',
   },
   {
@@ -39,18 +41,20 @@ const TRACKS = [
     stateKey: 'marketingStream',
     label:    'marketing_stream',
     color:    '#BA7517',
-    baseCost: () => CONSTANTS.Ship_Marketing_Base_Cost,
-    delta:    (level) => CONSTANTS.Ship_Marketing_Delta * Math.pow(CONSTANTS.Ship_Delta_Scale, level),
+    baseCost: () => SAAS.ship_feature.marketing.base_cost,
+    costScale: () => SAAS.ship_feature.marketing.cost_scale,
+    delta:    (level) => SAAS.ship_feature.marketing.base_delta * Math.pow(SAAS.ship_feature.marketing.delta_scale, level),
     fmt:      v  => fmtN(v) + '/d',
   },
 ];
 
-function upgradeCost(track, level) {
-  return Math.round(track.baseCost() * Math.pow(CONSTANTS.Ship_Cost_Scale, level));
+function upgradeScale(base, scaleFactor, level) {
+  return base * Math.pow(scaleFactor, level);
 }
 
-// ── Price tier helpers ─────────────────────────────────────────
-const PRICE_TIERS    = () => [CONSTANTS.Saas_Price_T1, CONSTANTS.Saas_Price_T2, CONSTANTS.Saas_Price_T3];
+// ── Tier helpers ─────────────────────────────────────────
+const DEMAND_SHOCK    = [SAAS.demand_shock.t2, SAAS.demand_shock.t3]
+const PRICE_TIERS     = () => [SAAS.subscription_price.t1, SAAS.subscription_price.t2, SAAS.subscription_price.t3];
 const PRICE_CLAIM_IDS = ['price_t1', 'price_t2'];  // milestone step IDs per round
 
 // ── Renderer ───────────────────────────────────────────────────
@@ -65,13 +69,13 @@ export function renderSaasProduct(state) {
   const tiers = PRICE_TIERS();
   const round = state.saas.priceRound;
 
-  const nextPrice  = tiers[round + 1] ?? null;
-  const claimId    = PRICE_CLAIM_IDS[round] ?? null;
+  const nextPrice   = tiers[round + 1] ?? null;
+  const claimId     = PRICE_CLAIM_IDS[round] ?? null;
   const milestoneOk = claimId !== null && !!state.milestones?.claimed?.[claimId];
-  const canRaise   = nextPrice !== null && milestoneOk;
+  const canRaise    = nextPrice !== null && milestoneOk;
 
-  const shockSat = CONSTANTS.Saas_Price_Shock_Conversion;
-  const shockRet = CONSTANTS.Saas_Price_Shock_Retention;
+  const shockConv = DEMAND_SHOCK[round].conversion ?? null;
+  const shockRet  = DEMAND_SHOCK[round].retention ?? null;
 
   panel.innerHTML = `
     <div class="sp-section">
@@ -91,7 +95,7 @@ export function renderSaasProduct(state) {
       <div class="sp-hint sp-raise-warning">
         ${!milestoneOk
           ? `<span class="sp-hint-lock">locked · claim money_earned milestone in milestones tab first</span>`
-          : `<span class="sp-hint-warn">⚠ demand shock: −${shockSat.toFixed(1)} conversion · −${shockRet.toFixed(1)} retention</span>`}
+          : `<span class="sp-hint-warn">⚠ demand shock: −${shockConv.toFixed(1)} conversion · −${shockRet.toFixed(1)} retention</span>`}
       </div>
     </div>` : `
     <div class="sp-section">
@@ -122,7 +126,7 @@ export function renderSaasProduct(state) {
 
 function upgradeCard(track, state) {
   const level     = state.upgrades[track.key].length;
-  const cost      = upgradeCost(track, level);
+  const cost      = upgradeScale(track.baseCost(), track.costScale(), level);
   const canAfford = state.rcu >= cost;
   const current   = state.saas[track.stateKey];
 
@@ -149,12 +153,14 @@ function upgradeCard(track, state) {
 
 // ── Action handlers ────────────────────────────────────────────
 function onRaisePrice(state) {
+  const round = state.saas.priceRound;
   const tiers = PRICE_TIERS();
-  if (state.saas.priceRound >= tiers.length - 1) return;
+  if (round >= tiers.length - 1) return;
 
-  const fromPrice = tiers[state.saas.priceRound];
+  const fromPrice = tiers[round];
   state.saas.priceRound++;
-  state.saas.price        = tiers[state.saas.priceRound];
+  
+  state.saas.price        = tiers[round + 1];
   // Analytics: record the manual raise as a timeline marker for the post-game charts
   (state.events ??= []).push({
     tick: state.ticksElapsed,
@@ -163,8 +169,8 @@ function onRaisePrice(state) {
     to:   state.saas.price,
   });
   // Demand shock: flat negative pressure on conversion and retention
-  state.saas.conversion   = Math.max(0.1, state.saas.conversion - CONSTANTS.Saas_Price_Shock_Conversion);
-  state.saas.retention    = Math.max(0.1, state.saas.retention    - CONSTANTS.Saas_Price_Shock_Retention);
+  state.saas.conversion   = Math.max(0.1, state.saas.conversion - DEMAND_SHOCK[round].conversion);
+  state.saas.retention    = Math.max(0.1, state.saas.retention    - DEMAND_SHOCK[round].retention);
   state.saas.mrr          = state.saas.price * state.saas.customers;
 
   renderSaasProduct(state);
@@ -172,7 +178,7 @@ function onRaisePrice(state) {
 
 function onBuyUpgrade(state, track) {
   const level = state.upgrades[track.key].length;
-  const cost  = upgradeCost(track, level);
+  const cost  = upgradeScale(track.baseCost(), track.costScale(), level);
   if (state.rcu < cost) return;
 
   state.rcu                   -= cost;

@@ -3,7 +3,7 @@
 // Each step has a threshold and an optional onClaim() mutator.
 // Status is derived on-the-fly — nothing is stored except state.milestones.claimed[id].
 
-import { MILESTONES, CONSTANTS } from './state.js';
+import { MILESTONES, CONSTANTS, SAAS } from './state.js';
 
 // ── Local formatters (no render.js import — avoids circular deps) ──
 function fmtMoney(n) {
@@ -49,13 +49,13 @@ export const MILESTONE_TRACKS = [
       {
         id:        'price_t1',
         threshold: MILESTONES.money_tiers.t2,
-        effect:    `raise_price → $${CONSTANTS.Saas_Price_T2}/mo unlocked`,
+        effect:    `raise_price → $${SAAS.subscription_price.t2}/mo unlocked`,
         onClaim:   () => {},  // raise_price is a manual button in saas_product tab
       },
       {
         id:        'price_t2',
         threshold: MILESTONES.money_tiers.t3,
-        effect:    `raise_price → $${CONSTANTS.Saas_Price_T3}/mo unlocked`,
+        effect:    `raise_price → $${SAAS.subscription_price.t3}/mo unlocked`,
         onClaim:   () => {},  // raise_price is a manual button in saas_product tab
       },
     ],

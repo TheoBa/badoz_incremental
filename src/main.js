@@ -1,7 +1,7 @@
 // main.js — entry point
 // Boots the game: loads state, wires tab switching, starts the tick loop.
 
-import { initState, CONSTANTS } from './engine/state.js';
+import { initState, INVESTMENTS, SAAS } from './engine/state.js';
 import { startTick }            from './engine/tick.js';
 import { load, save }           from './engine/save.js';
 import { render }               from './ui/render.js';
@@ -22,11 +22,28 @@ if (state.freelance.missions.length === 0) {
 
 // Migrate investments shape: old saves have investments as [] instead of an object
 if (Array.isArray(state.investments)) {
-  state.investments = { active: [], productHuntUsed: false, pressUsesRemaining: CONSTANTS.Invest_Press_Uses };
+  state.investments = { active: [], cooldowns: {}, uses: {} };
 }
-// Initialise press coverage uses if not yet set
-if (state.investments.pressUsesRemaining == null) {
-  state.investments.pressUsesRemaining = CONSTANTS.Invest_Press_Uses;
+// Migrate named cooldown fields → generic cooldowns dict (old saves)
+if (!state.investments.cooldowns) {
+  state.investments.cooldowns = {};
+  const nlcd = state.investments.newsletterCooldownTicks ?? 0;
+  const prcd = state.investments.pressCooldownTicks ?? 0;
+  if (nlcd > 0) state.investments.cooldowns.newsletter = nlcd;
+  if (prcd > 0) state.investments.cooldowns.press = prcd;
+  delete state.investments.newsletterCooldownTicks;
+  delete state.investments.pressCooldownTicks;
+}
+// Migrate named uses fields → generic uses dict (old saves)
+if (!state.investments.uses) {
+  const pressItem = INVESTMENTS.reputation.press_coverage;
+  const phItem    = INVESTMENTS.reputation.product_hunt;
+  state.investments.uses = {
+    [pressItem.id]: state.investments.pressUsesRemaining ?? pressItem.max_uses,
+    [phItem.id]:    state.investments.productHuntUsed ? 0 : phItem.max_uses,
+  };
+  delete state.investments.pressUsesRemaining;
+  delete state.investments.productHuntUsed;
 }
 // Initialise hardware sub-object if missing (old saves)
 if (!state.investments.hardware) {
@@ -36,9 +53,6 @@ if (!state.investments.hardware) {
 const _hw = state.investments.hardware;
 if ('cpuPurchased' in _hw) { _hw.cpuLevel = _hw.cpuPurchased ? 1 : 0; delete _hw.cpuPurchased; }
 if ('gpuPurchased' in _hw) { _hw.gpuLevel = _hw.gpuPurchased ? 1 : 0; delete _hw.gpuPurchased; }
-// Initialise cooldown fields if missing (old saves)
-if (state.investments.pressCooldownTicks == null)     state.investments.pressCooldownTicks = 0;
-if (state.investments.newsletterCooldownTicks == null) state.investments.newsletterCooldownTicks = 0;
 // Migrate lab agents: add pendingTier + modelMajor/modelMinor (old saves)
 if (state.lab?.agents) {
   for (const agent of Object.values(state.lab.agents)) {
@@ -136,7 +150,7 @@ document.querySelectorAll('.tab').forEach(btn => {
 
     // saas_product discovery: auto-set initial price on first visit
     if (tab === 'saas_product' && state.saas.price === 0) {
-      state.saas.price      = CONSTANTS.Saas_Price_T1;
+      state.saas.price      = SAAS.subscription_price.t1;
       state.saas.priceRound = 0;
     }
 
