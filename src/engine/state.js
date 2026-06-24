@@ -463,11 +463,13 @@ export function initState() {
 
     // KPI histogram snapshots — last 7 in-game days, oldest first
     history: {
-      prev: { earned: 0, rcu: 0, mrr: 0, burn: 0 },
-      earned: [0, 0, 0, 0, 0, 0, 0],
-      rcu:    [0, 0, 0, 0, 0, 0, 0],
-      mrr:    [0, 0, 0, 0, 0, 0, 0],
-      burn:   [0, 0, 0, 0, 0, 0, 0],
+      prev: { earned: 0, rcu: 0, mrr: 0, burn: 0, customers: 0 },
+      earned:    [0, 0, 0, 0, 0, 0, 0],
+      rcu:       [0, 0, 0, 0, 0, 0, 0],
+      mrr:       [0, 0, 0, 0, 0, 0, 0],
+      burn:      [0, 0, 0, 0, 0, 0, 0],
+      customers: [0, 0, 0, 0, 0, 0, 0],  // daily net customer delta (acquired − churned)
+      wallet:    [0, 0, 0, 0, 0, 0, 0],  // daily wallet balance snapshot (absolute)
     },
 
     // Milestones — player-claimed rewards
@@ -498,5 +500,13 @@ export function initState() {
 
     // Analytics events queued for backend
     _pendingEvents: [],
+
+    // Weekly summary — fired every 7 in-game days (168 ticks)
+    weekStats: {
+      investSpent:     0,   // accumulator: money spent on investments this week
+      missionsAtStart: 0,   // missionsCompleted snapshot at start of current week
+      lastWeek: { missionsDone: 0, investSpent: 0 },  // frozen display values for popup
+    },
+    _weeklyPopupPending: false,
   };
 }

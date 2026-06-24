@@ -43,6 +43,7 @@ function buildMarketingCategory() {
         buy: (state) => {
           if (state.wallet < item.cost) return;
           state.wallet -= item.cost;
+          if (state.weekStats) state.weekStats.investSpent += item.cost;
           state.investments.active.push({
             id:             item.id + '_' + Date.now(),
             label:          item.label,
@@ -95,6 +96,7 @@ function buildReputationCategory() {
           if (hasUses && uses <= 0) return;
           if (hasCooldown && cooldown > 0) return;
           state.wallet -= item.cost;
+          if (state.weekStats) state.weekStats.investSpent += item.cost;
           state.reputation.multiplier += item.boost;
           if (hasUses) {
             if (!state.investments.uses) state.investments.uses = {};
@@ -126,6 +128,7 @@ function buildHardwareCategory() {
       if (state.wallet < tier.cost) return;
       if (state.investments.hardware.gearLevel !== i) return;
       state.wallet -= tier.cost;
+      if (state.weekStats) state.weekStats.investSpent += tier.cost;
       state.investments.hardware.gearLevel = i + 1;
     },
   }));
@@ -143,6 +146,7 @@ function buildHardwareCategory() {
       if (state.wallet < tier.cost) return;
       if (state.investments.hardware.laptopLevel !== i) return;
       state.wallet -= tier.cost;
+      if (state.weekStats) state.weekStats.investSpent += tier.cost;
       state.investments.hardware.laptopLevel = i + 1;
     },
   }));
@@ -159,6 +163,7 @@ function buildHardwareCategory() {
       const cost = Math.floor(cpu.base_cost * Math.pow(cpu.cost_scale, state.investments.hardware.cpuLevel));
       if (state.wallet < cost) return;
       state.wallet -= cost;
+      if (state.weekStats) state.weekStats.investSpent += cost;
       state.investments.hardware.cpuLevel++;
     },
   };
@@ -175,6 +180,7 @@ function buildHardwareCategory() {
       const cost = Math.floor(gpu.base_cost * Math.pow(gpu.cost_scale, state.investments.hardware.gpuLevel));
       if (state.wallet < cost) return;
       state.wallet -= cost;
+      if (state.weekStats) state.weekStats.investSpent += cost;
       state.investments.hardware.gpuLevel++;
     },
   };
