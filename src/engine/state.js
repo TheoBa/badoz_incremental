@@ -111,12 +111,10 @@ export const LAB = {
       minor_base_cost:  20,
       minor_cost_scale: 1.3,
       base_delta:       1,
-      delta_scale:      1.15,
+      delta_scale:      1.11,
       major_base_cost:  800,
       major_cost_scale: 2.5,
       major_pow:        4,
-      output_base:      1,
-      output_delta:     1,
     },
     support: {
       id:               'ai_support',
@@ -127,13 +125,11 @@ export const LAB = {
       showRcu:          false,
       minor_base_cost:  100,
       minor_cost_scale: 1.3,
-      base_delta:       2,
+      base_delta:       1,
       delta_scale:      1.15,
       major_base_cost:  4_000,
       major_cost_scale: 2.5,
-      major_pow:        4,
-      output_base:      0.2,
-      output_delta:     0.05,
+      major_pow:        2,
     },
     marketer: {
       id:               'ai_marketer',
@@ -145,12 +141,10 @@ export const LAB = {
       minor_base_cost:  500,
       minor_cost_scale: 1.3,
       base_delta:       5,
-      delta_scale:      1.15,
+      delta_scale:      1.3,
       major_base_cost:  20_000,
       major_cost_scale: 2.5,
       major_pow:        4,
-      output_base:      2,
-      output_delta:     1,
     },
     product_manager: {
       id:               'ai_product_manager',
@@ -160,14 +154,12 @@ export const LAB = {
       boost_type:       'pm_mult',
       showRcu:          false,
       minor_base_cost:  2_000,
-      minor_cost_scale: 1.3,
-      base_delta:       0.1,
+      minor_cost_scale: 1.4,
+      base_delta:       0.3,
       delta_scale:      1.15,
       major_base_cost:  100_000,
       major_cost_scale: 2.5,
-      major_pow:        4,
-      output_base:      0.1,
-      output_delta:     0.02,
+      major_pow:        2,
     },
     ceo: {
       id:               'ai_ceo',
@@ -179,12 +171,10 @@ export const LAB = {
       minor_base_cost:  10_000,
       minor_cost_scale: 1.3,
       base_delta:       0.005,
-      delta_scale:      1.05,
+      delta_scale:      1.1,
       major_base_cost:  500_000,
       major_cost_scale: 2.5,
       major_pow:        4,
-      output_base:      0.01,
-      output_delta:     0.005,
     },
   },
   pay_per_use: {
@@ -274,7 +264,6 @@ export const CONSTANTS = {
 
 // ── Frontier Lab plan definitions ──────────────────────────────
 // plan_multiplier is the base boost multiplier at this plan tier.
-// effective_boost = plan_multiplier × agent.modelLevel
 export const LAB_PLANS = {
   free:     { dailyCost: 5,   multiplier: 1,   label: 'free'     },
   hobbyist: { dailyCost: 10,   multiplier: 1.5, label: 'hobbyist' },
@@ -305,106 +294,78 @@ export function calcRcuPerClick(state) {
 // ── Frontier Lab model helpers ─────────────────────────────────
 
 /**
- * Total minor increments purchased across all major versions.
- * v1.0 = 0, v1.5 = 5, v2.0 = 9, v2.3 = 12, v3.0 = 18, …
- * Major releases consume 9 minor slots each (x.0 → x.9, then money bump).
- */
-export function calcModelTotalMinorIncrements(agent) {
-  return (agent.modelMajor - 1) * 9 + agent.modelMinor;
-}
-
-/**
- * RCU cost for the next minor increment on this agent.
- * Formula: floor(minorRcuBase × Minor_Scale^totalMinorIncrements)
- * minorRcuBase is LAB.agents[key].minor_base_cost — later-unlocking agents start costlier.
+ * RCU cost for the next minor increment.
+ * Formula: floor(minor_base_cost × minor_cost_scale^modelLevel)
  */
 export function calcModelMinorUpgradeCost(agent, cfg) {
-  const n = calcModelTotalMinorIncrements(agent);
-  return Math.floor(cfg.minor_base_cost * Math.pow(cfg.minor_cost_scale, n));
+  return Math.floor(cfg.minor_base_cost * Math.pow(cfg.minor_cost_scale, agent.modelLevel));
 }
 
 /**
- * Per-minor-increment output bonus with major-version doubling.
- * The effective delta per minor doubles with each major: delta × 2^(major-1).
- * Completed major versions contribute their full 9 increments at that era's delta.
- * Formula: base + 9×delta×(2^(major-1) − 1) + minor×delta×2^(major-1)
+ * Geometric boost helper: base * scale^level
  */
-export function calcAgentTieredBonus(agent, base, delta) {
-  const majorMult  = Math.pow(2, agent.modelMajor - 1);
-  const prevMajors = 9 * delta * (majorMult - 1);
-  return base + prevMajors + agent.modelMinor * delta * majorMult;
+export function upgradeScale(base, scale, level) {
+  return base * Math.pow(scale, level);
 }
 
 /**
- * Money cost for the next major version release (only at minor === 9).
- * Formula: floor(Major_Money_Base × Major_Money_Scale^(modelMajor - 1))
+ * Total agent output boost.
+ * Formula: base_delta * delta_scale^modelLevel * major_pow^floor(modelLevel/10)
+ * Major releases (level%10===9 → level++) multiply the full output by major_pow.
+ */
+export function calcAgentBoost(agent, cfg) {
+  return upgradeScale(cfg.base_delta, cfg.delta_scale, agent.modelLevel)
+    * Math.pow(cfg.major_pow, Math.floor(agent.modelLevel / 10));
+}
+
+/**
+ * Money cost for the major release (only available when level%10===9).
+ * Formula: floor(major_base_cost × major_cost_scale^floor(modelLevel/10))
  */
 export function calcModelMajorUpgradeCost(agent, cfg) {
   return Math.floor(
-    cfg.major_base_cost * Math.pow(cfg.major_cost_scale, agent.modelMajor - 1)
+    cfg.major_base_cost * Math.pow(cfg.major_cost_scale, Math.floor(agent.modelLevel / 10))
   );
 }
 
 /**
  * Base passive RCU/h for this agent before plan multiplier.
- * Formula: Coder_RCU_Base + totalMinorIncrements × Coder_RCU_Delta
- * Multiply by plan.multiplier in tick/render. Free plan (mult 1) gives the baseline floor.
+ * Multiply by plan.multiplier in tick/render.
  */
 export function calcCoderRcuPerHour(agent) {
-  const cfg = LAB.agents.coder;
-  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta);
+  return calcAgentBoost(agent, LAB.agents.coder);
 }
 
 // ── AI Support helper ──────────────────────────────────────────
-/**
- * Flat retention bonus contributed by ai_support agent.
- * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
- */
 export function calcSupportRetentionBonus(state) {
   const agent = state.lab?.agents?.ai_support;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const cfg = LAB.agents.support;
-  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
+  return calcAgentBoost(agent, LAB.agents.support) * plan.multiplier;
 }
 
 // ── AI Marketer helpers ────────────────────────────────────────
-/**
- * Extra marketing visitors/day contributed by ai_marketer agent.
- * Free plan uses multiplier 1 (baseline). Returns 0 only if not unlocked.
- */
 export function calcMarketerMarketingBonus(state) {
   const agent = state.lab?.agents?.ai_marketer;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const cfg = LAB.agents.marketer;
-  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
+  return calcAgentBoost(agent, LAB.agents.marketer) * plan.multiplier;
 }
 
 // ── AI Product Manager helper ──────────────────────────────────
-/**
- * Output multiplier applied to all 3 existing agents (coder RCU, support retention, marketer marketing).
- * Returns 1 (no effect) when not unlocked.
- */
 export function calcProductManagerMultiplier(state) {
   const agent = state.lab?.agents?.ai_product_manager;
   if (!agent?.unlocked) return 1;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const cfg = LAB.agents.product_manager;
-  return 1 + calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
+  return 1 + calcAgentBoost(agent, LAB.agents.product_manager) * plan.multiplier;
 }
 
 // ── AI CEO helper ──────────────────────────────────────────────
-/**
- * Daily reputation.multiplier increment added by ai_ceo.
- * Returns 0 when not unlocked.
- */
 export function calcCeoReputationGain(state) {
   const agent = state.lab?.agents?.ai_ceo;
   if (!agent?.unlocked) return 0;
   const plan = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-  const cfg = LAB.agents.ceo;
-  return calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan.multiplier;
+  return calcAgentBoost(agent, LAB.agents.ceo) * plan.multiplier;
 }
 
 // ── Initial state factory ──────────────────────────────────────
@@ -459,7 +420,7 @@ export function initState() {
       agents: Object.fromEntries(
         Object.values(LAB.agents).map(cfg => [
           cfg.id,
-          { unlocked: cfg.starts_unlocked ?? false, tier: 'free', pendingTier: null, modelMajor: 1, modelMinor: 0 },
+          { unlocked: cfg.starts_unlocked ?? false, tier: 'free', pendingTier: null, modelLevel: 0 },
         ])
       ),
     },
