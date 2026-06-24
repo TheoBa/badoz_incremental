@@ -20,7 +20,7 @@ import {
   calcCoderRcuPerHour,
   calcProductManagerMultiplier,
   calcCeoReputationGain,
-  calcAgentTieredBonus,
+  calcAgentBoost,
 } from '../engine/state.js';
 
 // ── Plan display order + lab_spend gates ──────────────────────
@@ -37,20 +37,18 @@ const PLAN_GATES = {
 // Keyed by boost_type from LAB.agents. Called as fn(agent, plan, state).
 // Add a new entry here when adding a new agent type to LAB.agents.
 const BOOST_DISPLAY = {
-  coder_rcu: (agent, plan, _state) => {
-    const rcu = calcCoderRcuPerHour(agent) * plan.multiplier;
+  coder_rcu: (agent, plan, state) => {
+    const rcu = calcCoderRcuPerHour(agent) * plan.multiplier * calcProductManagerMultiplier(state);
     return `passive_rcu/h: <b class="teal">${fmtN(rcu)}</b>`;
   },
-  support_retention: (agent, _plan, _state) => {
+  support_retention: (agent, _plan, state) => {
     const plan_ = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-    const cfg   = LAB.agents.support;
-    const bonus = calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan_.multiplier;
+    const bonus = calcAgentBoost(agent, LAB.agents.support) * plan_.multiplier * calcProductManagerMultiplier(state);
     return `retention_bonus: <b class="blue">+${bonus.toFixed(2)}</b>`;
   },
-  marketer_mkt: (agent, _plan, _state) => {
+  marketer_mkt: (agent, _plan, state) => {
     const plan_ = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-    const cfg   = LAB.agents.marketer;
-    const mkt   = calcAgentTieredBonus(agent, cfg.output_base, cfg.output_delta) * plan_.multiplier;
+    const mkt   = calcAgentBoost(agent, LAB.agents.marketer) * plan_.multiplier * calcProductManagerMultiplier(state);
     return `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b>`;
   },
   pm_mult: (_agent, _plan, state) => {
@@ -180,25 +178,24 @@ function activeCardHTML(cfg, agent, state) {
   const pending = agent.pendingTier;
 
   // ── Model upgrade section ──
-  const versionLabel = `v${agent.modelMajor}.${agent.modelMinor}`;
-  const atMajorGate  = agent.modelMinor === 9;
+  const vLabel       = lvl => `v${Math.floor(lvl / 10) + 1}.${lvl % 10}`;
+  const versionLabel = vLabel(agent.modelLevel);
+  const atMajorGate  = agent.modelLevel % 10 === 9;
 
   let upgradeHTML;
   if (!atMajorGate) {
     const cost      = calcModelMinorUpgradeCost(agent, cfg);
     const canAfford = state.rcu >= cost;
-    const nextMinor = `v${agent.modelMajor}.${agent.modelMinor + 1}`;
     upgradeHTML = `
       <button class="lab-btn" id="lab-minor-${cfg.id}" ${canAfford ? '' : 'disabled'}>
-        [ ${versionLabel} → ${nextMinor} — ${cost} RCU ]
+        [ ${versionLabel} → ${vLabel(agent.modelLevel + 1)} — ${cost} RCU ]
       </button>`;
   } else {
     const cost      = calcModelMajorUpgradeCost(agent, cfg);
     const canAfford = state.wallet >= cost;
-    const nextMajor = `v${agent.modelMajor + 1}.0`;
     upgradeHTML = `
       <button class="lab-btn lab-btn-money" id="lab-major-${cfg.id}" ${canAfford ? '' : 'disabled'}>
-        [ release ${nextMajor} — ${fmtMoney(cost)} ]
+        [ release ${vLabel(agent.modelLevel + 1)} — ${fmtMoney(cost)} ]
       </button>`;
   }
 
@@ -257,12 +254,12 @@ function onSetPlan(state, agentId, planId) {
 
 function onMinorUpgrade(state, agentId) {
   const agent = state.lab.agents[agentId];
-  if (agent.modelMinor >= 9) return;
+  if (agent.modelLevel % 10 >= 9) return;
   const cfg  = Object.values(LAB.agents).find(a => a.id === agentId);
   const cost = calcModelMinorUpgradeCost(agent, cfg);
   if (state.rcu < cost) return;
   state.rcu -= cost;
-  agent.modelMinor++;
+  agent.modelLevel++;
 }
 
 function onBuyCompute(state) {
@@ -278,13 +275,12 @@ function onBuyCompute(state) {
 
 function onMajorUpgrade(state, agentId) {
   const agent = state.lab.agents[agentId];
-  if (agent.modelMinor !== 9) return;
+  if (agent.modelLevel % 10 !== 9) return;
   const cfg  = Object.values(LAB.agents).find(a => a.id === agentId);
   const cost = calcModelMajorUpgradeCost(agent, cfg);
   if (state.wallet < cost) return;
   state.wallet -= cost;
-  agent.modelMajor++;
-  agent.modelMinor = 0;
+  agent.modelLevel++;
 }
 
 // ── Helpers ────────────────────────────────────────────────────

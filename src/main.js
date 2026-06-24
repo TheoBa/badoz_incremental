@@ -53,13 +53,17 @@ if (!state.investments.hardware) {
 const _hw = state.investments.hardware;
 if ('cpuPurchased' in _hw) { _hw.cpuLevel = _hw.cpuPurchased ? 1 : 0; delete _hw.cpuPurchased; }
 if ('gpuPurchased' in _hw) { _hw.gpuLevel = _hw.gpuPurchased ? 1 : 0; delete _hw.gpuPurchased; }
-// Migrate lab agents: add pendingTier + modelMajor/modelMinor (old saves)
+// Migrate lab agents to modelLevel (old saves had modelMajor/modelMinor)
 if (state.lab?.agents) {
   for (const agent of Object.values(state.lab.agents)) {
-    if (!('pendingTier' in agent))  agent.pendingTier = null;
-    if (!('modelMajor'  in agent))  agent.modelMajor  = agent.modelLevel ?? 1;
-    if (!('modelMinor'  in agent))  agent.modelMinor  = 0;
-    delete agent.modelLevel;  // remove old field
+    if (!('pendingTier' in agent)) agent.pendingTier = null;
+    if (!('modelLevel' in agent)) {
+      const major = agent.modelMajor ?? 1;
+      const minor = agent.modelMinor ?? 0;
+      agent.modelLevel = (major - 1) * 10 + minor;
+    }
+    delete agent.modelMajor;
+    delete agent.modelMinor;
   }
 }
 // Migrate: add mrrPeak to saas (old saves)
