@@ -94,10 +94,13 @@ body {
 /* ── Body ────────────────────────────────────────────────────── */
 #body {
   display: grid;
-  grid-template-columns: 1fr 180px;
+  grid-template-columns: 1fr 220px;
+  transition: grid-template-columns 0.2s ease;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
+body.kpi-closed #body { grid-template-columns: 1fr 0; }
 #main { padding: 14px; overflow-y: auto; }
 .panel { display: none; }
 .panel.on { display: block; }
@@ -108,7 +111,49 @@ body {
   background: var(--bg2);
   border-left: 0.5px solid var(--border);
   overflow-y: auto;
+  transition: padding 0.2s ease, border-color 0.2s ease;
 }
+body.kpi-closed #kpi {
+  padding: 0;
+  overflow: hidden;
+  border-left-color: transparent;
+}
+#kpi-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+#kpi-globals { margin-bottom: 14px; }
+#kpi-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  font-family: var(--mono);
+}
+#kpi-toggle:hover { color: var(--text); }
+#kpi-reopen {
+  display: none;
+  position: absolute;
+  top: 65px;
+  right: 0;
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  padding: 3px 5px;
+  cursor: pointer;
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 15px;
+  z-index: 10;
+}
+#kpi-reopen:hover { color: var(--text); }
+body.kpi-closed #kpi-reopen { display: block; }
 .kpi-label {
   font-size: 10px;
   text-transform: uppercase;

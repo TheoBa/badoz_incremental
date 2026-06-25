@@ -174,6 +174,14 @@ initWinScreen(state, render);
 // ── Start screen (handle + product name; gates the run start) ──
 initStartScreen(state, render);
 
+// ── KPI sidebar toggle ─────────────────────────────────────────
+document.getElementById('kpi-toggle').addEventListener('click', () => {
+  document.body.classList.toggle('kpi-closed');
+});
+document.getElementById('kpi-reopen').addEventListener('click', () => {
+  document.body.classList.remove('kpi-closed');
+});
+
 // ── Initial render ─────────────────────────────────────────────
 render(state);
 

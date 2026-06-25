@@ -13,10 +13,6 @@
     <div id="header-title">BDZ_INCREMENTAL v1.0</div>
     <div id="header-stats">
       <span>⏱ <b id="h-timer">00:00</b></span>
-      <span>wallet <b id="h-wallet" class="money">$0</b></span>
-      <span>RCU <b id="h-rcu">0</b></span>
-      <span>RCU/h <b id="h-rcuh">0</b></span>
-      <span>MB/h <b id="h-mbh" class="burn">$0</b></span>
     </div>
   </div>
 
@@ -47,7 +43,17 @@
     </div>
 
     <div id="kpi">
-      <div class="kpi-label">dashboard</div>
+      <div id="kpi-topbar">
+        <span class="kpi-label" style="margin-bottom:0">dashboard</span>
+        <button id="kpi-toggle" title="collapse">›</button>
+      </div>
+
+      <div id="kpi-globals">
+        <div class="sr"><span>wallet</span><b id="h-wallet" class="money">$0</b></div>
+        <div class="sr"><span>RCU</span><b id="h-rcu">0</b></div>
+        <div class="sr"><span>RCU/h</span><b id="h-rcuh">0</b></div>
+        <div class="sr"><span>MB/h</span><b id="h-mbh" class="burn">$0</b></div>
+      </div>
 
       <div class="km">
         <div class="km-head"><span class="dot" style="background:#1D9E75"></span>daily earned</div>
@@ -149,6 +155,8 @@
       <button id="win-new-run" class="win-btn">new_run</button>
     </div>
   </div>
+
+  <button id="kpi-reopen" title="open dashboard">‹</button>
 
   <script type="module" src="src/main.js"></script>
 </body>

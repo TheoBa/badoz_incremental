@@ -56,20 +56,19 @@ function renderTabLocks(state) {
 
 // ── Header ─────────────────────────────────────────────────────
 function renderHeader(state) {
-  const hours  = state.ticksElapsed;
-  const days   = Math.floor(hours / 24);
-  const h      = hours % 24;
-  const mm     = String(days).padStart(2, '0');
-  const ss     = String(h).padStart(2, '0');
-  set('h-timer',  `${mm}d ${ss}h`);
-  set('h-wallet', fmt(state.wallet));
-  set('h-rcu',    fmtN(state.rcu));
-  set('h-rcuh',   fmtN(calcRcuPerHour(state)));
-  set('h-mbh',    fmt(calcBurnPerHour(state)));
+  const hours = state.ticksElapsed;
+  const days  = Math.floor(hours / 24);
+  const h     = hours % 24;
+  set('h-timer', `${String(days).padStart(2, '0')}d ${String(h).padStart(2, '0')}h`);
 }
 
 // ── KPI sidebar ────────────────────────────────────────────────
 function renderKpi(state) {
+  set('h-wallet', fmt(state.wallet));
+  set('h-rcu',    fmtN(state.rcu));
+  set('h-rcuh',   fmtN(calcRcuPerHour(state)));
+  set('h-mbh',    fmt(calcBurnPerHour(state)));
+
   const lastEarned = state.history.earned.at(-1) ?? 0;
   const lastRcu    = state.history.rcu.at(-1)    ?? 0;
   set('k-earned', fmt(lastEarned) + '/d');
