@@ -469,6 +469,9 @@ body.kpi-closed #kpi-reopen { display: block; }
   cursor: pointer;
 }
 .inv-btn:disabled { border-color: var(--border); color: var(--text3); cursor: not-allowed; }
+.inv-row { display: flex; gap: 7px; margin-bottom: 7px; }
+.inv-row .inv-card { flex: 1; margin-bottom: 0; flex-direction: column; gap: 6px; }
+.inv-row .inv-card-side { flex-direction: row; justify-content: space-between; align-items: center; width: 100%; }
 .amber { color: var(--amber); }
 
 /* ── frontier_lab tab ────────────────────────────────────────── */
