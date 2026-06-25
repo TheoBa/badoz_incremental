@@ -24,9 +24,13 @@ export function renderWriteCode(state) {
         <div class="stat-row"><span>name</span><b id="wc-product" class="teal">—</b></div>
         <div class="stat-row"><span>customers</span><b id="wc-customers">0</b></div>
         <div class="stat-row"><span>MRR</span><b id="wc-mrr" class="money">$0</b></div>
-      </div>`;
+      </div>
+      <button class="go-broke-btn" id="wc-go-broke">go_broke()</button>`;
 
     document.getElementById('wc-btn').addEventListener('click', () => onWriteCode(state));
+    document.getElementById('wc-go-broke').addEventListener('click', () => {
+      document.getElementById('go-broke-overlay').classList.add('on');
+    });
     panel._built = true;
   }
 

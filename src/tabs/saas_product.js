@@ -74,8 +74,8 @@ export function renderSaasProduct(state) {
   const milestoneOk = claimId !== null && !!state.milestones?.claimed?.[claimId];
   const canRaise    = nextPrice !== null && milestoneOk;
 
-  const shockConv = DEMAND_SHOCK[round].conversion ?? null;
-  const shockRet  = DEMAND_SHOCK[round].retention ?? null;
+  const shockConv = canRaise ? DEMAND_SHOCK[round].conversion : null;
+  const shockRet  = canRaise ? DEMAND_SHOCK[round].retention  : null;
 
   panel.innerHTML = `
     <div class="sp-section">

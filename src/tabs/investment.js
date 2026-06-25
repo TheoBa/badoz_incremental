@@ -194,9 +194,9 @@ function buildHardwareCategory() {
 }
 
 const CATEGORIES = [
-  buildMarketingCategory(),
-  buildReputationCategory(),
   buildHardwareCategory(),
+  buildReputationCategory(),
+  buildMarketingCategory(),
 ];
 
 // ── Renderer ───────────────────────────────────────────────────
@@ -219,7 +219,9 @@ export function renderInvestment(state) {
       ${activeBoost > 0 ? `<div class="inv-stat-row"><span>active_boost</span><b class="amber">+${fmtN(activeBoost)} mkt/d</b></div>` : ''}
     </div>
 
-    ${CATEGORIES.map(cat => categorySection(cat, state)).join('')}`;
+    ${CATEGORIES
+        .filter(cat => cat.id !== 'mkt_stream' || (state.freelance.missionsCompleted ?? 0) >= MILESTONES.freelance_tiers.t0)
+        .map(cat => categorySection(cat, state)).join('')}`;
 
   // Wire click handlers for every buy button
   CATEGORIES.forEach(cat => {
@@ -238,12 +240,9 @@ export function renderInvestment(state) {
 
 // ── Section builder ────────────────────────────────────────────
 function categorySection(cat, state) {
-  // For hardware: show only purchased items + the next available/locked one per sub-track
-  const items = cat.id === 'hardware'
-    ? hardwareVisible(cat.items, state)
-    : cat.items;
+  if (cat.id === 'hardware') return hardwareCategorySection(cat, state);
 
-  const cards = items.map(inv => {
+  const cards = cat.items.map(inv => {
     const gated = inv.gate && !inv.gate(state);
     return gated
       ? lockedInvestmentCard(inv, state)
@@ -257,27 +256,23 @@ function categorySection(cat, state) {
     </div>`;
 }
 
-// For hardware: show purchased items + first not-done item per sub-track.
-// CPU and GPU are always shown.
-function hardwareVisible(items, state) {
+// Hardware renders as three fixed rows: gear · laptop · cpu+gpu
+function hardwareCategorySection(cat, state) {
   const { gear, laptop, cpu, gpu } = INVESTMENTS.rcu;
-  const ALWAYS      = [cpu.id, gpu.id];
-  const GEAR_IDS    = Object.values(gear).map(t => t.id);
-  const LAPTOP_IDS  = Object.values(laptop).map(t => t.id);
+  const byId = Object.fromEntries(cat.items.map(i => [i.id, i]));
+  const card = id => investmentCard(byId[id], state, cat.effectClass);
 
-  const visible = new Set(ALWAYS);
+  const gearRow   = Object.values(gear).map(t => card(t.id)).join('');
+  const laptopRow = Object.values(laptop).map(t => card(t.id)).join('');
+  const cpuGpuRow = [cpu.id, gpu.id].map(id => card(id)).join('');
 
-  // Gear: show purchased + next
-  GEAR_IDS.filter(id => items.find(i => i.id === id)?.done?.(state)).forEach(id => visible.add(id));
-  const nextGear = GEAR_IDS.find(id => !items.find(i => i.id === id)?.done?.(state));
-  if (nextGear) visible.add(nextGear);
-
-  // Laptop: show purchased + next
-  LAPTOP_IDS.filter(id => items.find(i => i.id === id)?.done?.(state)).forEach(id => visible.add(id));
-  const nextLaptop = LAPTOP_IDS.find(id => !items.find(i => i.id === id)?.done?.(state));
-  if (nextLaptop) visible.add(nextLaptop);
-
-  return items.filter(i => visible.has(i.id));
+  return `
+    <div class="inv-section">
+      <div class="inv-label">${cat.label}</div>
+      <div class="inv-row">${gearRow}</div>
+      <div class="inv-row">${laptopRow}</div>
+      <div class="inv-row">${cpuGpuRow}</div>
+    </div>`;
 }
 
 // ── Locked card (gated by milestone) ──────────────────────────
