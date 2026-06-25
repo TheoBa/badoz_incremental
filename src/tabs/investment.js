@@ -194,9 +194,9 @@ function buildHardwareCategory() {
 }
 
 const CATEGORIES = [
-  buildMarketingCategory(),
-  buildReputationCategory(),
   buildHardwareCategory(),
+  buildReputationCategory(),
+  buildMarketingCategory(),
 ];
 
 // ── Renderer ───────────────────────────────────────────────────
@@ -219,7 +219,9 @@ export function renderInvestment(state) {
       ${activeBoost > 0 ? `<div class="inv-stat-row"><span>active_boost</span><b class="amber">+${fmtN(activeBoost)} mkt/d</b></div>` : ''}
     </div>
 
-    ${CATEGORIES.map(cat => categorySection(cat, state)).join('')}`;
+    ${CATEGORIES
+        .filter(cat => cat.id !== 'mkt_stream' || (state.freelance.missionsCompleted ?? 0) >= MILESTONES.freelance_tiers.t0)
+        .map(cat => categorySection(cat, state)).join('')}`;
 
   // Wire click handlers for every buy button
   CATEGORIES.forEach(cat => {

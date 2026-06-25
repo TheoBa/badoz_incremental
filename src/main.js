@@ -6,6 +6,7 @@ import { startTick }            from './engine/tick.js';
 import { load, save }           from './engine/save.js';
 import { render }               from './ui/render.js';
 import { generateMissions }     from './engine/missions.js';
+import { newRun }               from './engine/run.js';
 import { initDevPanel }         from './ui/dev.js';
 import { initWinScreen }        from './ui/win.js';
 import { initStartScreen }      from './ui/start.js';
@@ -135,33 +136,32 @@ if (!state.tabsDiscovered) {
 }
 
 // ── Tab switching ──────────────────────────────────────────────
+function switchToTab(tab) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  const btn = document.querySelector(`.tab[data-tab="${tab}"]`);
+  btn?.classList.add('on');
+  document.getElementById('panel-' + tab)?.classList.add('on');
+
+  if (isTabUnlocked(tab, state) && !state.tabsDiscovered[tab]) {
+    state.tabsDiscovered[tab] = true;
+    showLore(tab, state, () => render(state));
+  }
+
+  if (tab === 'saas_product' && state.saas.price === 0) {
+    state.saas.price      = SAAS.subscription_price.t1;
+    state.saas.priceRound = 0;
+  }
+
+  if (tab === 'leaderboard') refreshLeaderboard();
+
+  render(state);
+}
+
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.classList.contains('locked')) return;
-
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
-    btn.classList.add('on');
-    document.getElementById('panel-' + btn.dataset.tab)?.classList.add('on');
-
-    const tab = btn.dataset.tab;
-
-    // Lore: show one-time discovery overlay on first visit (when tab content is accessible)
-    if (isTabUnlocked(tab, state) && !state.tabsDiscovered[tab]) {
-      state.tabsDiscovered[tab] = true;
-      showLore(tab, state, () => render(state));
-    }
-
-    // saas_product discovery: auto-set initial price on first visit
-    if (tab === 'saas_product' && state.saas.price === 0) {
-      state.saas.price      = SAAS.subscription_price.t1;
-      state.saas.priceRound = 0;
-    }
-
-    // leaderboard: refetch fresh standings each time the tab is opened
-    if (tab === 'leaderboard') refreshLeaderboard();
-
-    render(state);
+    switchToTab(btn.dataset.tab);
   });
 });
 
@@ -170,6 +170,16 @@ initDevPanel(state, render);
 
 // ── Win screen (shown when state.won) ─────────────────────────
 initWinScreen(state, render);
+
+// ── Go broke confirm overlay ───────────────────────────────────
+document.getElementById('go-broke-confirm')?.addEventListener('click', () => {
+  document.getElementById('go-broke-overlay').classList.remove('on');
+  newRun(state);
+  render(state);
+});
+document.getElementById('go-broke-cancel')?.addEventListener('click', () => {
+  document.getElementById('go-broke-overlay').classList.remove('on');
+});
 
 // ── Start screen (handle + product name; gates the run start) ──
 initStartScreen(state, render);
@@ -188,6 +198,10 @@ render(state);
 // ── Tick loop ──────────────────────────────────────────────────
 startTick(state, (s) => {
   render(s);
+  // Auto-switch to saas_product the moment it unlocks (first time only)
+  if (isTabUnlocked('saas_product', s) && !s.tabsDiscovered.saas_product) {
+    switchToTab('saas_product');
+  }
   if (s.won) {
     // Save once on the winning frame so a reload keeps the run resolved,
     // then stop autosaving (the tick loop is frozen anyway).
