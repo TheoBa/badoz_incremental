@@ -82,8 +82,8 @@ export function renderSaasProduct(state) {
       <div class="sp-label">saas_product</div>
       <div class="stat-row"><span>name</span><b>${state.productName ?? '—'}</b></div>
       <div class="stat-row"><span>price</span><b class="money">$${tiers[round]}/mo</b></div>
-      <div class="stat-row"><span>customers</span><b>${Math.floor(state.saas.customers)}</b></div>
-      <div class="stat-row"><span>MRR</span><b class="money">${fmt(state.saas.mrr)}</b></div>
+      <div class="stat-row"><span>customers</span><b class="mrr">${Math.floor(state.saas.customers)}</b></div>
+      <div class="stat-row"><span>MRR</span><b class="mrr">${fmt(state.saas.mrr)}</b></div>
     </div>
 
     ${nextPrice !== null ? `
@@ -134,11 +134,11 @@ function upgradeCard(track, state) {
     <div class="sf-card">
       <div class="sf-track-header">
         <span class="sf-track-name" style="color:${track.color}">${track.label}</span>
-        <span class="sf-track-val">${track.fmt(current)}</span>
+        <span class="sf-track-val" style="color:${track.color}">${track.fmt(current)}</span>
       </div>
       <div class="sf-card-name">lv. ${level}</div>
       <div class="sf-card-sub">
-        cost <b style="color:${track.color}">${fmtN(cost)} RCU</b>
+        cost <b class="rcu">${fmtN(cost)} RCU</b>
         · +${track.fmt(track.delta(level))}
       </div>
       <button
