@@ -222,11 +222,11 @@ body.kpi-closed #kpi-reopen { display: block; }
 /* ── Shared utility ──────────────────────────────────────────── */
 .money  { color: var(--green)  !important; }
 .burn   { color: var(--red)    !important; }
-.rcu    { color: var(--blue);  }
-.mrr    { color: var(--purple); }
-.gold   { color: var(--gold);  }
-.pink   { color: var(--pink);  }
-.yellow { color: var(--yellow); }
+.rcu    { color: var(--blue)   !important; }
+.mrr    { color: var(--purple) !important; }
+.gold   { color: var(--gold)   !important; }
+.pink   { color: var(--pink)   !important; }
+.yellow { color: var(--yellow) !important; }
 
 /* ── freelance tab ───────────────────────────────────────────── */
 .fl-meta {
