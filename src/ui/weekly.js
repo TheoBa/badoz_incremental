@@ -33,8 +33,8 @@ function showWeeklySummary(state) {
 
   el('weekly-rows').innerHTML = [
     row('money_made',     fmt(moneyMade),              'money'),
-    row('rcu_gained',     fmtN(rcuGained)),
-    row('new_customers',  fmtCust(newCust)),
+    row('rcu_gained',     fmtN(rcuGained),   'rcu'),
+    row('new_customers',  fmtCust(newCust),  'mrr'),
     row('freelance_done', `${missions} mission${missions !== 1 ? 's' : ''}`),
     investSpent > 0 ? row('invest_spent', fmt(investSpent)) : '',
   ].join('');
