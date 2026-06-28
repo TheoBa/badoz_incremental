@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-DEVRUN is a **finite, speedrunnable incremental game**. The player builds a SaaS product from solo dev to $1B exit. The win condition is hard — every run ends. The design goal is that first-timers discover the game blind, then replay faster with accumulated knowledge.
+BADOZ_INCREMENTAL is a **finite, speedrunnable incremental game**. The player builds a SaaS product from solo dev to $1B exit. The win condition is hard — every run ends. The design goal is that first-timers discover the game blind, then replay faster with accumulated knowledge.
 
 This is a personal project by Théo — keep implementations lean and readable over clever.
+It will be made clever from time to time semi-manually".
 
 ---
 
@@ -67,7 +68,7 @@ tick.js mutates state → render.js reads state → DOM updates
 
 - **snake_case everywhere in the UI** — tab names, property names, button labels. This is intentional: the game has a nerdy dev aesthetic.
 - **Tab identifiers**: `write_code`, `saas_product`, `freelance`, `investment`, `frontier_lab`, `post_on_x`. (`ship_feature` was folded into `saas_product`.)
-- **CONSTANTS keys** use `PascalCase_with_underscores` (e.g. `Freelance_RCU_T1`) — this matches the GDD vocabulary so balancing discussions map directly to code.
+- **CONSTANTS keys** use `upper_case` for constant name and `lower_case_with_underscores` for its derived attributes (e.g. `FREELANCE = {rcu: { t1: 10, t2: 100, t3: 1000 }}`).
 - **`null` constants are not yet tuned** — do not invent values. Leave them `null` until a balancing pass sets them deliberately.
 
 ---
@@ -78,29 +79,32 @@ Every game mechanic has one canonical color. Use the right class or CSS variable
 
 | Mechanic | Color | Hex | CSS var | Class |
 |---|---|---|---|---|
-| `RCU` / hardware | teal | `#1D9E75` | `var(--teal)` | `.teal` |
-| `money` / income | teal | `#1D9E75` | `var(--teal)` | `.money` |
-| `satisfaction` | teal | `#1D9E75` | `var(--teal)` | `.teal` |
-| `retention` | blue | `#378ADD` | `var(--blue)` | `.blue` |
-| `marketing_stream` | amber | `#BA7517` | `var(--amber)` | `.amber` |
-| `reputation` | default | `var(--text)` | — | *(none — default text color)* |
+| `money` / income | green | `#16a34a` | `var(--green)` | `.money` |
+| `RCU` / hardware | blue | `#2563eb` | `var(--blue)` | `.rcu` |
+| `MRR` | purple | `#7c3aed` | `var(--purple)` | `.mrr` |
 | burn / daily cost | red | `#c94040` | `var(--red)` | `.burn` |
-| cooldown timers | amber | `#BA7517` | `var(--amber)` | `.amber` |
-| **Frontier Lab** accent | purple | `#8b5cf6` | `--lab-accent` | *(lab panel only)* |
+| `reputation` | gold | `#d97706` | `var(--gold)` | `.gold` |
+| `marketing_stream` | gold | `#d97706` | `var(--gold)` | `.gold` |
+| `satisfaction` | pink | `#db2777` | `var(--pink)` | `.pink` |
+| `retention` | yellow | `#a89200` | `var(--yellow)` | `.yellow` |
+| cooldown timers | grey | `var(--text2)` | — | *(none — use default muted text color)* |
 
-The Frontier Lab tab uses a fully separate dark theme (`#0e0e14` background, purple `#8b5cf6` accent). Its CSS is scoped to `#panel-frontier_lab` and `.lab-*` child classes. Do not mix standard utility classes (`.teal`, `.amber`, etc.) inside the lab panel — use the lab-scoped equivalents.
+Reputation and `marketing_stream` share the same gold color — this is intentional to signal to the player that the two mechanics are related.
+
+The Frontier Lab tab uses the same light theme as the rest of the app. Its CSS is scoped to `.lab-*` classes. Standard utility classes are used inside the lab panel for boost value labels — this is intentional.
 
 ---
 
 ## Key game mechanics (for context when editing logic)
 
 - **Tick rate**: 1 real second = 1 in-game hour. 24 ticks = 1 day. 1 month ≈ 12 real minutes.
-- **Three milestone tracks** (checked in `tick.js → checkMilestones`):
-  1. Lifetime RCU → freelance tier upgrades (Junior → Senior → Lead → 10x)
-  2. Cumulative Frontier Lab spend → agent unlocks
-  3. Lifetime money earned → subscription price rounds (one-way, triggers demand shock)
-- **Rush option** in freelance: one-time unlock costing `Freelance_RCU_T1` RCU, doubles mission reward, instant completion.
-- **post_on_x**: available once per in-game day (24-tick cooldown). Each post compounds `reputation.multiplier` by ×1.05. No streak mechanic.
+- **Milestone tracks** (checked in `tick.js → checkMilestones`):
+  1. money_earned; unlocks the `investments` tab and 2 subscription `raise_price` instances (10 → 100 → 1000)
+  2. freelance_missions; unlocks freelance related upgrades (Junior → Senior → Lead → 10x) as well as the `rush` option: double RCU cost to mission reward.
+  3. rcu_gained → unlocks the `frontier_lab` tab and first 3 agents 
+  4. lab_spend → agent unlocks lab scale plan (free → hobbyist → growth → scale → infernal)
+  5. mrr_peak; unlocks investments options then frontier_lab agents (ai_marketer → ai_ceo)
+- **post_on_x**: available once per in-game day (24-tick cooldown). Each post compounds `reputation.multiplier` by ×1.01. No streak mechanic.
 - **Frontier Lab billing**: plan changes take effect at the next in-game day boundary (tick % 24 === 0). Daily cost deducted then.
 - **Run info panel** in the KPI dashboard is hidden until `state.runCount > 0`.
 
@@ -131,25 +135,3 @@ When a feature branch is ready to push, Claude must write a PR description conta
 Format it as a markdown block so Théo can paste it directly into the GitHub PR body.
 
 ---
-
-## Backlog (one feature branch per item)
-
-All `// TODO` stubs in `tick.js`, the tab render functions in `src/tabs/`, and the analytics event emission in `src/engine/save.js` are intentional placeholders. Do not fill them in incidentally while working on something else — each is its own feature branch.
-
-### Pending items
-
-- **KPI histograms — daily deltas** (`feature/kpi-histograms`)
-  Replace cumulative lifetime snapshots with per-day deltas so bars fluctuate meaningfully.
-  - `earned` bar → money earned that day
-  - `rcu` bar → RCU acquired that day (clicks + passive)
-  - `mrr` bar → net subscriptions gained that day (new acquisitions + renewals − churn), displayed under MRR
-  `history` in state needs a `prev` shadow object to compute deltas at snapshot time.
-
-- **Milestone checks** (`feature/milestones`)
-  Wire up `checkMilestones()` in `tick.js`:
-  - `Freelance_RCU_T1/T2/T3` → freelance tier upgrades (junior → senior → lead → 10x)
-  - `Price_Round_T1/T2` (lifetime money earned) → subscription price rounds
-  - `Lab_Money_T1–T9` → Frontier Lab agent unlocks
-
-- **Win condition** (`feature/win`)
-  `$1B retire` button appears when `state.moneyLifetime >= WIN_CONDITION`.

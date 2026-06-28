@@ -865,7 +865,7 @@ body.kpi-closed #kpi-reopen { display: block; }
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
 }
 .lore-card.creepy {
-  border-color: var(--lab-accent);
+  border-color: #8b5cf6;
   box-shadow: 0 8px 40px rgba(139, 92, 246, 0.18);
 }
 .lore-text p {
@@ -876,7 +876,7 @@ body.kpi-closed #kpi-reopen { display: block; }
 }
 .lore-text p:first-child { color: var(--text); font-weight: 500; }
 .lore-card.creepy .lore-text p { color: #9d7ee0; }
-.lore-card.creepy .lore-text p:first-child { color: var(--lab-accent); letter-spacing: 1px; }
+.lore-card.creepy .lore-text p:first-child { color: #8b5cf6; letter-spacing: 1px; }
 .lore-form { margin: 14px 0 4px; }
 
 /* ── go broke overlay ────────────────────────────────────────── */
