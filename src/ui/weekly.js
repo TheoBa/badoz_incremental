@@ -40,7 +40,7 @@ function showWeeklySummary(state) {
   ].join('');
 
   // Wallet evolution bars — clamp to 0 for bar height; negative shown as near-zero
-  renderHistogram(el('weekly-wallet'), h.wallet.map(v => Math.max(v, 0)), '#1D9E75');
+  renderHistogram(el('weekly-wallet'), h.wallet.map(v => Math.max(v, 0)), '#16a34a');
 
   el('weekly-hint').textContent = `balance: ${fmt(state.wallet)} · target: $1B`;
 

@@ -20,7 +20,7 @@ export function renderFreelance(state) {
   panel.innerHTML = `
     <div class="fl-meta">
       day <b>${day}</b>
-      · tier <b class="teal">${state.freelance.tier}</b>
+      · tier <b class="rcu">${state.freelance.tier}</b>
       · refreshes in <b>${refreshIn}h</b>
     </div>
 
@@ -60,7 +60,7 @@ function missionCard(m, state, seniorClaimed, rushUnlocked) {
   const canRush        = rushUnlocked && !m.accepted && state.rcu >= m.rcuCost * 2;
   const sub = m.accepted
     ? `completed ✓ · +${fmt(m.reward)}`
-    : `cost <b class="teal">${fmtN(m.rcuCost)} RCU</b> · reward <b class="money">${fmt(m.reward)}</b>`;
+    : `cost <b class="rcu">${fmtN(m.rcuCost)} RCU</b> · reward <b class="money">${fmt(m.reward)}</b>`;
 
   const rushBtn = seniorClaimed
     ? rushUnlocked

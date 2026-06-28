@@ -21,7 +21,7 @@ export function renderWriteCode(state) {
       </div>
       <div class="stat-section">
         <div class="stat-section-label">saas_product</div>
-        <div class="stat-row"><span>name</span><b id="wc-product" class="teal">—</b></div>
+        <div class="stat-row"><span>name</span><b id="wc-product">—</b></div>
         <div class="stat-row"><span>customers</span><b id="wc-customers">0</b></div>
         <div class="stat-row"><span>MRR</span><b id="wc-mrr" class="money">$0</b></div>
       </div>

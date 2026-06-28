@@ -20,7 +20,7 @@ const TRACKS = [
     key:      'conversion',
     stateKey: 'conversion',
     label:    'conversion',
-    color:    '#1D9E75',
+    color:    '#db2777',
     baseCost: () => SAAS.ship_feature.conversion.base_cost,
     costScale: () => SAAS.ship_feature.conversion.cost_scale,
     delta:    (level) => SAAS.ship_feature.conversion.base_delta * Math.pow(SAAS.ship_feature.conversion.delta_scale, level),
@@ -30,7 +30,7 @@ const TRACKS = [
     key:      'retention',
     stateKey: 'retention',
     label:    'retention',
-    color:    '#378ADD',
+    color:    '#a89200',
     baseCost: () => SAAS.ship_feature.retention.base_cost,
     costScale: () => SAAS.ship_feature.retention.cost_scale,
     delta:    (level) => SAAS.ship_feature.retention.base_delta * Math.pow(SAAS.ship_feature.retention.delta_scale, level),
@@ -40,7 +40,7 @@ const TRACKS = [
     key:      'marketingStream',
     stateKey: 'marketingStream',
     label:    'marketing_stream',
-    color:    '#BA7517',
+    color:    '#d97706',
     baseCost: () => SAAS.ship_feature.marketing.base_cost,
     costScale: () => SAAS.ship_feature.marketing.cost_scale,
     delta:    (level) => SAAS.ship_feature.marketing.base_delta * Math.pow(SAAS.ship_feature.marketing.delta_scale, level),
@@ -80,7 +80,7 @@ export function renderSaasProduct(state) {
   panel.innerHTML = `
     <div class="sp-section">
       <div class="sp-label">saas_product</div>
-      <div class="stat-row"><span>name</span><b class="teal">${state.productName ?? '—'}</b></div>
+      <div class="stat-row"><span>name</span><b>${state.productName ?? '—'}</b></div>
       <div class="stat-row"><span>price</span><b class="money">$${tiers[round]}/mo</b></div>
       <div class="stat-row"><span>customers</span><b>${Math.floor(state.saas.customers)}</b></div>
       <div class="stat-row"><span>MRR</span><b class="money">${fmt(state.saas.mrr)}</b></div>

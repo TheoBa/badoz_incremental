@@ -39,25 +39,25 @@ const PLAN_GATES = {
 const BOOST_DISPLAY = {
   coder_rcu: (agent, plan, state) => {
     const rcu = calcCoderRcuPerHour(agent) * plan.multiplier * calcProductManagerMultiplier(state);
-    return `passive_rcu/h: <b class="teal">${fmtN(rcu)}</b>`;
+    return `passive_rcu/h: <b class="rcu">${fmtN(rcu)}</b>`;
   },
   support_retention: (agent, _plan, state) => {
     const plan_ = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
     const bonus = calcAgentBoost(agent, LAB.agents.support) * plan_.multiplier * calcProductManagerMultiplier(state);
-    return `retention_bonus: <b class="blue">+${bonus.toFixed(2)}</b>`;
+    return `retention_bonus: <b class="yellow">+${bonus.toFixed(2)}</b>`;
   },
   marketer_mkt: (agent, _plan, state) => {
     const plan_ = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
     const mkt   = calcAgentBoost(agent, LAB.agents.marketer) * plan_.multiplier * calcProductManagerMultiplier(state);
-    return `mkt_stream: <b class="amber">+${fmtN(mkt)}/d</b>`;
+    return `mkt_stream: <b class="gold">+${fmtN(mkt)}/d</b>`;
   },
   pm_mult: (_agent, _plan, state) => {
     const mult = calcProductManagerMultiplier(state);
-    return `all_agents: <b class="teal">×${mult.toFixed(2)}</b>`;
+    return `all_agents: <b>×${mult.toFixed(2)}</b>`;
   },
   ceo_rep: (_agent, _plan, state) => {
     const rep = calcCeoReputationGain(state);
-    return `reputation/d: <b class="teal">+${rep.toFixed(3)}</b>`;
+    return `reputation/d: <b class="gold">+${rep.toFixed(3)}</b>`;
   },
 };
 

@@ -214,9 +214,9 @@ export function renderInvestment(state) {
   panel.innerHTML = `
     <div class="inv-stats">
       <div class="inv-stat-row"><span>wallet</span><b class="money">${fmt(state.wallet)}</b></div>
-      <div class="inv-stat-row"><span>reputation</span><b class="teal">${state.reputation.multiplier.toFixed(2)}×</b></div>
+      <div class="inv-stat-row"><span>reputation</span><b class="gold">${state.reputation.multiplier.toFixed(2)}×</b></div>
       <div class="inv-stat-row"><span>rcu/click</span><b>${rcuPerClick}</b></div>
-      ${activeBoost > 0 ? `<div class="inv-stat-row"><span>active_boost</span><b class="amber">+${fmtN(activeBoost)} mkt/d</b></div>` : ''}
+      ${activeBoost > 0 ? `<div class="inv-stat-row"><span>active_boost</span><b class="gold">+${fmtN(activeBoost)} mkt/d</b></div>` : ''}
     </div>
 
     ${CATEGORIES
