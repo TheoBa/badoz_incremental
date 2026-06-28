@@ -1,12 +1,12 @@
 // charts.js — post-game analytics charts (hand-rolled SVG, no external libs).
 // Renders the three cumulative series sharing a time axis, with vertical
-// raise_price markers. Colors follow CLAUDE.md: money=teal, rcu=grey, burn=red.
+// raise_price markers. Colors follow CLAUDE.md color coding.
 
 import { fmt, fmtN } from './render.js';
 
 const SERIES = [
-  { key: 'money',   title: 'cumulative_money',  color: '#1D9E75', peak: fmt  },
-  { key: 'rcu',     title: 'cumulative_rcu',    color: '#888888', peak: fmtN },
+  { key: 'money',   title: 'cumulative_money',  color: '#16a34a', peak: fmt  },
+  { key: 'rcu',     title: 'cumulative_rcu',    color: '#2563eb', peak: fmtN },
   { key: 'labBurn', title: 'lab_tokens_burned', color: '#c94040', peak: fmt  },
 ];
 
@@ -51,8 +51,8 @@ function chartSVG(spec, t, vals, maxT, evs) {
     .filter(e => Number.isFinite(e.tick) && e.tick <= maxT)
     .map(e => {
       const x = sx(e.tick).toFixed(1);
-      return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + innerH}" stroke="#BA7517" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`
-           + `<text x="${x}" y="${padT - 6}" fill="#BA7517" font-size="9" text-anchor="middle">$${e.to}</text>`;
+      return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + innerH}" stroke="#d97706" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`
+           + `<text x="${x}" y="${padT - 6}" fill="#d97706" font-size="9" text-anchor="middle">$${e.to}</text>`;
     })
     .join('');
 

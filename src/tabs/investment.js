@@ -23,7 +23,7 @@ function buildMarketingCategory() {
   return {
     id:          'mkt_stream',
     label:       'mkt_stream · visitor boosts',
-    effectClass: 'amber',
+    effectClass: 'gold',
     items: Object.values(INVESTMENTS.marketing).map(item => {
       const days = item.campaign_active / 24;
       const durLabel = `${days} day${days !== 1 ? 's' : ''}`;
@@ -60,7 +60,7 @@ function buildReputationCategory() {
   return {
     id:          'reputation',
     label:       'reputation · rep multiplier',
-    effectClass: '',
+    effectClass: 'gold',
     items: Object.values(INVESTMENTS.reputation).map(item => {
       const hasUses     = item.max_uses != null;
       const hasCooldown = item.cooldown  != null;
@@ -188,7 +188,7 @@ function buildHardwareCategory() {
   return {
     id:          'hardware',
     label:       'hardware · rcu/click',
-    effectClass: 'teal',
+    effectClass: 'rcu',
     items:       [...gearItems, ...laptopItems, cpuItem, gpuItem],
   };
 }
@@ -214,9 +214,9 @@ export function renderInvestment(state) {
   panel.innerHTML = `
     <div class="inv-stats">
       <div class="inv-stat-row"><span>wallet</span><b class="money">${fmt(state.wallet)}</b></div>
-      <div class="inv-stat-row"><span>reputation</span><b class="teal">${state.reputation.multiplier.toFixed(2)}×</b></div>
-      <div class="inv-stat-row"><span>rcu/click</span><b>${rcuPerClick}</b></div>
-      ${activeBoost > 0 ? `<div class="inv-stat-row"><span>active_boost</span><b class="amber">+${fmtN(activeBoost)} mkt/d</b></div>` : ''}
+      <div class="inv-stat-row"><span>reputation</span><b class="gold">${state.reputation.multiplier.toFixed(2)}×</b></div>
+      <div class="inv-stat-row"><span>rcu/click</span><b class="rcu">${rcuPerClick}</b></div>
+      ${activeBoost > 0 ? `<div class="inv-stat-row"><span>active_boost</span><b class="gold">+${fmtN(activeBoost)} mkt/d</b></div>` : ''}
     </div>
 
     ${CATEGORIES

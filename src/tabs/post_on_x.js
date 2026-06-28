@@ -12,7 +12,7 @@ export function renderPostOnX(state) {
   if (!panel._built) {
     panel.innerHTML = `
       <div class="pox-rep-display">
-        <div class="pox-rep-value" id="pox-rep">1.00×</div>
+        <div class="pox-rep-value gold" id="pox-rep">1.00×</div>
         <div class="pox-rep-label">reputation_multiplier</div>
       </div>
 
@@ -20,8 +20,8 @@ export function renderPostOnX(state) {
       <div class="pox-cooldown" id="pox-cooldown"></div>
 
       <div class="stat-section">
-        <div class="stat-row"><span>rep/post</span><b>+${CONSTANTS.PostOnX_Rep_Delta.toFixed(2)}</b></div>
-        <div class="stat-row"><span>number_of_posts</span><b id="pox-count">0</b></div>
+        <div class="stat-row"><span>rep/post</span><b class="gold">+${CONSTANTS.PostOnX_Rep_Delta.toFixed(2)}</b></div>
+        <div class="stat-row"><span>number_of_posts</span><b id="pox-count" class="gold">0</b></div>
         <div class="stat-row"><span>cooldown</span><b>1 day</b></div>
       </div>`;
 

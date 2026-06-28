@@ -88,9 +88,9 @@ function renderKpi(state) {
   set('k-mkt', fmtN(effectiveMkt) + '/d');
   set('k-rep', state.reputation.multiplier.toFixed(2) + '×');
 
-  renderHistogram(document.getElementById('hist-earned'), state.history.earned, '#1D9E75');
-  renderHistogram(document.getElementById('hist-rcu'),    state.history.rcu,    '#888');
-  renderHistogram(document.getElementById('hist-mrr'),    state.history.mrr,    '#378ADD');
+  renderHistogram(document.getElementById('hist-earned'), state.history.earned, '#16a34a');
+  renderHistogram(document.getElementById('hist-rcu'),    state.history.rcu,    '#2563eb');
+  renderHistogram(document.getElementById('hist-mrr'),    state.history.mrr,    '#7c3aed');
   renderHistogram(document.getElementById('hist-burn'),   state.history.burn,   '#c94040');
 
   // Run info only visible once the leaderboard is unlocked (first win)

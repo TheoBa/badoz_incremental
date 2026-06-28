@@ -15,15 +15,15 @@ export function renderWriteCode(state) {
       </div>
       <button class="write-btn" id="wc-btn">[ write_code() ]</button>
       <div class="stat-section">
-        <div class="stat-row"><span>RCU/click</span><b id="wc-rcu-click">1</b></div>
-        <div class="stat-row"><span>RCU/h</span><b id="wc-rcuh">0</b></div>
+        <div class="stat-row"><span>RCU/click</span><b id="wc-rcu-click" class="rcu">1</b></div>
+        <div class="stat-row"><span>RCU/h</span><b id="wc-rcuh" class="rcu">0</b></div>
         <div class="stat-row"><span>MB/h</span><b id="wc-mbh" class="burn">$0</b></div>
       </div>
       <div class="stat-section">
         <div class="stat-section-label">saas_product</div>
-        <div class="stat-row"><span>name</span><b id="wc-product" class="teal">—</b></div>
+        <div class="stat-row"><span>name</span><b id="wc-product">—</b></div>
         <div class="stat-row"><span>customers</span><b id="wc-customers">0</b></div>
-        <div class="stat-row"><span>MRR</span><b id="wc-mrr" class="money">$0</b></div>
+        <div class="stat-row"><span>MRR</span><b id="wc-mrr" class="mrr">$0</b></div>
       </div>
       <button class="go-broke-btn" id="wc-go-broke">go_broke()</button>`;
 

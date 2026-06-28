@@ -38,7 +38,7 @@ export const MILESTONE_TRACKS = [
     label:    'money_earned',
     getValue: (state) => state.moneyLifetime,
     fmtValue: fmtMoney,
-    barColor: '#1D9E75',
+    barColor: '#16a34a',
     steps: [
       {
         id:        'investment_unlock',
@@ -174,7 +174,7 @@ export const MILESTONE_TRACKS = [
     label:    'mrr_peak',
     getValue: (state) => state.saas.mrrPeak ?? state.saas.mrr,
     fmtValue: fmtMoney,
-    barColor: '#378ADD',
+    barColor: '#7c3aed',
     steps: [
       {
         id:        'mrr_t1',
