@@ -165,6 +165,18 @@ document.querySelectorAll('.tab').forEach(btn => {
   });
 });
 
+// ── Tab shortcuts (1-8 switch tabs left to right) ──────────────
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const target = e.target;
+  if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) return;
+  const idx = Number(e.key) - 1;
+  if (!Number.isInteger(idx) || idx < 0) return;
+  const btn = document.querySelectorAll('.tab')[idx];
+  if (!btn || btn.classList.contains('locked')) return;
+  switchToTab(btn.dataset.tab);
+});
+
 // ── Dev panel (toggle with ` key) ─────────────────────────────
 initDevPanel(state, render);
 
