@@ -1,4 +1,5 @@
 import { newRun } from '../engine/run.js';
+import { openDevAnalysis } from './dev-analysis.js';
 
 export function initDevPanel(state, renderFn) {
   // Inject styles
@@ -18,6 +19,8 @@ export function initDevPanel(state, renderFn) {
     #dev-panel button:hover { background: #3a3a5e; }
     #dev-panel .dev-reset { margin-top: .25rem; border-color: #c94040; color: #c94040; width: 100%; }
     #dev-panel .dev-reset:hover { background: #2a1010; }
+    #dev-panel .dev-analysis { margin-top: .25rem; border-color: #2563eb; color: #2563eb; width: 100%; }
+    #dev-panel .dev-analysis:hover { background: #0a1428; }
     #dev-panel .dev-title { color: #666; font-size: .65rem; margin-bottom: .1rem; }
   `;
   document.head.appendChild(style);
@@ -38,6 +41,7 @@ export function initDevPanel(state, renderFn) {
       <button id="dev-give-rcu">Give RCU</button>
     </div>
     <button class="dev-reset" id="dev-reset-run">Reset run</button>
+    <button class="dev-analysis" id="dev-open-analysis">Analysis ▶</button>
   `;
   document.body.appendChild(panel);
 
@@ -67,5 +71,9 @@ export function initDevPanel(state, renderFn) {
   document.getElementById('dev-reset-run').addEventListener('click', () => {
     newRun(state);
     renderFn(state);
+  });
+
+  document.getElementById('dev-open-analysis').addEventListener('click', () => {
+    openDevAnalysis();
   });
 }
