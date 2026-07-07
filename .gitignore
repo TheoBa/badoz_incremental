@@ -35,3 +35,6 @@ logs/
 
 # Local SQLite database (regenerated from schema.sql on first run)
 server/db/*.db.bin
+
+# Theo's ignore
+auto-pull.sh
