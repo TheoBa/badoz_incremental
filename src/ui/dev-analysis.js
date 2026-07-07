@@ -1,6 +1,7 @@
 // dev-analysis.js — developer analysis panel for game balancing
 
 import { CONSTANTS, MILESTONES, FREELANCE, SAAS, LAB, INVESTMENTS } from '../engine/state.js';
+import { runSim, saveSim, loadSims, deleteSim } from '../engine/simulator.js';
 
 const ROOTS    = { CONSTANTS, MILESTONES, FREELANCE, SAAS, LAB, INVESTMENTS };
 const DEFAULTS = JSON.parse(JSON.stringify(ROOTS));
@@ -554,6 +555,73 @@ function injectStyles() {
     .da-stat-row span { color: #555; }
     .da-stat-row b { color: #ccc; font-weight: 600; }
     .da-stat-note { font-size: 9px; color: #333; margin-left: 6px; font-weight: 400; }
+
+    /* ── simulator tab ── */
+    #da-simulator-section {
+      display: none; flex-direction: row; flex: 1; gap: 10px; overflow: hidden; min-height: 0;
+    }
+    #da-simulator-section.on { display: flex; }
+    #da-sim-left {
+      width: 210px; flex-shrink: 0; overflow-y: auto;
+      background: #0c0c10; border-right: 1px solid #1e1e28; padding: 8px;
+    }
+    #da-sim-right {
+      flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; min-height: 0;
+    }
+    .da-sim-section-label {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+      color: #444; margin-bottom: 6px; margin-top: 10px;
+    }
+    .da-sim-section-label:first-child { margin-top: 0; }
+    .da-sim-row {
+      display: flex; align-items: center; gap: 5px; margin-bottom: 5px;
+    }
+    .da-sim-row label { font-size: 9px; color: #555; width: 76px; flex-shrink: 0; }
+    .da-sim-input {
+      flex: 1; background: #141420; border: 1px solid #2a2a2a; color: #ccc;
+      font-family: inherit; font-size: 10px; padding: 2px 5px; border-radius: 2px;
+    }
+    .da-sim-range { flex: 1; accent-color: #2563eb; }
+    .da-sim-select {
+      flex: 1; background: #141420; border: 1px solid #2a2a2a; color: #ccc;
+      font-family: inherit; font-size: 10px; padding: 2px 4px; border-radius: 2px;
+    }
+    .da-sim-check-row {
+      display: flex; align-items: center; gap: 5px; margin-bottom: 4px;
+      font-size: 10px; color: #666;
+    }
+    .da-sim-check-row input[type=checkbox] { accent-color: #2563eb; }
+    #da-sim-run-btn {
+      width: 100%; margin-top: 8px; padding: 6px; font-family: inherit; font-size: 11px;
+      background: none; border: 1px solid #2563eb; color: #2563eb; cursor: pointer; border-radius: 3px;
+    }
+    #da-sim-run-btn:hover { background: rgba(37,99,235,0.1); }
+    #da-sim-run-btn:disabled { border-color: #333; color: #444; cursor: not-allowed; }
+    #da-sim-status { font-size: 9px; color: #444; margin-top: 4px; min-height: 12px; text-align: center; }
+    #da-sim-metric-row {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 2px;
+    }
+    #da-sim-metric-row label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+    #da-sim-metric { background: #141420; border: 1px solid #2a2a2a; color: #ccc; font-family: inherit; font-size: 10px; padding: 3px 6px; border-radius: 3px; }
+    #da-sim-canvas-wrap { flex: 1; min-height: 0; }
+    #da-sim-canvas { display: block; width: 100%; height: 100%; border-radius: 4px; }
+    #da-sim-runs {
+      flex-shrink: 0; max-height: 130px; overflow-y: auto;
+      border-top: 1px solid #1e1e28; padding-top: 6px;
+    }
+    .da-sim-run-row {
+      display: flex; align-items: center; gap: 6px; padding: 3px 2px;
+      border-bottom: 1px solid #111; font-size: 10px;
+    }
+    .da-sim-run-row:last-child { border-bottom: none; }
+    .da-sim-run-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .da-sim-run-name { flex: 1; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .da-sim-run-win { color: #16a34a; white-space: nowrap; }
+    .da-sim-run-nowin { color: #555; }
+    .da-sim-run-del {
+      background: none; border: none; color: #333; cursor: pointer; font-size: 11px; padding: 0 2px;
+    }
+    .da-sim-run-del:hover { color: #c94040; }
   `;
   document.head.appendChild(el);
 }
@@ -595,6 +663,7 @@ function buildHTML() {
         <div id="da-view-tabs">
           <button class="da-tab on" id="da-tab-curves">curves</button>
           <button class="da-tab"    id="da-tab-snapshot">snapshot</button>
+          <button class="da-tab"    id="da-tab-simulator">simulator</button>
         </div>
 
         <!-- ── curves section ── -->
@@ -677,6 +746,94 @@ function buildHTML() {
               <span>mrr</span>
               <b id="da-s-mrr">—</b>
             </div>
+          </div>
+        </div>
+
+        <!-- ── simulator section ── -->
+        <div id="da-simulator-section">
+          <div id="da-sim-left">
+            <div class="da-sim-section-label">strategy</div>
+            <div class="da-sim-row">
+              <label>name</label>
+              <input id="da-sim-name" class="da-sim-input" type="text" value="my_strategy" maxlength="24">
+            </div>
+            <div class="da-sim-row">
+              <label>clicks/tick</label>
+              <input id="da-sim-clicks-val" class="da-sim-input" type="number" value="3" min="0" max="20" style="width:36px;flex:none">
+              <input id="da-sim-clicks-range" class="da-sim-range" type="range" min="0" max="20" value="3" step="1">
+            </div>
+
+            <div class="da-sim-section-label">rcu_priority</div>
+            <div class="da-sim-row"><label>slot_1</label><select class="da-sim-select da-sim-rcu-pri" data-slot="0">
+              <option value="conversion" selected>conversion</option><option value="retention">retention</option><option value="marketing">marketing</option><option value="coder">coder</option>
+            </select></div>
+            <div class="da-sim-row"><label>slot_2</label><select class="da-sim-select da-sim-rcu-pri" data-slot="1">
+              <option value="conversion">conversion</option><option value="retention" selected>retention</option><option value="marketing">marketing</option><option value="coder">coder</option>
+            </select></div>
+            <div class="da-sim-row"><label>slot_3</label><select class="da-sim-select da-sim-rcu-pri" data-slot="2">
+              <option value="conversion">conversion</option><option value="retention">retention</option><option value="marketing" selected>marketing</option><option value="coder">coder</option>
+            </select></div>
+            <div class="da-sim-row"><label>slot_4</label><select class="da-sim-select da-sim-rcu-pri" data-slot="3">
+              <option value="conversion">conversion</option><option value="retention">retention</option><option value="marketing">marketing</option><option value="coder" selected>coder</option>
+            </select></div>
+
+            <div class="da-sim-section-label">money_priority</div>
+            <div class="da-sim-row"><label>slot_1</label><select class="da-sim-select da-sim-money-pri" data-slot="0">
+              <option value="cpu" selected>cpu</option><option value="gear">gear</option><option value="laptop">laptop</option><option value="gpu">gpu</option>
+            </select></div>
+            <div class="da-sim-row"><label>slot_2</label><select class="da-sim-select da-sim-money-pri" data-slot="1">
+              <option value="cpu">cpu</option><option value="gear" selected>gear</option><option value="laptop">laptop</option><option value="gpu">gpu</option>
+            </select></div>
+            <div class="da-sim-row"><label>slot_3</label><select class="da-sim-select da-sim-money-pri" data-slot="2">
+              <option value="cpu">cpu</option><option value="gear">gear</option><option value="laptop" selected>laptop</option><option value="gpu">gpu</option>
+            </select></div>
+            <div class="da-sim-row"><label>slot_4</label><select class="da-sim-select da-sim-money-pri" data-slot="3">
+              <option value="cpu">cpu</option><option value="gear">gear</option><option value="laptop">laptop</option><option value="gpu" selected>gpu</option>
+            </select></div>
+
+            <div class="da-sim-section-label">settings</div>
+            <div class="da-sim-row">
+              <label>target_plan</label>
+              <select id="da-sim-plan" class="da-sim-select">
+                <option value="free">free</option>
+                <option value="hobbyist">hobbyist</option>
+                <option value="growth" selected>growth</option>
+                <option value="scale">scale</option>
+                <option value="infernal">infernal</option>
+              </select>
+            </div>
+            <div class="da-sim-row">
+              <label>max_days</label>
+              <input id="da-sim-maxdays" class="da-sim-input" type="number" value="365" min="30" max="1000">
+            </div>
+            <div class="da-sim-check-row">
+              <input type="checkbox" id="da-sim-missions" checked>
+              <label for="da-sim-missions">accept_missions</label>
+            </div>
+            <div class="da-sim-check-row">
+              <input type="checkbox" id="da-sim-post" checked>
+              <label for="da-sim-post">always_post_on_x</label>
+            </div>
+
+            <button id="da-sim-run-btn">▶ run_sim()</button>
+            <div id="da-sim-status"></div>
+          </div>
+
+          <div id="da-sim-right">
+            <div id="da-sim-metric-row">
+              <label>metric</label>
+              <select id="da-sim-metric">
+                <option value="moneyLifetime">lifetime_earned</option>
+                <option value="mrr" selected>mrr</option>
+                <option value="wallet">wallet</option>
+                <option value="customers">customers</option>
+                <option value="rcuH">rcu/h</option>
+              </select>
+            </div>
+            <div id="da-sim-canvas-wrap">
+              <canvas id="da-sim-canvas"></canvas>
+            </div>
+            <div id="da-sim-runs"></div>
           </div>
         </div>
 
@@ -864,20 +1021,117 @@ function drawCurves() {
   if (gainCanvas) plotChart(gainCanvas, { title: 'gain / cumulative_gain', series: gainSeries, yLog: false });
 }
 
+// ── Simulator helpers ────────────────────────────────────────────
+const SIM_COLORS = ['#2563eb','#16a34a','#c94040','#d97706','#7c3aed','#db2777','#a89200','#0891b2'];
+let _simSelectedIds = new Set();
+
+function readStrategy() {
+  const rcuPri   = [...document.querySelectorAll('.da-sim-rcu-pri')]
+    .sort((a,b) => a.dataset.slot - b.dataset.slot).map(s => s.value);
+  const moneyPri = [...document.querySelectorAll('.da-sim-money-pri')]
+    .sort((a,b) => a.dataset.slot - b.dataset.slot).map(s => s.value);
+  return {
+    name:           document.getElementById('da-sim-name')?.value ?? 'run',
+    clicksPerTick:  parseInt(document.getElementById('da-sim-clicks-val')?.value) || 0,
+    rcuPriority:    rcuPri,
+    moneyPriority:  moneyPri,
+    targetPlan:     document.getElementById('da-sim-plan')?.value ?? 'growth',
+    maxDays:        parseInt(document.getElementById('da-sim-maxdays')?.value) || 365,
+    acceptMissions: document.getElementById('da-sim-missions')?.checked !== false,
+    alwaysPost:     document.getElementById('da-sim-post')?.checked !== false,
+  };
+}
+
+function refreshSimRunsList() {
+  const el = document.getElementById('da-sim-runs');
+  if (!el) return;
+  const sims = loadSims();
+  if (!sims.length) { el.innerHTML = '<div style="font-size:9px;color:#333;padding:4px 0;">no saved runs</div>'; return; }
+  el.innerHTML = sims.map((sim, idx) => {
+    const color   = SIM_COLORS[idx % SIM_COLORS.length];
+    const checked = _simSelectedIds.has(sim.id);
+    const winText = sim.winDay != null
+      ? `<span class="da-sim-run-win">${sim.winDay}d</span>`
+      : `<span class="da-sim-run-nowin">—</span>`;
+    return `<div class="da-sim-run-row">
+      <input type="checkbox" data-simid="${sim.id}" ${checked ? 'checked' : ''} style="accent-color:${color}">
+      <span class="da-sim-run-dot" style="background:${color}"></span>
+      <span class="da-sim-run-name" title="${sim.name}">${sim.name}</span>
+      ${winText}
+      <button class="da-sim-run-del" data-del="${sim.id}" title="delete">✕</button>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('input[type=checkbox][data-simid]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = Number(cb.dataset.simid);
+      cb.checked ? _simSelectedIds.add(id) : _simSelectedIds.delete(id);
+      drawSimChart();
+    });
+  });
+  el.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.dataset.del);
+      deleteSim(id);
+      _simSelectedIds.delete(id);
+      refreshSimRunsList();
+      drawSimChart();
+    });
+  });
+}
+
+function drawSimChart() {
+  const canvas  = document.getElementById('da-sim-canvas');
+  if (!canvas) return;
+  const metric  = document.getElementById('da-sim-metric')?.value ?? 'mrr';
+  const sims    = loadSims();
+  const selected = sims.filter((s, idx) => _simSelectedIds.has(s.id));
+
+  if (!selected.length) {
+    const dpr  = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = (rect.width  || 400) * dpr;
+    canvas.height = (rect.height || 200) * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, rect.width || 400, rect.height || 200);
+    ctx.fillStyle = '#333';
+    ctx.font = '11px var(--mono, monospace)';
+    ctx.textAlign = 'center';
+    ctx.fillText('select runs below to compare', (rect.width || 400) / 2, (rect.height || 200) / 2);
+    return;
+  }
+
+  const series = selected.map((sim, i) => {
+    const simIdx = sims.indexOf(sim);
+    return {
+      data:   sim.timeline.map(e => e[metric] ?? 0),
+      color:  SIM_COLORS[simIdx % SIM_COLORS.length],
+      label:  sim.name + (sim.winDay != null ? ` (${sim.winDay}d)` : ' (—)'),
+    };
+  });
+
+  const isLog   = metric === 'mrr' || metric === 'wallet' || metric === 'moneyLifetime';
+  plotChart(canvas, { title: metric, series, yLog: isLog });
+}
+
 // ── View toggle ──────────────────────────────────────────────────
 function switchView(view) {
   _activeView = view;
   const curvesSection   = document.getElementById('da-curves-section');
   const snapshotSection = document.getElementById('da-snapshot-section');
-  const tabCurves       = document.getElementById('da-tab-curves');
-  const tabSnapshot     = document.getElementById('da-tab-snapshot');
+  const simSection      = document.getElementById('da-simulator-section');
   if (!curvesSection) return;
-  curvesSection.style.display   = view === 'curves'   ? 'flex' : 'none';
-  snapshotSection.classList.toggle('on', view === 'snapshot');
-  tabCurves.classList.toggle('on',   view === 'curves');
-  tabSnapshot.classList.toggle('on', view === 'snapshot');
-  if (view === 'curves')   requestAnimationFrame(drawCurves);
-  if (view === 'snapshot') requestAnimationFrame(drawSnapshot);
+  curvesSection.style.display = view === 'curves' ? 'flex' : 'none';
+  snapshotSection.classList.toggle('on',  view === 'snapshot');
+  simSection.classList.toggle('on',       view === 'simulator');
+  document.getElementById('da-tab-curves').classList.toggle('on',    view === 'curves');
+  document.getElementById('da-tab-snapshot').classList.toggle('on',  view === 'snapshot');
+  document.getElementById('da-tab-simulator').classList.toggle('on', view === 'simulator');
+  if (view === 'curves')    requestAnimationFrame(drawCurves);
+  if (view === 'snapshot')  requestAnimationFrame(drawSnapshot);
+  if (view === 'simulator') requestAnimationFrame(() => { refreshSimRunsList(); drawSimChart(); });
 }
 
 // ── Public API ───────────────────────────────────────────────────
@@ -900,8 +1154,9 @@ export function initDevAnalysis() {
   });
 
   // View toggle buttons
-  _overlay.querySelector('#da-tab-curves').addEventListener('click',   () => switchView('curves'));
-  _overlay.querySelector('#da-tab-snapshot').addEventListener('click', () => switchView('snapshot'));
+  _overlay.querySelector('#da-tab-curves').addEventListener('click',    () => switchView('curves'));
+  _overlay.querySelector('#da-tab-snapshot').addEventListener('click',  () => switchView('snapshot'));
+  _overlay.querySelector('#da-tab-simulator').addEventListener('click', () => switchView('simulator'));
 
   // Curves controls
   _overlay.querySelector('#da-system').addEventListener('change', drawCurves);
@@ -952,6 +1207,44 @@ export function initDevAnalysis() {
   for (const id of ['da-snap-price', 'da-snap-plan', 'da-snap-days']) {
     _overlay.querySelector(`#${id}`).addEventListener('input', drawSnapshot);
   }
+
+  // Simulator: clicks slider sync
+  _overlay.querySelector('#da-sim-clicks-val').addEventListener('input', e => {
+    _overlay.querySelector('#da-sim-clicks-range').value = e.target.value;
+  });
+  _overlay.querySelector('#da-sim-clicks-range').addEventListener('input', e => {
+    _overlay.querySelector('#da-sim-clicks-val').value = e.target.value;
+  });
+
+  // Simulator: metric change redraws chart
+  _overlay.querySelector('#da-sim-metric').addEventListener('change', drawSimChart);
+
+  // Simulator: run button
+  _overlay.querySelector('#da-sim-run-btn').addEventListener('click', () => {
+    const btn    = _overlay.querySelector('#da-sim-run-btn');
+    const status = _overlay.querySelector('#da-sim-status');
+    btn.disabled = true;
+    status.textContent = 'running…';
+    requestAnimationFrame(() => {
+      try {
+        const strategy = readStrategy();
+        const result   = runSim(strategy);
+        saveSim(result);
+        _simSelectedIds.add(result.id);
+        refreshSimRunsList();
+        drawSimChart();
+        status.textContent = result.winDay != null
+          ? `done — won day ${result.winDay}`
+          : `done — no win in ${strategy.maxDays}d`;
+      } catch (err) {
+        status.textContent = 'error: ' + err.message;
+      }
+      btn.disabled = false;
+    });
+  });
+
+  // Load existing sims on init
+  loadSims().forEach(s => _simSelectedIds.add(s.id));
 }
 
 export function openDevAnalysis() {
