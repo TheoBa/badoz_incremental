@@ -8,6 +8,7 @@ import { render }               from './ui/render.js';
 import { generateMissions }     from './engine/missions.js';
 import { newRun }               from './engine/run.js';
 import { initDevPanel }         from './ui/dev.js';
+import { initDevAnalysis }     from './ui/dev-analysis.js';
 import { initWinScreen }        from './ui/win.js';
 import { initStartScreen }      from './ui/start.js';
 import { refreshLeaderboard }   from './tabs/leaderboard.js';
@@ -179,6 +180,7 @@ document.addEventListener('keydown', e => {
 
 // ── Dev panel (toggle with ` key) ─────────────────────────────
 initDevPanel(state, render);
+initDevAnalysis();
 
 // ── Win screen (shown when state.won) ─────────────────────────
 initWinScreen(state, render);
