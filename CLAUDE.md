@@ -122,16 +122,11 @@ Examples: `feat(tick): implement daily revenue`, `fix(server): correct static fi
 
 Known issue: the macOS FUSE mount used by the Linux sandbox blocks `unlink()`, so git emits `unable to unlink` warnings. These are harmless — the post-commit hook at `.git/hooks/post-commit` clears stale lock files using `mv` instead of `rm`.
 
-**Claude must never attempt `git push`.** The sandbox has no GitHub credentials. After committing, always tell Théo to run `git push origin <branch>` from his terminal. Do not retry push on failure — hand it off immediately.
+**Claude is authorised to:**
+- `git push origin <feature-branch>` — push feature branches to remote.
+- `gh pr create` — open PRs (feature → dev, or as directed).
+- `gh pr merge` — merge PRs once created (squash merge preferred).
 
-### PR descriptions
-
-When a feature branch is ready to push, Claude must write a PR description containing:
-
-1. **Purpose** — one sentence on what the branch adds or fixes and why it matters.
-2. **Changes** — a brief list of every file touched and what changed in each.
-3. **Testing notes** — anything Théo should verify manually before merging.
-
-Format it as a markdown block so Théo can paste it directly into the GitHub PR body.
+Never force-push to `main` or `dev`. Never push directly to `main`.
 
 ---
