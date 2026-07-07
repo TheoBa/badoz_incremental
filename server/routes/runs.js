@@ -72,6 +72,7 @@ router.get('/leaderboard', async (req, res) => {
   const result = db.exec(
     `SELECT id, player_name, saas_name, total_elapsed_ticks, submitted_at, dev_mode
        FROM runs
+      WHERE dev_mode = 0
       ORDER BY total_elapsed_ticks ASC
       LIMIT ${limit}`
   );
