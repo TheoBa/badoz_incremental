@@ -1,14 +1,8 @@
-// ship_feature.js — tab renderer
-// Displays upgrade cards grouped by: satisfaction / retention / marketing_stream.
-
+// ship_feature.js — stub (not yet implemented)
 export function renderShipFeature(state) {
-  // TODO: render upgrade cards with color-coded left borders
-  // satisfaction   → #1D9E75 (teal)
-  // retention      → #378ADD (blue)
-  // marketing_stream → #BA7517 (amber)
-}
-
-/** Called when player buys an upgrade. */
-export function onBuyUpgrade(state, upgradeId) {
-  // TODO: deduct RCU cost, increment upgrade level, apply effect to state.saas
+  const panel = document.getElementById('panel-ship_feature');
+  if (!panel._built) {
+    panel.innerHTML = '<p style="color:var(--text2);padding:20px;font-size:12px">ship_feature — coming soon</p>';
+    panel._built = true;
+  }
 }

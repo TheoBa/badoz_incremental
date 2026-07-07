@@ -1,7 +1,7 @@
 {
   "name": "badoz-incremental",
   "version": "0.1.0",
-  "description": "DEVRUN — a speedrunnable incremental game",
+  "description": "BDZ_INCREMENTAL — a speedrunnable incremental game",
   "type": "module",
   "scripts": {
     "start": "node server/index.js",

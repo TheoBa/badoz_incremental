@@ -3,11 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DEVRUN</title>
+  <title>BDZ_INCREMENTAL</title>
   <link rel="stylesheet" href="src/ui/style.css">
 </head>
 <body>
-  <div id="app"></div>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div id="header">
+    <div id="header-title">BDZ_INCREMENTAL v1.0</div>
+    <div id="header-stats">
+      <span>⏱ <b id="h-timer">00:00</b></span>
+    </div>
+  </div>
+
+  <!-- ── Tab bar ────────────────────────────────────────────── -->
+  <div id="tabbar">
+    <button class="tab on" data-tab="write_code">write_code</button>
+    <button class="tab" data-tab="saas_product">saas_product</button>
+    <button class="tab" data-tab="freelance">freelance</button>
+    <button class="tab" data-tab="investment">investment</button>
+    <button class="tab" data-tab="frontier_lab">frontier_lab</button>
+    <button class="tab" data-tab="post_on_x">post_on_x</button>
+    <button class="tab" data-tab="milestones">milestones</button>
+    <button class="tab" data-tab="leaderboard">leaderboard</button>
+  </div>
+
+  <!-- ── Body: main panel + KPI sidebar ────────────────────── -->
+  <div id="body">
+
+    <div id="main">
+      <div class="panel on" id="panel-write_code"></div>
+      <div class="panel"    id="panel-saas_product"></div>
+      <div class="panel"    id="panel-freelance"></div>
+      <div class="panel"    id="panel-investment"></div>
+      <div class="panel"    id="panel-frontier_lab"></div>
+      <div class="panel"    id="panel-post_on_x"></div>
+      <div class="panel"    id="panel-milestones"></div>
+      <div class="panel"    id="panel-leaderboard"></div>
+    </div>
+
+    <div id="kpi">
+      <div id="kpi-topbar">
+        <span class="kpi-label" style="margin-bottom:0">dashboard</span>
+        <button id="kpi-toggle" title="collapse">›</button>
+      </div>
+
+      <div id="kpi-globals">
+        <div class="sr"><span>wallet</span><b id="h-wallet" class="money">$0</b></div>
+        <div class="sr"><span>RCU</span><b id="h-rcu" class="rcu">0</b></div>
+        <div class="sr"><span>RCU/h</span><b id="h-rcuh" class="rcu">0</b></div>
+        <div class="sr"><span>MB/h</span><b id="h-mbh" class="burn">$0</b></div>
+      </div>
+
+      <div class="km">
+        <div class="km-head"><span class="dot" style="background:#16a34a"></span>daily earned</div>
+        <div class="km-val money" id="k-earned">$0</div>
+        <div class="hist" id="hist-earned"></div>
+      </div>
+
+      <div class="km">
+        <div class="km-head"><span class="dot" style="background:#2563eb"></span>daily RCU</div>
+        <div class="km-val rcu" id="k-rcu">0</div>
+        <div class="hist" id="hist-rcu"></div>
+      </div>
+
+      <div class="km" id="km-mrr">
+        <div class="km-head"><span class="dot" style="background:#7c3aed"></span>MRR</div>
+        <div class="km-val mrr" id="k-mrr">$0</div>
+        <div class="hist" id="hist-mrr"></div>
+      </div>
+
+      <div class="km" id="km-burn">
+        <div class="km-head"><span class="dot" style="background:#c94040"></span>daily burn</div>
+        <div class="km-val burn" id="k-burn">$0/d</div>
+        <div class="hist" id="hist-burn"></div>
+      </div>
+
+      <div id="kpi-props">
+        <div class="kpi-label" style="margin-top:10px">saas_properties</div>
+        <div class="sr"><span>conversion_rate</span><b id="k-sat" class="pink">1.00</b></div>
+        <div class="sr"><span>retention</span><b id="k-ret" class="yellow">1.00</b></div>
+        <div class="sr"><span>mkt_stream</span><b id="k-mkt" class="gold">0/d</b></div>
+      </div>
+
+      <div id="kpi-reputation">
+        <div class="kpi-label" style="margin-top:10px">reputation</div>
+        <div class="sr"><span>multiplier</span><b id="k-rep" class="gold">1.00×</b></div>
+      </div>
+
+      <div id="kpi-run-info" style="display:none">
+        <div class="kpi-label" style="margin-top:10px">run_info</div>
+        <div class="sr"><span>best run</span><b id="k-best">—</b></div>
+        <div class="sr"><span>runs</span><b id="k-runs">0</b></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Start screen overlay (shown until the run is started) ── -->
+  <div id="start-screen">
+    <form class="start-card" id="start-form">
+      <div class="win-kicker">new_run</div>
+      <div class="start-title">BDZ_INCREMENTAL</div>
+      <div class="start-field" id="start-handle-row">
+        <label for="start-handle">your_handle</label>
+        <input id="start-handle" type="text" maxlength="64" autocomplete="off" placeholder="e.g. theo">
+      </div>
+      <button type="submit" class="win-btn">start_run()</button>
+    </form>
+  </div>
+
+  <!-- ── Lore overlay (one-time tab discovery messages) ─────────── -->
+  <div id="lore-overlay">
+    <div class="lore-card" id="lore-card">
+      <div class="lore-text" id="lore-text"></div>
+      <div class="lore-form" id="lore-form" style="display:none">
+        <div class="start-field">
+          <label for="lore-product-input">product_name</label>
+          <input id="lore-product-input" type="text" maxlength="64" autocomplete="off" placeholder="name your SaaS">
+        </div>
+      </div>
+      <button class="win-btn" id="lore-ok">ok</button>
+    </div>
+  </div>
+
+  <!-- ── Go broke confirmation overlay ──────────────────────────── -->
+  <div id="go-broke-overlay">
+    <div class="lore-card">
+      <div class="lore-text">
+        <p>go_broke()</p>
+        <p>all progress will be lost. the run is over.</p>
+        <p>are you sure?</p>
+      </div>
+      <div class="go-broke-actions">
+        <button class="win-btn go-broke-confirm" id="go-broke-confirm">yes, reset</button>
+        <button class="win-btn go-broke-cancel"  id="go-broke-cancel">cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Weekly summary overlay (shown every 7 in-game days) ─────── -->
+  <div id="weekly-overlay">
+    <div class="weekly-card">
+      <div class="weekly-kicker" id="weekly-kicker">week_summary</div>
+      <div class="weekly-rows"   id="weekly-rows"></div>
+      <div class="weekly-wallet-label">wallet_trend</div>
+      <div class="hist weekly-wallet" id="weekly-wallet"></div>
+      <div class="weekly-hint"   id="weekly-hint"></div>
+      <button class="win-btn"    id="weekly-ok">continue</button>
+    </div>
+  </div>
+
+  <!-- ── Win screen overlay (shown when state.won) ──────────────── -->
+  <div id="win-screen">
+    <div class="win-card">
+      <div class="win-kicker">run_complete</div>
+      <div class="win-title">$1B exit</div>
+      <div class="win-product" id="win-product">—</div>
+      <div class="win-stats">
+        <div class="win-stat"><span>time</span><b id="win-time">0d 0h</b></div>
+        <div class="win-stat"><span>lifetime_earned</span><b class="money" id="win-earned">$0</b></div>
+        <div class="win-stat"><span>lifetime_rcu</span><b id="win-rcu">0</b></div>
+        <div class="win-stat"><span>lab_burn</span><b class="burn" id="win-burn">$0</b></div>
+      </div>
+      <div class="win-status" id="win-submit-status"></div>
+      <button id="win-new-run" class="win-btn">new_run</button>
+    </div>
+  </div>
+
+  <button id="kpi-reopen" title="open dashboard">‹</button>
+
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

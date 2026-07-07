@@ -20,7 +20,7 @@ router.post('/event', async (req, res) => {
 // Return all runs
 router.get('/runs', async (req, res) => {
   const db = await getDb();
-  const result = db.exec('SELECT * FROM runs ORDER BY started_at DESC');
+  const result = db.exec('SELECT * FROM runs ORDER BY submitted_at DESC');
   const rows = result[0]
     ? result[0].values.map(row =>
         Object.fromEntries(result[0].columns.map((col, i) => [col, row[i]]))

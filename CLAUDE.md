@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-DEVRUN is a **finite, speedrunnable incremental game**. The player builds a SaaS product from solo dev to $1B exit. The win condition is hard — every run ends. The design goal is that first-timers discover the game blind, then replay faster with accumulated knowledge.
+BADOZ_INCREMENTAL is a **finite, speedrunnable incremental game**. The player builds a SaaS product from solo dev to $1B exit. The win condition is hard — every run ends. The design goal is that first-timers discover the game blind, then replay faster with accumulated knowledge.
 
 This is a personal project by Théo — keep implementations lean and readable over clever.
+It will be made clever from time to time semi-manually".
 
 ---
 
@@ -66,33 +67,44 @@ tick.js mutates state → render.js reads state → DOM updates
 ## Naming & style conventions
 
 - **snake_case everywhere in the UI** — tab names, property names, button labels. This is intentional: the game has a nerdy dev aesthetic.
-- **Tab identifiers**: `write_code`, `ship_feature`, `freelance`, `investment`, `frontier_lab`, `post_on_x`.
-- **CONSTANTS keys** use `PascalCase_with_underscores` (e.g. `Freelance_RCU_T1`) — this matches the GDD vocabulary so balancing discussions map directly to code.
+- **Tab identifiers**: `write_code`, `saas_product`, `freelance`, `investment`, `frontier_lab`, `post_on_x`. (`ship_feature` was folded into `saas_product`.)
+- **CONSTANTS keys** use `upper_case` for constant name and `lower_case_with_underscores` for its derived attributes (e.g. `FREELANCE = {rcu: { t1: 10, t2: 100, t3: 1000 }}`).
 - **`null` constants are not yet tuned** — do not invent values. Leave them `null` until a balancing pass sets them deliberately.
 
 ---
 
-## Color coding (do not change without updating both places)
+## Color coding — strict, never override
 
-These three colors are used consistently across `ship_feature` upgrade cards (left border accent) **and** the KPI dashboard dot labels:
+Every game mechanic has one canonical color. Use the right class or CSS variable everywhere: tab UIs, KPI sidebar dots, effect labels, button accents. **Changing a color requires updating every usage site at once.**
 
-| Property | Color | Hex |
-|---|---|---|
-| `satisfaction` | teal | `#1D9E75` |
-| `retention` | blue | `#378ADD` |
-| `marketing_stream` | amber | `#BA7517` |
+| Mechanic | Color | Hex | CSS var | Class |
+|---|---|---|---|---|
+| `money` / income | green | `#16a34a` | `var(--green)` | `.money` |
+| `RCU` / hardware | blue | `#2563eb` | `var(--blue)` | `.rcu` |
+| `MRR` | purple | `#7c3aed` | `var(--purple)` | `.mrr` |
+| burn / daily cost | red | `#c94040` | `var(--red)` | `.burn` |
+| `reputation` | gold | `#d97706` | `var(--gold)` | `.gold` |
+| `marketing_stream` | gold | `#d97706` | `var(--gold)` | `.gold` |
+| `satisfaction` | pink | `#db2777` | `var(--pink)` | `.pink` |
+| `retention` | yellow | `#a89200` | `var(--yellow)` | `.yellow` |
+| cooldown timers | grey | `var(--text2)` | — | *(none — use default muted text color)* |
+
+Reputation and `marketing_stream` share the same gold color — this is intentional to signal to the player that the two mechanics are related.
+
+The Frontier Lab tab uses the same light theme as the rest of the app. Its CSS is scoped to `.lab-*` classes. Standard utility classes are used inside the lab panel for boost value labels — this is intentional.
 
 ---
 
 ## Key game mechanics (for context when editing logic)
 
 - **Tick rate**: 1 real second = 1 in-game hour. 24 ticks = 1 day. 1 month ≈ 12 real minutes.
-- **Three milestone tracks** (checked in `tick.js → checkMilestones`):
-  1. Lifetime RCU → freelance tier upgrades (Junior → Senior → Lead → 10x)
-  2. Cumulative Frontier Lab spend → agent unlocks
-  3. Lifetime money earned → subscription price rounds (one-way, triggers demand shock)
-- **Rush option** in freelance: one-time unlock costing `Freelance_RCU_T1` RCU, doubles mission reward, instant completion.
-- **post_on_x**: available once per in-game day (24-tick cooldown). Each post compounds `reputation.multiplier` by ×1.05. No streak mechanic.
+- **Milestone tracks** (checked in `tick.js → checkMilestones`):
+  1. money_earned; unlocks the `investments` tab and 2 subscription `raise_price` instances (10 → 100 → 1000)
+  2. freelance_missions; unlocks freelance related upgrades (Junior → Senior → Lead → 10x) as well as the `rush` option: double RCU cost to mission reward.
+  3. rcu_gained → unlocks the `frontier_lab` tab and first 3 agents 
+  4. lab_spend → agent unlocks lab scale plan (free → hobbyist → growth → scale → infernal)
+  5. mrr_peak; unlocks investments options then frontier_lab agents (ai_marketer → ai_ceo)
+- **post_on_x**: available once per in-game day (24-tick cooldown). Each post compounds `reputation.multiplier` by ×1.01. No streak mechanic.
 - **Frontier Lab billing**: plan changes take effect at the next in-game day boundary (tick % 24 === 0). Daily cost deducted then.
 - **Run info panel** in the KPI dashboard is hidden until `state.runCount > 0`.
 
@@ -110,8 +122,16 @@ Examples: `feat(tick): implement daily revenue`, `fix(server): correct static fi
 
 Known issue: the macOS FUSE mount used by the Linux sandbox blocks `unlink()`, so git emits `unable to unlink` warnings. These are harmless — the post-commit hook at `.git/hooks/post-commit` clears stale lock files using `mv` instead of `rm`.
 
+**Claude must never attempt `git push`.** The sandbox has no GitHub credentials. After committing, always tell Théo to run `git push origin <branch>` from his terminal. Do not retry push on failure — hand it off immediately.
+
+### PR descriptions
+
+When a feature branch is ready to push, Claude must write a PR description containing:
+
+1. **Purpose** — one sentence on what the branch adds or fixes and why it matters.
+2. **Changes** — a brief list of every file touched and what changed in each.
+3. **Testing notes** — anything Théo should verify manually before merging.
+
+Format it as a markdown block so Théo can paste it directly into the GitHub PR body.
+
 ---
-
-## What is not yet implemented (Phase 3 onwards)
-
-All `// TODO` stubs in `tick.js`, the tab render functions in `src/tabs/`, and the analytics event emission in `src/engine/save.js` are intentional placeholders. Do not fill them in incidentally while working on something else — each is its own feature branch.
