@@ -497,6 +497,63 @@ function injectStyles() {
     .da-canvas-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; }
     .da-canvas-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #444; margin-bottom: 4px; }
     .da-canvas-el { display: block; width: 100%; flex: 1; min-height: 0; border-radius: 4px; }
+
+    /* ── view toggle ── */
+    #da-view-tabs { display: flex; gap: 4px; flex-shrink: 0; }
+    .da-tab {
+      font-family: inherit; font-size: 10px; padding: 3px 12px;
+      background: none; border: 1px solid #2a2a2a; color: #555; cursor: pointer; border-radius: 3px;
+    }
+    .da-tab.on { border-color: #2563eb; color: #2563eb; }
+    #da-snapshot-section {
+      display: none; flex-direction: column; gap: 8px; flex: 1; overflow: hidden;
+    }
+    #da-snapshot-section.on { display: flex; }
+
+    /* ── snapshot controls ── */
+    .da-snap-block { flex-shrink: 0; }
+    .da-snap-row {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+    }
+    .da-snap-row label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; width: 52px; }
+    .da-snap-num {
+      width: 80px; background: #141420; border: 1px solid #2a2a2a;
+      color: #ccc; font-family: inherit; font-size: 10px; padding: 2px 5px; border-radius: 2px; text-align: right;
+    }
+    .da-snap-range {
+      flex: 1; accent-color: #2563eb; cursor: pointer;
+    }
+    .da-snap-sel {
+      background: #141420; border: 1px solid #2a2a2a; color: #ccc;
+      font-family: inherit; font-size: 10px; padding: 2px 5px; border-radius: 2px;
+    }
+    .da-snap-days { width: 44px; }
+
+    /* ── upgrade table ── */
+    #da-snap-table-wrap { flex: 1; overflow-y: auto; min-height: 0; }
+    #da-snap-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    #da-snap-table thead th {
+      text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+      color: #444; padding: 4px 6px; border-bottom: 1px solid #1e1e28; position: sticky; top: 0; background: #090910;
+    }
+    #da-snap-table td { padding: 4px 6px; border-bottom: 1px solid #111; color: #888; }
+    #da-snap-table tr:last-child td { border-bottom: none; }
+    .da-snap-track { color: #555; }
+    .da-snap-lvl { color: #ccc; font-weight: 600; text-align: right; }
+    .da-snap-gain { color: #4ade80; }
+    .da-snap-spent { color: #333; font-size: 9px; }
+    .da-snap-sep td { background: #0f0f18; color: #333; font-size: 9px; padding: 2px 6px; }
+
+    /* ── derived stats ── */
+    #da-snap-stats { flex-shrink: 0; border-top: 1px solid #1e1e28; padding-top: 8px; }
+    .da-stat-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 3px 0; border-bottom: 1px solid #111; font-size: 10px;
+    }
+    .da-stat-row:last-child { border-bottom: none; }
+    .da-stat-row span { color: #555; }
+    .da-stat-row b { color: #ccc; font-weight: 600; }
+    .da-stat-note { font-size: 9px; color: #333; margin-left: 6px; font-weight: 400; }
   `;
   document.head.appendChild(el);
 }
@@ -523,6 +580,9 @@ function buildHTML() {
     </div>`;
   }
 
+  const defMoneySlider = valueToLogSlider(5000, 1, 1e9).toFixed(4);
+  const defRcuSlider   = valueToLogSlider(1000, 1, 1e6).toFixed(4);
+
   return `
     <div id="da-panel">
       <div id="da-header">
@@ -531,27 +591,260 @@ function buildHTML() {
       </div>
       <div id="da-left">${groupsHTML}</div>
       <div id="da-right">
-        <div id="da-curve-controls">
-          <label>system</label>
-          <select id="da-system">${sysOptions}</select>
-          <label>levels</label>
-          <input id="da-max-level" type="number" value="50" min="5" max="200" step="5">
+
+        <div id="da-view-tabs">
+          <button class="da-tab on" id="da-tab-curves">curves</button>
+          <button class="da-tab"    id="da-tab-snapshot">snapshot</button>
         </div>
-        <div class="da-canvas-wrap">
-          <div class="da-canvas-title">cost_curve (log scale)</div>
-          <canvas class="da-canvas-el" id="da-canvas-cost"></canvas>
+
+        <!-- ── curves section ── -->
+        <div id="da-curves-section" style="display:flex;flex-direction:column;gap:10px;flex:1;overflow:hidden;">
+          <div id="da-curve-controls">
+            <label>system</label>
+            <select id="da-system">${sysOptions}</select>
+            <label>levels</label>
+            <input id="da-max-level" type="number" value="50" min="5" max="200" step="5">
+          </div>
+          <div class="da-canvas-wrap">
+            <div class="da-canvas-title">cost_curve (log scale)</div>
+            <canvas class="da-canvas-el" id="da-canvas-cost"></canvas>
+          </div>
+          <div class="da-canvas-wrap">
+            <div class="da-canvas-title">gain_curve</div>
+            <canvas class="da-canvas-el" id="da-canvas-gain"></canvas>
+          </div>
         </div>
-        <div class="da-canvas-wrap">
-          <div class="da-canvas-title">gain_curve</div>
-          <canvas class="da-canvas-el" id="da-canvas-gain"></canvas>
+
+        <!-- ── snapshot section ── -->
+        <div id="da-snapshot-section">
+          <div class="da-snap-block">
+            <div class="da-snap-row">
+              <label>money_$</label>
+              <input id="da-snap-money-val"   class="da-snap-num" type="number" value="5000" min="1" max="1000000000">
+              <input id="da-snap-money-range" class="da-snap-range" type="range" min="0" max="1" step="0.001" value="${defMoneySlider}">
+            </div>
+            <div class="da-snap-row">
+              <label>rcu</label>
+              <input id="da-snap-rcu-val"   class="da-snap-num" type="number" value="1000" min="1" max="1000000">
+              <input id="da-snap-rcu-range" class="da-snap-range" type="range" min="0" max="1" step="0.001" value="${defRcuSlider}">
+            </div>
+            <div class="da-snap-row">
+              <label>price</label>
+              <select id="da-snap-price" class="da-snap-sel">
+                <option value="10">$10/mo</option>
+                <option value="100">$100/mo</option>
+                <option value="1000">$1000/mo</option>
+              </select>
+              <label style="width:32px">plan</label>
+              <select id="da-snap-plan" class="da-snap-sel">
+                <option value="free">free ×1</option>
+                <option value="hobbyist">hobbyist ×1.5</option>
+                <option value="growth">growth ×4</option>
+                <option value="scale">scale ×12</option>
+                <option value="infernal">infernal ×40</option>
+              </select>
+              <label style="width:32px">days</label>
+              <input id="da-snap-days" class="da-snap-num da-snap-days" type="number" value="30" min="1" max="365">
+            </div>
+          </div>
+
+          <div id="da-snap-table-wrap">
+            <table id="da-snap-table">
+              <thead>
+                <tr>
+                  <th>track</th><th style="text-align:right">lvl</th>
+                  <th>gain</th><th>budget_used</th>
+                </tr>
+              </thead>
+              <tbody id="da-snap-tbody"></tbody>
+            </table>
+          </div>
+
+          <div id="da-snap-stats">
+            <div class="da-stat-row">
+              <span>rcu/click</span>
+              <b id="da-s-rcu-click">—</b>
+            </div>
+            <div class="da-stat-row">
+              <span>rcu/h <span class="da-stat-note">(full RCU → coder)</span></span>
+              <b id="da-s-rcu-h">—</b>
+            </div>
+            <div class="da-stat-row">
+              <span>customers <span class="da-stat-note">(equal RCU split → saas)</span></span>
+              <b id="da-s-customers">—</b>
+            </div>
+            <div class="da-stat-row">
+              <span>mrr</span>
+              <b id="da-s-mrr">—</b>
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   `;
 }
 
+// ── Log-scale slider helpers ─────────────────────────────────────
+function logSliderToValue(pos, min, max) {
+  return Math.round(Math.pow(10, pos * (Math.log10(max) - Math.log10(min)) + Math.log10(min)));
+}
+function valueToLogSlider(val, min, max) {
+  return (Math.log10(Math.max(val, min)) - Math.log10(min)) / (Math.log10(max) - Math.log10(min));
+}
+
+// ── Snapshot helpers ─────────────────────────────────────────────
+function maxLevel(budget, baseCost, costScale, maxN = 300) {
+  let cum = 0;
+  for (let i = 0; i < maxN; i++) {
+    const cost = Math.floor(baseCost * Math.pow(costScale, i));
+    if (cum + cost > budget) return { level: i, spent: cum };
+    cum += cost;
+  }
+  return { level: maxN, spent: cum };
+}
+
+function steppedLevel(budget, tiers) {
+  let cum = 0, level = 0;
+  for (const t of tiers) {
+    if (cum + t.cost <= budget) { cum += t.cost; level++; } else break;
+  }
+  return { level, spent: cum };
+}
+
+function cumGainAt(level, baseDelta, deltaScale) {
+  let g = 0;
+  for (let i = 0; i < level; i++) g += baseDelta * Math.pow(deltaScale, i);
+  return g;
+}
+
+function agentBoostAt(level, cfg) {
+  return cfg.base_delta * Math.pow(cfg.delta_scale, level) * Math.pow(cfg.major_pow, Math.floor(level / 10));
+}
+
+function fmtNum(v) {
+  if (Math.abs(v) >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (Math.abs(v) >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (Math.abs(v) >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'k';
+  return '$' + v.toFixed(0);
+}
+function fmtPlain(v, dp = 2) {
+  if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1) + 'k';
+  return v.toFixed(dp);
+}
+
+function simMRR(rcuBudget, price, planName, days) {
+  const split    = rcuBudget / 3;
+  const convCfg  = SAAS.ship_feature.conversion;
+  const retCfg   = SAAS.ship_feature.retention;
+  const mktCfg   = SAAS.ship_feature.marketing;
+
+  const convLvl = maxLevel(split, convCfg.base_cost, convCfg.cost_scale).level;
+  const retLvl  = maxLevel(split, retCfg.base_cost,  retCfg.cost_scale).level;
+  const mktLvl  = maxLevel(split, mktCfg.base_cost,  mktCfg.cost_scale).level;
+
+  const saasConversion = cumGainAt(convLvl, convCfg.base_delta, convCfg.delta_scale);
+  const saasRetention  = 1 + cumGainAt(retLvl, retCfg.base_delta, retCfg.delta_scale);
+  const saasMarketing  = cumGainAt(mktLvl, mktCfg.base_delta, mktCfg.delta_scale);
+
+  let customers = 0;
+  for (let d = 0; d < days; d++) {
+    const visitors  = (1 + saasMarketing) * 1.0;
+    const convRate  = saasConversion > 0 ? (saasConversion) / (saasConversion + 2) : 0;
+    const gained    = visitors * convRate;
+    const churnRate = 0.02 / saasRetention;
+    customers = Math.max(0, customers + gained - customers * churnRate);
+  }
+  return { customers: Math.floor(customers), mrr: price * Math.floor(customers) };
+}
+
+function drawSnapshot() {
+  const money = parseFloat(document.getElementById('da-snap-money-val')?.value) || 0;
+  const rcu   = parseFloat(document.getElementById('da-snap-rcu-val')?.value)   || 0;
+  const price = parseFloat(document.getElementById('da-snap-price')?.value)     || 10;
+  const plan  = document.getElementById('da-snap-plan')?.value ?? 'free';
+  const days  = parseInt(document.getElementById('da-snap-days')?.value)        || 30;
+  const planMult = LAB.plans[plan]?.multiplier ?? 1;
+
+  // ── RCU tracks ──────────────────────────────────────────────────
+  const convCfg = SAAS.ship_feature.conversion;
+  const retCfg  = SAAS.ship_feature.retention;
+  const mktCfg  = SAAS.ship_feature.marketing;
+  const coderCfg = LAB.agents.coder;
+
+  const conv  = maxLevel(rcu, convCfg.base_cost,    convCfg.cost_scale);
+  const ret   = maxLevel(rcu, retCfg.base_cost,     retCfg.cost_scale);
+  const mkt   = maxLevel(rcu, mktCfg.base_cost,     mktCfg.cost_scale);
+  const coder = maxLevel(rcu, coderCfg.minor_base_cost, coderCfg.minor_cost_scale);
+
+  const convGain  = cumGainAt(conv.level, convCfg.base_delta, convCfg.delta_scale);
+  const retGain   = cumGainAt(ret.level,  retCfg.base_delta,  retCfg.delta_scale);
+  const mktGain   = cumGainAt(mkt.level,  mktCfg.base_delta,  mktCfg.delta_scale);
+  const coderBoost = agentBoostAt(coder.level, coderCfg) * planMult;
+
+  // ── Money tracks ─────────────────────────────────────────────────
+  const gearTiers   = Object.values(INVESTMENTS.rcu.gear);
+  const laptopTiers = Object.values(INVESTMENTS.rcu.laptop);
+  const cpuCfg      = INVESTMENTS.rcu.cpu;
+  const gpuCfg      = INVESTMENTS.rcu.gpu;
+
+  const gear   = steppedLevel(money, gearTiers);
+  const laptop = steppedLevel(money, laptopTiers);
+  const cpu    = maxLevel(money, cpuCfg.base_cost, cpuCfg.cost_scale);
+  const gpu    = maxLevel(money, gpuCfg.base_cost, gpuCfg.cost_scale);
+
+  const gearBonus   = gearTiers.slice(0, gear.level).reduce((s, t) => s + t.boost, 0);
+  const laptopBonus = laptopTiers.slice(0, laptop.level).reduce((s, t) => s + t.boost, 0);
+  const cpuMult     = 1 + cpu.level * cpuCfg.delta;
+  const gpuMult     = 1 + gpu.level * gpuCfg.delta;
+  const rcuPerClick = Math.floor((1 + gearBonus + laptopBonus) * cpuMult * gpuMult);
+
+  // ── Update table ─────────────────────────────────────────────────
+  const tbody = document.getElementById('da-snap-tbody');
+  if (!tbody) return;
+
+  const rcuRows = [
+    { label: '[RCU] conversion',  lvl: conv.level,  gain: `+${fmtPlain(convGain, 2)} conv`,      spent: conv.spent,  budget: rcu },
+    { label: '[RCU] retention',   lvl: ret.level,   gain: `+${fmtPlain(retGain, 2)} ret`,        spent: ret.spent,   budget: rcu },
+    { label: '[RCU] marketing',   lvl: mkt.level,   gain: `+${fmtPlain(mktGain, 1)}/d`,          spent: mkt.spent,   budget: rcu },
+    { label: '[RCU] coder_minor', lvl: coder.level, gain: `${fmtPlain(coderBoost, 2)} RCU/h`,   spent: coder.spent, budget: rcu },
+  ];
+  const moneyRows = [
+    { label: '[$]  gear',   lvl: gear.level,   gain: `+${gearBonus} RCU/click`,  spent: gear.spent,   budget: money },
+    { label: '[$]  laptop', lvl: laptop.level, gain: `+${laptopBonus} RCU/click`,spent: laptop.spent, budget: money },
+    { label: '[$]  cpu',    lvl: cpu.level,    gain: `×${cpuMult.toFixed(2)} mult`,spent: cpu.spent,  budget: money },
+    { label: '[$]  gpu',    lvl: gpu.level,    gain: `×${gpuMult.toFixed(2)} mult`,spent: gpu.spent, budget: money },
+  ];
+
+  function renderRows(rows, sep) {
+    let html = '';
+    if (sep) html += `<tr class="da-snap-sep"><td colspan="4">— ${sep} —</td></tr>`;
+    for (const r of rows) {
+      const pct = r.budget > 0 ? Math.min(100, (r.spent / r.budget) * 100).toFixed(0) : 0;
+      html += `<tr>
+        <td class="da-snap-track">${r.label}</td>
+        <td class="da-snap-lvl">${r.lvl}</td>
+        <td class="da-snap-gain">${r.gain}</td>
+        <td class="da-snap-spent">${fmtPlain(r.spent)} / ${fmtPlain(r.budget)} (${pct}%)</td>
+      </tr>`;
+    }
+    return html;
+  }
+  tbody.innerHTML = renderRows(rcuRows, 'rcu') + renderRows(moneyRows, 'money');
+
+  // ── Update derived stats ──────────────────────────────────────────
+  document.getElementById('da-s-rcu-click').textContent  = rcuPerClick;
+  document.getElementById('da-s-rcu-h').textContent      = fmtPlain(coderBoost, 2);
+
+  const sim = simMRR(rcu, price, plan, days);
+  document.getElementById('da-s-customers').textContent  = `${sim.customers} after ${days}d`;
+  document.getElementById('da-s-mrr').textContent        = fmtNum(sim.mrr);
+}
+
 // ── Module state ─────────────────────────────────────────────────
 let _overlay = null;
+let _activeView = 'curves';
 
 function syncInputsToConstants() {
   const panel = document.getElementById('da-left');
@@ -569,6 +862,22 @@ function drawCurves() {
   const gainCanvas = document.getElementById('da-canvas-gain');
   if (costCanvas) plotChart(costCanvas, { title: 'cost / cumulative_cost', series: costSeries, yLog: true });
   if (gainCanvas) plotChart(gainCanvas, { title: 'gain / cumulative_gain', series: gainSeries, yLog: false });
+}
+
+// ── View toggle ──────────────────────────────────────────────────
+function switchView(view) {
+  _activeView = view;
+  const curvesSection   = document.getElementById('da-curves-section');
+  const snapshotSection = document.getElementById('da-snapshot-section');
+  const tabCurves       = document.getElementById('da-tab-curves');
+  const tabSnapshot     = document.getElementById('da-tab-snapshot');
+  if (!curvesSection) return;
+  curvesSection.style.display   = view === 'curves'   ? 'flex' : 'none';
+  snapshotSection.classList.toggle('on', view === 'snapshot');
+  tabCurves.classList.toggle('on',   view === 'curves');
+  tabSnapshot.classList.toggle('on', view === 'snapshot');
+  if (view === 'curves')   requestAnimationFrame(drawCurves);
+  if (view === 'snapshot') requestAnimationFrame(drawSnapshot);
 }
 
 // ── Public API ───────────────────────────────────────────────────
@@ -590,6 +899,11 @@ export function initDevAnalysis() {
     }
   });
 
+  // View toggle buttons
+  _overlay.querySelector('#da-tab-curves').addEventListener('click',   () => switchView('curves'));
+  _overlay.querySelector('#da-tab-snapshot').addEventListener('click', () => switchView('snapshot'));
+
+  // Curves controls
   _overlay.querySelector('#da-system').addEventListener('change', drawCurves);
   _overlay.querySelector('#da-max-level').addEventListener('input', drawCurves);
 
@@ -598,7 +912,7 @@ export function initDevAnalysis() {
     const path = e.target.dataset?.path;
     if (!path) return;
     const val = parseFloat(e.target.value);
-    if (!isNaN(val)) { updateValue(path, val); drawCurves(); }
+    if (!isNaN(val)) { updateValue(path, val); if (_activeView === 'curves') drawCurves(); }
   });
 
   // Reset buttons — delegate
@@ -607,11 +921,40 @@ export function initDevAnalysis() {
     if (!groupId) return;
     resetGroup(groupId);
     syncInputsToConstants();
-    drawCurves();
+    if (_activeView === 'curves') drawCurves();
   });
+
+  // Snapshot: money slider ↔ number input sync
+  _overlay.querySelector('#da-snap-money-val').addEventListener('input', e => {
+    const v = Math.max(1, parseFloat(e.target.value) || 1);
+    _overlay.querySelector('#da-snap-money-range').value = valueToLogSlider(v, 1, 1e9);
+    drawSnapshot();
+  });
+  _overlay.querySelector('#da-snap-money-range').addEventListener('input', e => {
+    const v = logSliderToValue(parseFloat(e.target.value), 1, 1e9);
+    _overlay.querySelector('#da-snap-money-val').value = v;
+    drawSnapshot();
+  });
+
+  // Snapshot: RCU slider ↔ number input sync
+  _overlay.querySelector('#da-snap-rcu-val').addEventListener('input', e => {
+    const v = Math.max(1, parseFloat(e.target.value) || 1);
+    _overlay.querySelector('#da-snap-rcu-range').value = valueToLogSlider(v, 1, 1e6);
+    drawSnapshot();
+  });
+  _overlay.querySelector('#da-snap-rcu-range').addEventListener('input', e => {
+    const v = logSliderToValue(parseFloat(e.target.value), 1, 1e6);
+    _overlay.querySelector('#da-snap-rcu-val').value = v;
+    drawSnapshot();
+  });
+
+  // Snapshot: selectors + days
+  for (const id of ['da-snap-price', 'da-snap-plan', 'da-snap-days']) {
+    _overlay.querySelector(`#${id}`).addEventListener('input', drawSnapshot);
+  }
 }
 
 export function openDevAnalysis() {
   _overlay?.classList.add('on');
-  requestAnimationFrame(drawCurves);
+  requestAnimationFrame(_activeView === 'snapshot' ? drawSnapshot : drawCurves);
 }
