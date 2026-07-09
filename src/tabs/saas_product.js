@@ -9,8 +9,8 @@
 //   - Three upgrade tracks: conversion, retention, marketing_stream (global, apply to all tiers)
 //   - Each track shows the next purchasable upgrade; costs scale as baseCost × Scale^level
 
-import { CONSTANTS, MILESTONES, SAAS } from '../engine/state.js';
-import { fmt, fmtN } from '../ui/render.js';
+import { CONSTANTS, MILESTONES, SAAS, calcSupportRetentionBonus } from '../engine/state.js';
+import { fmt, fmtN, progressive_wall } from '../ui/render.js';
 
 // ── Track metadata (colors match CLAUDE.md color coding) ───────
 const TRACKS = [
@@ -62,17 +62,20 @@ export function renderSaasProduct(state) {
     return;
   }
 
-  const tiers    = state.saas.tiers;
-  const cfgTiers = SAAS.subscription_tiers;
-  const tierIdx  = tiers.length;               // next tier index to launch
-  const nextCfg  = cfgTiers[tierIdx] ?? null;
-  const claimId  = LAUNCH_CLAIM_IDS[tierIdx - 1] ?? null;
-  const canLaunch = nextCfg !== null && claimId !== null
+  const tiers       = state.saas.tiers;
+  const cfgTiers    = SAAS.subscription_tiers;
+  const tierIdx     = tiers.length;
+  const nextCfg     = cfgTiers[tierIdx] ?? null;
+  const claimId     = LAUNCH_CLAIM_IDS[tierIdx - 1] ?? null;
+  const canLaunch   = nextCfg !== null && claimId !== null
     && !!state.milestones?.claimed?.[claimId];
+  const supportBonus = calcSupportRetentionBonus(state);
 
   const tierCards = tiers.map((tier, i) => {
     const customers = Math.floor(tier.cohorts.reduce((a, b) => a + b, 0));
     const tierMrr   = tier.price * tier.cohorts.reduce((a, b) => a + b, 0);
+    const convPct   = progressive_wall(state.saas.conversion * tier.conversionMult, 100, 2);
+    const retPct    = progressive_wall((state.saas.retention + supportBonus) * tier.retentionMult, 100, 5);
     return `
     <div class="sp-tier-card">
       <div class="sp-tier-header">
@@ -81,8 +84,8 @@ export function renderSaasProduct(state) {
       </div>
       <div class="stat-row"><span>customers</span><b class="mrr">${customers}</b></div>
       <div class="stat-row"><span>MRR</span><b class="mrr">${fmt(tierMrr)}</b></div>
-      <div class="stat-row"><span>conv ×</span><b class="pink">${tier.conversionMult.toFixed(2)}</b></div>
-      <div class="stat-row"><span>ret ×</span><b class="yellow">${tier.retentionMult.toFixed(2)}</b></div>
+      <div class="stat-row"><span>conv</span><b class="pink">${convPct}%</b></div>
+      <div class="stat-row"><span>ret</span><b class="yellow">${retPct}%</b></div>
     </div>`;
   }).join('');
 
@@ -108,6 +111,10 @@ export function renderSaasProduct(state) {
       <div class="stat-row"><span>name</span><b>${state.productName ?? '—'}</b></div>
       <div class="stat-row"><span>customers</span><b class="mrr">${Math.floor(state.saas.customers)}</b></div>
       <div class="stat-row"><span>MRR</span><b class="mrr">${fmt(state.saas.mrr)}</b></div>
+      ${tiers.length < 2 ? `
+      <div class="stat-row"><span>conv</span><b class="pink">${progressive_wall(state.saas.conversion, 100, 2)}%</b></div>
+      <div class="stat-row"><span>ret</span><b class="yellow">${progressive_wall(state.saas.retention + supportBonus, 100, 5)}%</b></div>
+      ` : ''}
     </div>
 
     <div class="sp-section">
