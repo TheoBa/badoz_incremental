@@ -176,18 +176,23 @@ export function runSim(strategy) {
     // 4. Auto-claim milestones
     autoClaimMilestones(state);
 
-    // 5. Auto-set price (saas unlocked at freelance_t0 = 5 missions)
-    if (state.saas.price === 0 &&
+    // 5. Auto-init t1 tier (saas unlocked at freelance_t0 = 5 missions)
+    if (state.saas.tiers.length === 0 &&
         state.freelance.missionsCompleted >= MILESTONES.freelance_tiers.t0) {
-      state.saas.price = SAAS.subscription_price.t1;
+      const cfg = SAAS.subscription_tiers[0];
+      state.saas.tiers = [{ price: cfg.price, cohorts: new Array(30).fill(0),
+        conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult }];
     }
-    if (state.milestones.claimed.price_t1 &&
-        state.saas.price < SAAS.subscription_price.t2) {
-      state.saas.price = SAAS.subscription_price.t2;
+    // Auto-launch t2/t3 when milestone claimed (simulates player clicking button)
+    if (state.milestones.claimed.price_t1 && state.saas.tiers.length < 2) {
+      const cfg = SAAS.subscription_tiers[1];
+      state.saas.tiers.push({ price: cfg.price, cohorts: new Array(30).fill(0),
+        conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult });
     }
-    if (state.milestones.claimed.price_t2 &&
-        state.saas.price < SAAS.subscription_price.t3) {
-      state.saas.price = SAAS.subscription_price.t3;
+    if (state.milestones.claimed.price_t2 && state.saas.tiers.length < 3) {
+      const cfg = SAAS.subscription_tiers[2];
+      state.saas.tiers.push({ price: cfg.price, cohorts: new Array(30).fill(0),
+        conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult });
     }
 
     // 6. Spend RCU on upgrades (in priority order)
@@ -201,7 +206,7 @@ export function runSim(strategy) {
           cost = agentMinorNextCost(state, 'ai_coder');
         }
       } else {
-        if (state.saas.price === 0) continue;
+        if (state.saas.tiers.length === 0) continue;
         let cost = sfNextCost(state, track);
         while (cost <= state.rcu) {
           sfBuy(state, track);
@@ -259,32 +264,36 @@ export function runSim(strategy) {
     if (tick > 0 && tick % 24 === 0) {
       const pmMult = calcProductManagerMultiplier(state);
 
-      // Revenue
-      if (state.saas.price > 0 && state.saas.customers >= 1) {
-        const daily = (state.saas.price * state.saas.customers) / 30;
-        state.wallet        += daily;
-        state.moneyLifetime += daily;
-      }
+      // SaaS cohort: acquisition + monthly renewal per tier
+      if (state.saas.tiers.length > 0) {
+        const slotIdx       = Math.floor(tick / 24) % 30;
+        const marketerBoost = calcMarketerMarketingBonus(state) * pmMult;
+        const visitors      = (1 + state.saas.marketingStream + marketerBoost)
+                              * state.reputation.multiplier;
+        const supportBonus  = calcSupportRetentionBonus(state);
 
-      // Acquisition
-      if (state.saas.price > 0) {
-        const marketerBoost  = calcMarketerMarketingBonus(state) * pmMult;
-        const visitors       = (1 + state.saas.marketingStream + marketerBoost) * state.reputation.multiplier;
-        const convRate       = state.saas.conversion > 0
-          ? state.saas.conversion / (state.saas.conversion + 2) : 0;
-        state.saas.customers += visitors * convRate;
-        state.saas.mrr       = state.saas.price * state.saas.customers;
-        state.saas.mrrPeak   = Math.max(state.saas.mrrPeak ?? 0, state.saas.mrr);
-      }
+        for (const tier of state.saas.tiers) {
+          const oldCohort    = tier.cohorts[slotIdx];
+          const effRetention = (state.saas.retention + supportBonus * pmMult) * tier.retentionMult;
+          const renewalProb  = effRetention > 0 ? Math.pow(1 - 0.02 / effRetention, 30) : 0;
+          const renewed      = oldCohort * renewalProb;
 
-      // Churn
-      if (state.saas.customers >= 1) {
-        const effectiveRetention = state.saas.retention +
-          calcSupportRetentionBonus(state) * pmMult;
-        const churnRate  = 0.02 / Math.max(1, effectiveRetention);
-        state.saas.customers = Math.max(0,
-          state.saas.customers - state.saas.customers * churnRate);
-        state.saas.mrr   = state.saas.price * state.saas.customers;
+          const effConv  = state.saas.conversion * tier.conversionMult;
+          const convRate = effConv > 0 ? effConv / (effConv + 2) : 0;
+          const gained   = visitors * convRate;
+
+          const revenue = (renewed + gained) * tier.price;
+          state.wallet        += revenue;
+          state.moneyLifetime += revenue;
+
+          tier.cohorts[slotIdx] = renewed + gained;
+        }
+
+        state.saas.customers = state.saas.tiers.reduce(
+          (total, t) => total + t.cohorts.reduce((a, b) => a + b, 0), 0);
+        state.saas.mrr = state.saas.tiers.reduce(
+          (s, t) => s + t.price * t.cohorts.reduce((a, b) => a + b, 0), 0);
+        state.saas.mrrPeak = Math.max(state.saas.mrrPeak ?? 0, state.saas.mrr);
       }
 
       // Lab billing

@@ -70,6 +70,18 @@ if (state.lab?.agents) {
 }
 // Migrate: add mrrPeak to saas (old saves)
 if (state.saas.mrrPeak == null) state.saas.mrrPeak = state.saas.mrr;
+// Migrate: saas cohort model — old saves have price/priceRound instead of tiers
+if (!state.saas.tiers) {
+  const oldRound = state.saas.priceRound ?? 0;
+  const oldCusts = state.saas.customers  ?? 0;
+  state.saas.tiers = SAAS.subscription_tiers.slice(0, oldRound + 1).map((cfg, i) => {
+    const cohorts = new Array(30).fill(0);
+    if (i === 0) cohorts[0] = oldCusts;
+    return { price: cfg.price, cohorts, conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult };
+  });
+  delete state.saas.price;
+  delete state.saas.priceRound;
+}
 // Migrate: add milestones object (old saves)
 if (!state.milestones)         state.milestones         = { claimed: {} };
 if (!state.milestones.claimed) state.milestones.claimed = {};
@@ -149,9 +161,14 @@ function switchToTab(tab) {
     showLore(tab, state, () => render(state));
   }
 
-  if (tab === 'saas_product' && state.saas.price === 0) {
-    state.saas.price      = SAAS.subscription_price.t1;
-    state.saas.priceRound = 0;
+  if (tab === 'saas_product' && state.saas.tiers.length === 0) {
+    const cfg = SAAS.subscription_tiers[0];
+    state.saas.tiers = [{
+      price:          cfg.price,
+      cohorts:        new Array(30).fill(0),
+      conversionMult: cfg.conversionMult,
+      retentionMult:  cfg.retentionMult,
+    }];
   }
 
   if (tab === 'leaderboard') refreshLeaderboard();

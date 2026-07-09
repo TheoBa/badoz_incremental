@@ -389,6 +389,27 @@ body.kpi-closed #kpi-reopen { display: block; }
 .sp-hint-lock { color: var(--text3); }
 .sp-hint-warn { color: var(--red); font-style: normal; font-weight: 500; }
 
+/* ── subscription tier cards ─────────────────────────────────── */
+.sp-tier-card {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+.sp-tier-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.sp-tier-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--text2);
+}
+
 /* ── ship_feature upgrade cards ──────────────────────────────── */
 .sf-card {
   background: var(--bg);

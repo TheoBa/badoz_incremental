@@ -1,15 +1,13 @@
 // saas_product.js — SaaS product tab
-// Consolidates price management and ship_feature upgrades.
 //
-// Price flow:
-//   - Price is auto-set to SAAS.subscription_price.t1 on first tab visit (handled in main.js)
-//   - raise_price() unlocks T2 then T3 at lifetime-earned milestones (Price_Round_T1/T2)
-//   - Raises are one-way and apply negative pressure on satisfaction + retention
+// Subscription model:
+//   - Customers buy a 1-month subscription, paid upfront.
+//   - After 30 in-game days, each cohort faces a renewal check (renewalProb based on retention).
+//   - launch_new_subscription() adds an independent tier at 10x price with lower conv/ret multipliers.
 //
 // Ship feature:
-//   - Three upgrade tracks: satisfaction, retention, marketing_stream
+//   - Three upgrade tracks: conversion, retention, marketing_stream (global, apply to all tiers)
 //   - Each track shows the next purchasable upgrade; costs scale as baseCost × Scale^level
-//   - Buying mutates state.saas.* directly and records purchase in state.upgrades.*
 
 import { CONSTANTS, MILESTONES, SAAS } from '../engine/state.js';
 import { fmt, fmtN } from '../ui/render.js';
@@ -52,10 +50,8 @@ function upgradeScale(base, scaleFactor, level) {
   return base * Math.pow(scaleFactor, level);
 }
 
-// ── Tier helpers ─────────────────────────────────────────
-const DEMAND_SHOCK    = [SAAS.demand_shock.t2, SAAS.demand_shock.t3]
-const PRICE_TIERS     = () => [SAAS.subscription_price.t1, SAAS.subscription_price.t2, SAAS.subscription_price.t3];
-const PRICE_CLAIM_IDS = ['price_t1', 'price_t2'];  // milestone step IDs per round
+// ── Tier helpers ──────────────────────────────────────────────
+const LAUNCH_CLAIM_IDS = ['price_t1', 'price_t2'];  // milestone IDs per launch
 
 // ── Renderer ───────────────────────────────────────────────────
 export function renderSaasProduct(state) {
@@ -66,41 +62,60 @@ export function renderSaasProduct(state) {
     return;
   }
 
-  const tiers = PRICE_TIERS();
-  const round = state.saas.priceRound;
+  const tiers    = state.saas.tiers;
+  const cfgTiers = SAAS.subscription_tiers;
+  const tierIdx  = tiers.length;               // next tier index to launch
+  const nextCfg  = cfgTiers[tierIdx] ?? null;
+  const claimId  = LAUNCH_CLAIM_IDS[tierIdx - 1] ?? null;
+  const canLaunch = nextCfg !== null && claimId !== null
+    && !!state.milestones?.claimed?.[claimId];
 
-  const nextPrice   = tiers[round + 1] ?? null;
-  const claimId     = PRICE_CLAIM_IDS[round] ?? null;
-  const milestoneOk = claimId !== null && !!state.milestones?.claimed?.[claimId];
-  const canRaise    = nextPrice !== null && milestoneOk;
+  const tierCards = tiers.map((tier, i) => {
+    const customers = Math.floor(tier.cohorts.reduce((a, b) => a + b, 0));
+    const tierMrr   = tier.price * tier.cohorts.reduce((a, b) => a + b, 0);
+    return `
+    <div class="sp-tier-card">
+      <div class="sp-tier-header">
+        <span class="sp-tier-label">t${i + 1}</span>
+        <span class="money">$${tier.price}/mo</span>
+      </div>
+      <div class="stat-row"><span>customers</span><b class="mrr">${customers}</b></div>
+      <div class="stat-row"><span>MRR</span><b class="mrr">${fmt(tierMrr)}</b></div>
+      <div class="stat-row"><span>conv ×</span><b class="pink">${tier.conversionMult.toFixed(2)}</b></div>
+      <div class="stat-row"><span>ret ×</span><b class="yellow">${tier.retentionMult.toFixed(2)}</b></div>
+    </div>`;
+  }).join('');
 
-  const shockConv = canRaise ? DEMAND_SHOCK[round].conversion : null;
-  const shockRet  = canRaise ? DEMAND_SHOCK[round].retention  : null;
+  const launchSection = nextCfg !== null ? `
+    <div class="sp-section">
+      <div class="sp-label">new_subscription_tier</div>
+      <button id="sp-launch-btn" class="sp-raise-btn" ${canLaunch ? '' : 'disabled'}>
+        launch_new_subscription() → $${nextCfg.price}/mo
+      </button>
+      <div class="sp-hint sp-raise-warning">
+        ${!canLaunch
+          ? `<span class="sp-hint-lock">locked · claim money_earned milestone first</span>`
+          : `<span class="sp-hint-warn">conv ×${nextCfg.conversionMult} · ret ×${nextCfg.retentionMult} vs t1</span>`}
+      </div>
+    </div>` : `
+    <div class="sp-section">
+      <div class="sp-hint">all_tiers_launched</div>
+    </div>`;
 
   panel.innerHTML = `
     <div class="sp-section">
       <div class="sp-label">saas_product</div>
       <div class="stat-row"><span>name</span><b>${state.productName ?? '—'}</b></div>
-      <div class="stat-row"><span>price</span><b class="money">$${tiers[round]}/mo</b></div>
       <div class="stat-row"><span>customers</span><b class="mrr">${Math.floor(state.saas.customers)}</b></div>
       <div class="stat-row"><span>MRR</span><b class="mrr">${fmt(state.saas.mrr)}</b></div>
     </div>
 
-    ${nextPrice !== null ? `
     <div class="sp-section">
-      <div class="sp-label">price_management</div>
-      <button id="sp-raise-btn" class="sp-raise-btn" ${canRaise ? '' : 'disabled'}>
-        raise_price() → $${nextPrice}/mo
-      </button>
-      <div class="sp-hint sp-raise-warning">
-        ${!milestoneOk
-          ? `<span class="sp-hint-lock">locked · claim money_earned milestone in milestones tab first</span>`
-          : `<span class="sp-hint-warn">⚠ demand shock: −${shockConv.toFixed(1)} conversion · −${shockRet.toFixed(1)} retention</span>`}
-      </div>
-    </div>` : `
-    <div class="sp-section">
-      <div class="sp-hint">max_price_tier reached</div>
-    </div>`}
+      <div class="sp-label">subscriptions</div>
+      ${tierCards}
+    </div>
+
+    ${launchSection}
 
     <div class="sp-section">
       <div class="sp-label">ship_feature</div>
@@ -109,13 +124,11 @@ export function renderSaasProduct(state) {
       </div>
     </div>`;
 
-  // Wire raise_price button
-  if (canRaise) {
-    document.getElementById('sp-raise-btn')
-      ?.addEventListener('click', () => onRaisePrice(state));
+  if (canLaunch) {
+    document.getElementById('sp-launch-btn')
+      ?.addEventListener('click', () => onLaunchNewSubscription(state));
   }
 
-  // Wire upgrade buttons
   TRACKS.forEach(t => {
     const btn = document.getElementById(`sp-upgrade-${t.key}`);
     if (btn && !btn.disabled) {
@@ -152,26 +165,20 @@ function upgradeCard(track, state) {
 }
 
 // ── Action handlers ────────────────────────────────────────────
-function onRaisePrice(state) {
-  const round = state.saas.priceRound;
-  const tiers = PRICE_TIERS();
-  if (round >= tiers.length - 1) return;
+function onLaunchNewSubscription(state) {
+  const nextIdx = state.saas.tiers.length;
+  if (nextIdx >= SAAS.subscription_tiers.length) return;
+  const claimId = LAUNCH_CLAIM_IDS[nextIdx - 1];
+  if (!state.milestones?.claimed?.[claimId]) return;
 
-  const fromPrice = tiers[round];
-  state.saas.priceRound++;
-  
-  state.saas.price        = tiers[round + 1];
-  // Analytics: record the manual raise as a timeline marker for the post-game charts
-  (state.events ??= []).push({
-    tick: state.ticksElapsed,
-    type: 'raise_price',
-    from: fromPrice,
-    to:   state.saas.price,
+  const cfg = SAAS.subscription_tiers[nextIdx];
+  state.saas.tiers.push({
+    price:          cfg.price,
+    cohorts:        new Array(30).fill(0),
+    conversionMult: cfg.conversionMult,
+    retentionMult:  cfg.retentionMult,
   });
-  // Demand shock: flat negative pressure on conversion and retention
-  state.saas.conversion   = Math.max(0.1, state.saas.conversion - DEMAND_SHOCK[round].conversion);
-  state.saas.retention    = Math.max(0.1, state.saas.retention    - DEMAND_SHOCK[round].retention);
-  state.saas.mrr          = state.saas.price * state.saas.customers;
+  state.events.push({ tick: state.ticksElapsed, type: 'launch_subscription', price: cfg.price });
 
   renderSaasProduct(state);
 }
@@ -185,7 +192,6 @@ function onBuyUpgrade(state, track) {
   state.saas[track.stateKey]  += track.delta(level);
   state.upgrades[track.key].push(level);
 
-  // Immediate header update
   document.getElementById('h-rcu').textContent = fmtN(state.rcu);
 
   renderSaasProduct(state);

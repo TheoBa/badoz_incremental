@@ -44,13 +44,15 @@ const GROUPS = [
   {
     id: 'saas', label: 'saas',
     fields: [
-      { path: 'SAAS.subscription_price.t1',               label: 'price.t1',       step: 1 },
-      { path: 'SAAS.subscription_price.t2',               label: 'price.t2',       step: 10 },
-      { path: 'SAAS.subscription_price.t3',               label: 'price.t3',       step: 100 },
-      { path: 'SAAS.demand_shock.t2.conversion',          label: 'shock.t2.conv',  step: 1 },
-      { path: 'SAAS.demand_shock.t2.retention',           label: 'shock.t2.ret',   step: 1 },
-      { path: 'SAAS.demand_shock.t3.conversion',          label: 'shock.t3.conv',  step: 1 },
-      { path: 'SAAS.demand_shock.t3.retention',           label: 'shock.t3.ret',   step: 1 },
+      { path: 'SAAS.subscription_tiers.0.price',          label: 't1.price',       step: 1 },
+      { path: 'SAAS.subscription_tiers.0.conversionMult', label: 't1.conv_mult',   step: 0.01 },
+      { path: 'SAAS.subscription_tiers.0.retentionMult',  label: 't1.ret_mult',    step: 0.01 },
+      { path: 'SAAS.subscription_tiers.1.price',          label: 't2.price',       step: 10 },
+      { path: 'SAAS.subscription_tiers.1.conversionMult', label: 't2.conv_mult',   step: 0.01 },
+      { path: 'SAAS.subscription_tiers.1.retentionMult',  label: 't2.ret_mult',    step: 0.01 },
+      { path: 'SAAS.subscription_tiers.2.price',          label: 't3.price',       step: 100 },
+      { path: 'SAAS.subscription_tiers.2.conversionMult', label: 't3.conv_mult',   step: 0.01 },
+      { path: 'SAAS.subscription_tiers.2.retentionMult',  label: 't3.ret_mult',    step: 0.01 },
       { path: 'SAAS.ship_feature.conversion.base_cost',   label: 'conv.base_cost', step: 1 },
       { path: 'SAAS.ship_feature.conversion.cost_scale',  label: 'conv.cost_x',   step: 0.01 },
       { path: 'SAAS.ship_feature.conversion.base_delta',  label: 'conv.base_d',   step: 0.01 },
@@ -902,18 +904,24 @@ function simMRR(rcuBudget, price, planName, days) {
   const mktLvl  = maxLevel(split, mktCfg.base_cost,  mktCfg.cost_scale).level;
 
   const saasConversion = cumGainAt(convLvl, convCfg.base_delta, convCfg.delta_scale);
-  const saasRetention  = 1 + cumGainAt(retLvl, retCfg.base_delta, retCfg.delta_scale);
+  const saasRetention  = cumGainAt(retLvl, retCfg.base_delta, retCfg.delta_scale);
   const saasMarketing  = cumGainAt(mktLvl, mktCfg.base_delta, mktCfg.delta_scale);
 
-  let customers = 0;
+  const effRetention  = saasRetention;
+  const renewalProb   = effRetention > 0 ? Math.pow(1 - 0.02 / effRetention, 30) : 0;
+  const visitors      = (1 + saasMarketing);
+  const convRate      = saasConversion > 0 ? saasConversion / (saasConversion + 2) : 0;
+  const cohorts       = new Array(30).fill(0);
+
   for (let d = 0; d < days; d++) {
-    const visitors  = (1 + saasMarketing) * 1.0;
-    const convRate  = saasConversion > 0 ? (saasConversion) / (saasConversion + 2) : 0;
-    const gained    = visitors * convRate;
-    const churnRate = 0.02 / saasRetention;
-    customers = Math.max(0, customers + gained - customers * churnRate);
+    const slotIdx = d % 30;
+    const renewed = cohorts[slotIdx] * renewalProb;
+    const gained  = visitors * convRate;
+    cohorts[slotIdx] = renewed + gained;
   }
-  return { customers: Math.floor(customers), mrr: price * Math.floor(customers) };
+
+  const customers = Math.floor(cohorts.reduce((a, b) => a + b, 0));
+  return { customers, mrr: price * customers };
 }
 
 function drawSnapshot() {

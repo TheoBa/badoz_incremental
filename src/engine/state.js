@@ -54,21 +54,11 @@ export const FREELANCE = {
 };
 
 export const SAAS = {
-  subscription_price: {
-    t1: 10,    // initial price, set on first tab visit
-    t2: 100,   // unlocks at MILESTONES.money_tiers.t2 milestone
-    t3: 1000,  // unlocks at MILESTONES.money_tiers.t3 milestone
-  },
-  demand_shock: { // flat decrease to conversion/retention on each price raises
-    t2: {
-      conversion: 10,
-      retention: 10
-    },
-    t3: {
-      conversion: 20, 
-      retention: 20
-    },
-  },
+  subscription_tiers: [
+    { price: 10,   conversionMult: 1.0,  retentionMult: 1.0 },  // t1: base
+    { price: 100,  conversionMult: 0.01, retentionMult: 0.01 },  // t2: launch via button
+    { price: 1000, conversionMult: 0.001, retentionMult: 0.001 },  // t3: launch via button
+  ],
   ship_feature: {
     conversion: {
       base_cost: 10,
@@ -399,12 +389,11 @@ export function initState() {
     saas: {
       mrr: 0,
       mrrPeak: 0,       // highest MRR ever reached this run (used for milestones)
-      customers: 0,
+      customers: 0,     // derived: sum of all tier cohorts — kept for compat
       conversion: 0,
       retention: 0,
       marketingStream: 0,
-      price: 0,
-      priceRound: 0,
+      tiers: [],        // populated on first saas_product tab visit
     },
 
     // Freelance
@@ -489,7 +478,7 @@ export function initState() {
     },
 
     // Timeline event markers overlaid on the analytics charts.
-    // v0: only manual raise_price events { tick, type, from, to }.
+    // launch_subscription events: { tick, type, price }
     events: [],
 
     // RCU/h sliding window — last 10 ticks (1 tick = 1 in-game hour)

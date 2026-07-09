@@ -31,9 +31,7 @@ function tick(state) {
 
   // Daily events (every 24 ticks = 1 in-game day)
   if (state.ticksElapsed % 24 === 0) {
-    applyDailyAcquisition(state);
-    applyDailyChurn(state);
-    applyDailyRevenue(state);
+    applyDailySaas(state);
     applyDailyLabBilling(state);
     applyDailyCeoReputation(state);
     refreshFreelanceMissions(state);
@@ -91,38 +89,46 @@ function applyLabAgents(state) {
   state._rcuThisTick    = (state._rcuThisTick ?? 0) + rcuPerHour;
 }
 
-// ── Daily revenue ──────────────────────────────────────────────
-function applyDailyRevenue(state) {
-  if (state.saas.price === 0 || state.saas.customers < 1) return;
-  const daily = (state.saas.price * state.saas.customers) / 30;
-  state.wallet        += daily;
-  state.moneyLifetime += daily;
-  state.saas.mrr       = state.saas.price * state.saas.customers;
-}
+// ── Daily SaaS: acquisition + monthly renewal (cohort ring buffer) ─
+function applyDailySaas(state) {
+  if (state.saas.tiers.length === 0) return;
 
-// ── Daily customer acquisition ─────────────────────────────────
-function applyDailyAcquisition(state) {
-  if (state.saas.price === 0) return;
-  // Effective marketing stream = permanent value + active investment boosts + ai_marketer, scaled by reputation
-  const investBoost    = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
-  const marketerBoost  = calcMarketerMarketingBonus(state) * calcProductManagerMultiplier(state);
-  const visitors       = (1 + state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
-  const conversionRate = progressive_wall(state.saas.conversion, 1, 2);
-  const gained         = visitors * conversionRate;
-  state.saas.customers += gained;
-  state.saas.mrr        = state.saas.price * state.saas.customers;
-  // Track peak MRR for milestones (MRR can fluctuate due to churn)
+  const slotIdx       = Math.floor(state.ticksElapsed / 24) % 30;
+  const investBoost   = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
+  const pmMult        = calcProductManagerMultiplier(state);
+  const marketerBoost = calcMarketerMarketingBonus(state) * pmMult;
+  const visitors      = (1 + state.saas.marketingStream + investBoost + marketerBoost)
+                        * state.reputation.multiplier;
+  const supportBonus  = calcSupportRetentionBonus(state);
+
+  for (const tier of state.saas.tiers) {
+    // Renewal: 30-day-old cohort either renews or churns
+    const oldCohort    = tier.cohorts[slotIdx];
+    const effRetention = (state.saas.retention + supportBonus * pmMult) * tier.retentionMult;
+    const renewalProb  = effRetention > 0 ? Math.pow(1 - 0.02 / effRetention, 30) : 0;
+    const renewed      = oldCohort * renewalProb;
+
+    // Acquisition: new signups today
+    const convRate     = progressive_wall(state.saas.conversion * tier.conversionMult, 1, 2);
+    const gained       = visitors * convRate;
+
+    // Revenue collected upfront: renewals pay for next month, new signups pay for month 1
+    const revenue = (renewed + gained) * tier.price;
+    state.wallet        += revenue;
+    state.moneyLifetime += revenue;
+
+    // Write slot: renewed subscribers + today's new signups
+    tier.cohorts[slotIdx] = renewed + gained;
+  }
+
+  // Recompute derived fields
+  state.saas.customers = state.saas.tiers.reduce(
+    (total, t) => total + t.cohorts.reduce((a, b) => a + b, 0), 0
+  );
+  state.saas.mrr = state.saas.tiers.reduce(
+    (s, t) => s + t.price * t.cohorts.reduce((a, b) => a + b, 0), 0
+  );
   if (state.saas.mrr > (state.saas.mrrPeak ?? 0)) state.saas.mrrPeak = state.saas.mrr;
-}
-
-// ── Daily churn ────────────────────────────────────────────────
-function applyDailyChurn(state) {
-  if (state.saas.customers < 1) return;
-  // 2% daily base churn, reduced by retention (+ ai_support bonus scaled by PM)
-  const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state) * calcProductManagerMultiplier(state);
-  const churnRate          = 0.02 / effectiveRetention;
-  state.saas.customers     = Math.max(0, state.saas.customers - state.saas.customers * churnRate);
-  state.saas.mrr           = state.saas.price * state.saas.customers;
 }
 
 // ── Daily Lab billing ──────────────────────────────────────────
