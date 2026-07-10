@@ -83,12 +83,11 @@ function paintList(panel) {
       <td class="lb-saas">${esc(r.saas_name)}</td>
       <td class="lb-time">${fmtTicks(r.total_elapsed_ticks)}</td>
       <td class="lb-date">${fmtDate(r.submitted_at)}</td>
-      <td class="lb-dev-mode">${r.dev_mode ? 'dev' : ''}</td>
     </tr>`).join('');
 
   panel.innerHTML = headerHTML() + `
     <table class="lb-table">
-      <thead><tr><th>#</th><th>handle</th><th>product</th><th>time</th><th>date</th><th>dev</th></tr></thead>
+      <thead><tr><th>#</th><th>handle</th><th>product</th><th>time</th><th>date</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 
