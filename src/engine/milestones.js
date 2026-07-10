@@ -49,14 +49,14 @@ export const MILESTONE_TRACKS = [
       {
         id:        'price_t1',
         threshold: MILESTONES.money_tiers.t2,
-        effect:    `raise_price → $${SAAS.subscription_price.t2}/mo unlocked`,
-        onClaim:   () => {},  // raise_price is a manual button in saas_product tab
+        effect:    `launch_subscription → $${SAAS.subscription_tiers[1].price}/mo unlocked`,
+        onClaim:   () => {},
       },
       {
         id:        'price_t2',
         threshold: MILESTONES.money_tiers.t3,
-        effect:    `raise_price → $${SAAS.subscription_price.t3}/mo unlocked`,
-        onClaim:   () => {},  // raise_price is a manual button in saas_product tab
+        effect:    `launch_subscription → $${SAAS.subscription_tiers[2].price}/mo unlocked`,
+        onClaim:   () => {},
       },
     ],
   },

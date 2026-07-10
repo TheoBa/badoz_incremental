@@ -15,7 +15,7 @@ export function renderSeriesCharts(container, series, events) {
   const s    = series || {};
   const t    = Array.isArray(s.t) ? s.t : [];
   const maxT = t.length ? t[t.length - 1] : 0;
-  const evs  = (Array.isArray(events) ? events : []).filter(e => e && e.type === 'raise_price');
+  const evs  = (Array.isArray(events) ? events : []).filter(e => e && e.type === 'launch_subscription');
 
   if (t.length < 2) {
     container.innerHTML = '<div class="lb-empty">no series data for this run.</div>';
@@ -52,7 +52,7 @@ function chartSVG(spec, t, vals, maxT, evs) {
     .map(e => {
       const x = sx(e.tick).toFixed(1);
       return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + innerH}" stroke="#d97706" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`
-           + `<text x="${x}" y="${padT - 6}" fill="#d97706" font-size="9" text-anchor="middle">$${e.to}</text>`;
+           + `<text x="${x}" y="${padT - 6}" fill="#d97706" font-size="9" text-anchor="middle">$${e.price}/mo</text>`;
     })
     .join('');
 
