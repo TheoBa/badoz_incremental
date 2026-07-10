@@ -5,9 +5,14 @@ import { initState } from './state.js';
 import { CONSTANTS, LAB, PLAN_ORDER, SAAS, INVESTMENTS, MILESTONES } from './config.js';
 import {
   calcRcuPerClick, calcCoderRcuPerHour, calcProductManagerMultiplier,
-  calcSupportRetentionBonus, calcMarketerMarketingBonus, calcCeoReputationGain,
   makeTier,
 } from './formulas.js';
+import {
+  applyPassiveCoderRcu,
+  applyDailySaas,
+  applyDailyLabBilling,
+  applyDailyCeoReputation,
+} from './economy.js';
 import { generateMissions } from './missions.js';
 import { MILESTONE_TRACKS }  from './milestones.js';
 
@@ -122,7 +127,7 @@ function queueLabPlan(state, targetPlan) {
 // ── Main simulation ────────────────────────────────────────────────────────
 
 export function runSim(strategy) {
-  const maxTicks = (strategy.maxDays ?? 365) * 24;
+  const maxTicks = (strategy.maxDays ?? 365) * CONSTANTS.TICKS_PER_DAY;
   const state    = initState();
   state._runStarted = true;
   state.freelance.missions = generateMissions('junior');
@@ -130,6 +135,7 @@ export function runSim(strategy) {
   const timeline = [];
 
   for (let tick = 0; tick < maxTicks; tick++) {
+    state.ticksElapsed = tick;
 
     // ── A. Player actions ──────────────────────────────────────
 
@@ -166,20 +172,14 @@ export function runSim(strategy) {
     // 5. Auto-init t1 tier (saas unlocked at freelance_t0 = 5 missions)
     if (state.saas.tiers.length === 0 &&
         state.freelance.missionsCompleted >= MILESTONES.freelance_tiers.t0) {
-      const cfg = SAAS.subscription_tiers[0];
-      state.saas.tiers = [{ price: cfg.price, cohorts: new Array(30).fill(0),
-        conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult }];
+      state.saas.tiers = [makeTier(SAAS.subscription_tiers[0])];
     }
     // Auto-launch t2/t3 when milestone claimed (simulates player clicking button)
     if (state.milestones.claimed.price_t1 && state.saas.tiers.length < 2) {
-      const cfg = SAAS.subscription_tiers[1];
-      state.saas.tiers.push({ price: cfg.price, cohorts: new Array(30).fill(0),
-        conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult });
+      state.saas.tiers.push(makeTier(SAAS.subscription_tiers[1]));
     }
     if (state.milestones.claimed.price_t2 && state.saas.tiers.length < 3) {
-      const cfg = SAAS.subscription_tiers[2];
-      state.saas.tiers.push({ price: cfg.price, cohorts: new Array(30).fill(0),
-        conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult });
+      state.saas.tiers.push(makeTier(SAAS.subscription_tiers[2]));
     }
 
     // 6. Spend RCU on upgrades (in priority order)
@@ -232,75 +232,19 @@ export function runSim(strategy) {
       queueLabPlan(state, strategy.targetPlan ?? 'growth');
     }
 
-    // ── B. Passive engine ──────────────────────────────────────
+    // ── B. Passive engine — same code the real game runs ───────
 
     // 10. Passive coder RCU
-    if (state.milestones.claimed.lab_unlock) {
-      const agent  = state.lab.agents.ai_coder;
-      const plan   = LAB.plans[agent.tier] ?? LAB.plans.free;
-      const pmMult = calcProductManagerMultiplier(state);
-      const rcuH   = calcCoderRcuPerHour(agent) * plan.multiplier * pmMult;
-      state.rcu         += rcuH;
-      state.rcuLifetime += rcuH;
-    }
+    applyPassiveCoderRcu(state);
 
     // 11. Post cooldown
     if (state.reputation.postCooldownTicks > 0) state.reputation.postCooldownTicks--;
 
-    // 12. Daily boundary (every 24 ticks)
-    if (tick > 0 && tick % 24 === 0) {
-      const pmMult = calcProductManagerMultiplier(state);
-
-      // SaaS cohort: acquisition + monthly renewal per tier
-      if (state.saas.tiers.length > 0) {
-        const slotIdx       = Math.floor(tick / 24) % 30;
-        const marketerBoost = calcMarketerMarketingBonus(state) * pmMult;
-        const visitors      = (1 + state.saas.marketingStream + marketerBoost)
-                              * state.reputation.multiplier;
-        const supportBonus  = calcSupportRetentionBonus(state);
-
-        for (const tier of state.saas.tiers) {
-          const oldCohort    = tier.cohorts[slotIdx];
-          const effRetention = (state.saas.retention + supportBonus * pmMult) * tier.retentionMult;
-          const renewalProb  = effRetention > 0 ? Math.pow(1 - 0.02 / effRetention, 30) : 0;
-          const renewed      = oldCohort * renewalProb;
-
-          const effConv  = state.saas.conversion * tier.conversionMult;
-          const convRate = effConv > 0 ? effConv / (effConv + 2) : 0;
-          const gained   = visitors * convRate;
-
-          const revenue = (renewed + gained) * tier.price;
-          state.wallet        += revenue;
-          state.moneyLifetime += revenue;
-
-          tier.cohorts[slotIdx] = renewed + gained;
-        }
-
-        state.saas.customers = state.saas.tiers.reduce(
-          (total, t) => total + t.cohorts.reduce((a, b) => a + b, 0), 0);
-        state.saas.mrr = state.saas.tiers.reduce(
-          (s, t) => s + t.price * t.cohorts.reduce((a, b) => a + b, 0), 0);
-        state.saas.mrrPeak = Math.max(state.saas.mrrPeak ?? 0, state.saas.mrr);
-      }
-
-      // Lab billing
-      if (state.milestones.claimed.lab_unlock) {
-        for (const agent of Object.values(state.lab.agents)) {
-          if (agent.unlocked && agent.pendingTier) {
-            agent.tier = agent.pendingTier;
-            agent.pendingTier = null;
-          }
-        }
-        const totalCost = Object.values(state.lab.agents)
-          .filter(a => a.unlocked)
-          .reduce((s, a) => s + (LAB.plans[a.tier]?.dailyCost ?? 0), 0);
-        state.wallet           -= totalCost;
-        state.labSpendLifetime += totalCost;
-      }
-
-      // CEO reputation
-      const ceoGain = calcCeoReputationGain(state);
-      if (ceoGain > 0) state.reputation.multiplier += ceoGain;
+    // 12. Daily boundary
+    if (tick > 0 && tick % CONSTANTS.TICKS_PER_DAY === 0) {
+      applyDailySaas(state);
+      applyDailyLabBilling(state);
+      applyDailyCeoReputation(state);
 
       // Refresh missions
       state.freelance.missions = generateMissions(state.freelance.tier);
@@ -312,7 +256,7 @@ export function runSim(strategy) {
         ? calcCoderRcuPerHour(coderAgent) * coderPlan.multiplier * calcProductManagerMultiplier(state)
         : 0;
       timeline.push({
-        day:           tick / 24,
+        day:           tick / CONSTANTS.TICKS_PER_DAY,
         mrr:           Math.max(0, state.saas.mrr),
         customers:     Math.floor(Math.max(0, state.saas.customers)),
         wallet:        Math.max(0, state.wallet),
@@ -323,7 +267,7 @@ export function runSim(strategy) {
 
     // 13. Win check
     if (state.moneyLifetime >= CONSTANTS.WIN_CONDITION) {
-      return buildResult(strategy, Math.floor(tick / 24), state.winTick ?? tick, timeline);
+      return buildResult(strategy, Math.floor(tick / CONSTANTS.TICKS_PER_DAY), tick, timeline);
     }
   }
 
