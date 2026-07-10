@@ -1,6 +1,7 @@
 // start.js — run start screen
-// Collects the player handle (once, persisted) before play begins.
-// Product naming moved to the saas_product tab (first visit lore).
+// Collects the player handle before play begins; pre-filled from the previous
+// run and editable every run. Product naming moved to the saas_product tab
+// (first visit lore).
 
 import { getPlayerName, setPlayerName } from '../engine/identity.js';
 import { save } from '../engine/save.js';
@@ -14,11 +15,9 @@ export function initStartScreen(state, renderFn) {
     e.preventDefault();
     const handleInput = document.getElementById('start-handle');
 
-    if (!getPlayerName()) {
-      const h = (handleInput?.value || '').trim();
-      if (!h) { handleInput?.focus(); return; }
-      setPlayerName(h);
-    }
+    const h = (handleInput?.value || '').trim();
+    if (!h) { handleInput?.focus(); return; }
+    setPlayerName(h);
 
     state._runStarted  = true;
     state.runStartedAt = Date.now();
@@ -47,9 +46,7 @@ export function renderStartScreen(state) {
   if (overlay.classList.contains('on')) return;  // already showing — leave inputs alone
 
   overlay.classList.add('on');
-  const handleRow   = document.getElementById('start-handle-row');
   const handleInput = document.getElementById('start-handle');
-  const haveHandle  = !!getPlayerName();
-  if (handleRow) handleRow.style.display = haveHandle ? 'none' : '';
+  if (handleInput) handleInput.value = getPlayerName() ?? '';
   handleInput?.focus();
 }
