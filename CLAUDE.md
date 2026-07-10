@@ -119,8 +119,9 @@ The Frontier Lab tab uses the same light theme as the rest of the app. Its CSS i
 
 ## Git workflow
 
-- **`main`** — single long-lived branch. All work lands here.
-- **`feature/xxx`** — short-lived, one mechanic per branch. Branch from `main`, PR back to `main`.
+- **`main`** — release branch. Prod (`~/badoz_prod`) always serves from `main`. Only `dev` merges into it — a `dev` → `main` merge **is** a release.
+- **`dev`** — long-lived integration branch. All day-to-day work lands here.
+- **`feature/xxx`** — short-lived, one mechanic per branch. Branch from `dev`, PR back to `dev`.
 
 Commit message format: `type(scope): description`
 Common types: `feat`, `fix`, `chore`, `docs`, `infra`, `refactor`.
@@ -130,9 +131,9 @@ Known issue: the macOS FUSE mount used by the Linux sandbox blocks `unlink()`, s
 
 **Claude is authorised to:**
 - `git push origin <feature-branch>` — push feature branches to remote.
-- `gh pr create` — open PRs (feature → main).
+- `gh pr create` — open PRs (feature → dev).
 - `gh pr merge` — merge PRs once created (squash merge preferred).
 
-Never force-push to `main`. Never push directly to `main`.
+Releases (`dev` → `main`) are done by Théo. Never force-push to `main` or `dev`. Never push directly to `main` or `dev`.
 
 ---

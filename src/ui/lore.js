@@ -105,6 +105,10 @@ export function showLore(tab, state, renderFn) {
   const newOk = okBtn.cloneNode(true);
   okBtn.parentNode.replaceChild(newOk, okBtn);
 
+  // Enter inside the product name input confirms (assignment, not addEventListener,
+  // so repeated showLore calls don't stack listeners)
+  if (inputEl) inputEl.onkeydown = e => { if (e.key === 'Enter') newOk.click(); };
+
   newOk.addEventListener('click', () => {
     if (entry.hasNameInput) {
       const name = (inputEl?.value || '').trim();
