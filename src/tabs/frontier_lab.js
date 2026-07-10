@@ -12,6 +12,7 @@
 // and a matching entry in BOOST_DISPLAY here; the rest flows automatically.
 
 import { LAB, MILESTONES, PLAN_ORDER } from '../engine/config.js';
+import { fmt as fmtMoney, fmtN } from '../ui/format.js';
 import {
   calcModelMinorUpgradeCost,
   calcModelMajorUpgradeCost,
@@ -272,16 +273,3 @@ function onMajorUpgrade(state, agentId) {
   agent.modelLevel++;
 }
 
-// ── Helpers ────────────────────────────────────────────────────
-function fmtMoney(n) {
-  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-  return '$' + Math.round(n);
-}
-
-function fmtN(n) {
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return (Math.round(n * 10) / 10).toFixed(1);
-}

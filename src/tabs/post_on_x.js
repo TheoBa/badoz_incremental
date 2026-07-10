@@ -3,6 +3,7 @@
 // Cooldown is tracked in state.reputation.postCooldownTicks (decremented by tick.js).
 
 import { CONSTANTS } from '../engine/config.js';
+import { ticksToLabel } from '../ui/format.js';
 
 export function renderPostOnX(state) {
   const panel    = document.getElementById('panel-post_on_x');
@@ -64,10 +65,4 @@ export function onPostOnX(state) {
     btn.textContent = `[ +${CONSTANTS.POST_REP_DELTA.toFixed(2)} rep ]`;
     setTimeout(() => renderPostOnX(state), 300);
   }
-}
-
-function ticksToLabel(ticks) {
-  const hours = ticks % 24;
-  const days  = Math.floor(ticks / 24);
-  return days > 0 ? `${days}d ${hours}h` : `${hours}h`;
 }

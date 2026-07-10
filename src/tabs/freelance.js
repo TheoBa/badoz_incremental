@@ -7,7 +7,7 @@
 //   - "rush ×2" button accepts at 2× RCU cost for 2× reward; counts as 2 missions completed
 
 import { CONSTANTS } from '../engine/config.js';
-import { fmtN, fmt } from '../ui/render.js';
+import { fmtN, fmt } from '../ui/format.js';
 
 export function renderFreelance(state) {
   const panel      = document.getElementById('panel-freelance');

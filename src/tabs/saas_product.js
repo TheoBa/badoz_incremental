@@ -11,7 +11,7 @@
 
 import { CONSTANTS, MILESTONES, SAAS } from '../engine/config.js';
 import { softCap, upgradeScale, makeTier, calcSupportRetentionBonus } from '../engine/formulas.js';
-import { fmt, fmtN } from '../ui/render.js';
+import { fmt, fmtN } from '../ui/format.js';
 
 const pct = (x, halfLife) => softCap(x, 100, halfLife).toFixed(2);
 

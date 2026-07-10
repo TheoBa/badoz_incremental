@@ -2,7 +2,7 @@
 // Renders the three cumulative series sharing a time axis, with vertical
 // raise_price markers. Colors follow CLAUDE.md color coding.
 
-import { fmt, fmtN } from './render.js';
+import { fmt, fmtN } from './format.js';
 
 const SERIES = [
   { key: 'money',   title: 'cumulative_money',  color: '#16a34a', peak: fmt  },

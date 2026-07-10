@@ -13,6 +13,7 @@ import { renderHistogram }   from './histograms.js';
 import { renderWinScreen }     from './win.js';
 import { renderStartScreen }   from './start.js';
 import { renderWeeklyOverlay } from './weekly.js';
+import { fmt, fmtN } from './format.js';
 import { CONSTANTS, MILESTONES } from '../engine/config.js';
 import {
   softCap, calcSupportRetentionBonus, calcMarketerMarketingBonus, calcDailyLabBurn,
@@ -128,19 +129,6 @@ function renderActiveTab(state) {
 function set(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = val;
-}
-
-export function fmt(n) {
-  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-  return '$' + Math.round(n);
-}
-
-export function fmtN(n) {
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return String(Math.floor(n));
 }
 
 function calcRcuPerHour(state) {

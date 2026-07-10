@@ -3,7 +3,7 @@
 // with a balance trend chart.
 
 import { CONSTANTS } from '../engine/config.js';
-import { fmt, fmtN } from './render.js';
+import { fmt, fmtN } from './format.js';
 import { renderHistogram } from './histograms.js';
 
 const overlay = () => document.getElementById('weekly-overlay');
