@@ -32,6 +32,13 @@ curl -X POST http://localhost:3000/api/state/save \
 
 nginx proxies port 80 → 3000. Config lives at `infra/nginx.conf`.
 
+**Deployment** (mac mini): the production server runs from `~/badoz_prod`, a separate clone always on `main`. Never from the dev working tree. To deploy:
+```bash
+bash infra/deploy.sh          # pulls origin/main into ~/badoz_prod
+lsof -i :3000 -t | xargs kill # stop running server
+cd ~/badoz_prod && npm start   # restart from prod dir
+```
+
 ---
 
 ## Architecture
