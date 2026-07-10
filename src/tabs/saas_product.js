@@ -9,7 +9,7 @@
 //   - Three upgrade tracks: conversion, retention, marketing_stream (global, apply to all tiers)
 //   - Each track shows the next purchasable upgrade; costs scale as baseCost × Scale^level
 
-import { CONSTANTS, MILESTONES, SAAS, calcSupportRetentionBonus } from '../engine/state.js';
+import { MILESTONES, SAAS, calcSupportRetentionBonus } from '../engine/state.js';
 import { fmt, fmtN, progressive_wall } from '../ui/render.js';
 
 // ── Track metadata (colors match CLAUDE.md color coding) ───────

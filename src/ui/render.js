@@ -80,9 +80,7 @@ function renderKpi(state) {
   const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state);
   const retentionPct = progressive_wall(effectiveRetention, 100, 5);
   set('k-ret',    retentionPct + '%');
-  const investBoost = Array.isArray(state.investments)
-    ? 0
-    : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
+  const investBoost = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   const marketerBoost = calcMarketerMarketingBonus(state);
   const effectiveMkt = (state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
   set('k-mkt', fmtN(effectiveMkt) + '/d');

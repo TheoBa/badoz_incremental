@@ -96,7 +96,6 @@ export const LAB = {
       desc:             'Writes code so you don\'t have to. Mostly correct.',
       boost_label:      'passive_rcu/h',
       boost_type:       'coder_rcu',
-      showRcu:          true,
       starts_unlocked:  true,
       minor_base_cost:  20,
       minor_cost_scale: 1.3,
@@ -112,7 +111,6 @@ export const LAB = {
       desc:             'Handles tickets. Rarely gaslights customers.',
       boost_label:      'customer_retention',
       boost_type:       'support_retention',
-      showRcu:          false,
       minor_base_cost:  300,
       minor_cost_scale: 1.3,
       base_delta:       1,
@@ -127,7 +125,6 @@ export const LAB = {
       desc:             'Posts everywhere simultaneously. Results may include virality. Or controversy.',
       boost_label:      'marketing_stream + reputation/d',
       boost_type:       'marketer_mkt',
-      showRcu:          false,
       minor_base_cost:  1_500,
       minor_cost_scale: 1.3,
       base_delta:       5,
@@ -142,7 +139,6 @@ export const LAB = {
       desc:             'Syncs all agents into a single coherent vision. Occasionally.',
       boost_label:      'all_agent_output ×mult',
       boost_type:       'pm_mult',
-      showRcu:          false,
       minor_base_cost:  5_000,
       minor_cost_scale: 1.4,
       base_delta:       0.3,
@@ -157,7 +153,6 @@ export const LAB = {
       desc:             'Sets the vision. Attends the offsites. Ships the deck.',
       boost_label:      'reputation/d',
       boost_type:       'ceo_rep',
-      showRcu:          false,
       minor_base_cost:  100_000,
       minor_cost_scale: 1.3,
       base_delta:       0.005,
@@ -486,9 +481,6 @@ export function initState() {
     // Display: average of the array = effective RCU/h over recent play.
     rcuHistory:   new Array(10).fill(0),
     _rcuThisTick: 0,
-
-    // Analytics events queued for backend
-    _pendingEvents: [],
 
     // Weekly summary — fired every 7 in-game days (168 ticks)
     weekStats: {
