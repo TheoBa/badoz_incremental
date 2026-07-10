@@ -99,7 +99,7 @@ The Frontier Lab tab uses the same light theme as the rest of the app. Its CSS i
 
 - **Tick rate**: 1 real second = 1 in-game hour. 24 ticks = 1 day. 1 month ≈ 12 real minutes.
 - **Milestone tracks** (checked in `tick.js → checkMilestones`):
-  1. money_earned; unlocks the `investments` tab and 2 subscription `raise_price` instances (10 → 100 → 1000)
+  1. money_earned; unlocks the `investments` tab and 2 `launch_new_subscription()` unlocks (t2 $100/mo → t3 $1000/mo)
   2. freelance_missions; unlocks freelance related upgrades (Junior → Senior → Lead → 10x) as well as the `rush` option: double RCU cost to mission reward.
   3. rcu_gained → unlocks the `frontier_lab` tab and first 3 agents 
   4. lab_spend → agent unlocks lab scale plan (free → hobbyist → growth → scale → infernal)
@@ -112,9 +112,8 @@ The Frontier Lab tab uses the same light theme as the rest of the app. Its CSS i
 
 ## Git workflow
 
-- **`main`** — stable only. Never commit directly. Merges from `dev` only.
-- **`dev`** — active development. All feature branches merge here.
-- **`feature/xxx`** — short-lived, one mechanic per branch. Branch from `dev`, PR back to `dev`.
+- **`main`** — single long-lived branch. All work lands here.
+- **`feature/xxx`** — short-lived, one mechanic per branch. Branch from `main`, PR back to `main`.
 
 Commit message format: `type(scope): description`
 Common types: `feat`, `fix`, `chore`, `docs`, `infra`, `refactor`.
@@ -124,9 +123,9 @@ Known issue: the macOS FUSE mount used by the Linux sandbox blocks `unlink()`, s
 
 **Claude is authorised to:**
 - `git push origin <feature-branch>` — push feature branches to remote.
-- `gh pr create` — open PRs (feature → dev, or as directed).
+- `gh pr create` — open PRs (feature → main).
 - `gh pr merge` — merge PRs once created (squash merge preferred).
 
-Never force-push to `main` or `dev`. Never push directly to `main`.
+Never force-push to `main`. Never push directly to `main`.
 
 ---
