@@ -13,6 +13,10 @@
 #   */5 * * * * $HOME/badoz_prod/infra/auto-deploy.sh >> $HOME/Library/Logs/badoz/auto-deploy.log 2>&1
 set -euo pipefail
 
+# cron's PATH lacks /usr/sbin (lsof) — without it the kill step silently
+# no-ops and the restarted server dies with EADDRINUSE.
+export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 PROD_DIR="$HOME/badoz_prod"
 PORT=3000
 LOCK="${TMPDIR:-/tmp}/badoz-auto-deploy.lock"
