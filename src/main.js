@@ -204,13 +204,13 @@ const PRIMARY_ACTION = {
   milestones: () => document.querySelector('.ms-claim-btn'),
 };
 
-// Pop-ups where Enter/Space confirm. go_broke is deliberately absent — it is
-// destructive and must be clicked. dev-analysis just suppresses shortcuts.
+// Pop-ups where Enter/Space confirm. go_broke and win-screen are deliberately
+// absent — go_broke is destructive, and the win screen shouldn't be skippable
+// by a stray keypress. dev-analysis just suppresses shortcuts.
 const OVERLAY_CONFIRM = [
   ['#start-screen.on',   () => document.querySelector('#start-form button[type=submit]')],
   ['#lore-overlay.on',   () => document.getElementById('lore-ok')],
   ['#weekly-overlay.on', () => document.getElementById('weekly-ok')],
-  ['#win-screen.on',     () => document.getElementById('win-new-run')],
 ];
 
 document.addEventListener('keydown', e => {
@@ -219,7 +219,7 @@ document.addEventListener('keydown', e => {
   const target = e.target;
   if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) return;
   if (target?.tagName === 'BUTTON') return; // focused buttons keep native Enter/Space
-  if (document.querySelector('#go-broke-overlay.on, #dev-analysis-overlay.on')) return;
+  if (document.querySelector('#go-broke-overlay.on, #win-screen.on, #dev-analysis-overlay.on')) return;
 
   for (const [sel, getBtn] of OVERLAY_CONFIRM) {
     if (!document.querySelector(sel)) continue;
