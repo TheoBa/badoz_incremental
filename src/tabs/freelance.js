@@ -6,13 +6,14 @@
 //   - Unlocks automatically when the freelance_t1 milestone is claimed (senior tier)
 //   - "rush ×2" button accepts at 2× RCU cost for 2× reward; counts as 2 missions completed
 
+import { CONSTANTS } from '../engine/config.js';
 import { fmtN, fmt } from '../ui/render.js';
 
 export function renderFreelance(state) {
   const panel      = document.getElementById('panel-freelance');
-  const ticksInDay = state.ticksElapsed % 24;
-  const refreshIn  = 24 - ticksInDay;
-  const day        = Math.floor(state.ticksElapsed / 24) + 1;
+  const ticksInDay = state.ticksElapsed % CONSTANTS.TICKS_PER_DAY;
+  const refreshIn  = CONSTANTS.TICKS_PER_DAY - ticksInDay;
+  const day        = Math.floor(state.ticksElapsed / CONSTANTS.TICKS_PER_DAY) + 1;
 
   const seniorClaimed = !!state.milestones?.claimed?.freelance_t1;
   const rushUnlocked  = state.freelance.rushUnlocked;

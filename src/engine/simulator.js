@@ -1,12 +1,13 @@
 // simulator.js — headless strategy simulator (pure logic, no DOM)
 // Runs a full game in one JS call; stores results to localStorage.
 
+import { initState } from './state.js';
+import { CONSTANTS, LAB, PLAN_ORDER, SAAS, INVESTMENTS, MILESTONES } from './config.js';
 import {
-  initState, calcRcuPerClick, calcAgentBoost, calcCoderRcuPerHour,
-  calcSupportRetentionBonus, calcMarketerMarketingBonus,
-  calcProductManagerMultiplier, calcCeoReputationGain,
-  CONSTANTS, LAB, LAB_PLANS, SAAS, INVESTMENTS, MILESTONES, FREELANCE,
-} from './state.js';
+  calcRcuPerClick, calcCoderRcuPerHour, calcProductManagerMultiplier,
+  calcSupportRetentionBonus, calcMarketerMarketingBonus, calcCeoReputationGain,
+  makeTier,
+} from './formulas.js';
 import { generateMissions } from './missions.js';
 import { MILESTONE_TRACKS }  from './milestones.js';
 
@@ -19,14 +20,6 @@ const SF_MAP = {
   conversion: { cfgKey: 'conversion', stateKey: 'conversion',     upgradeKey: 'conversion' },
   retention:  { cfgKey: 'retention',  stateKey: 'retention',      upgradeKey: 'retention'  },
   marketing:  { cfgKey: 'marketing',  stateKey: 'marketingStream', upgradeKey: 'marketingStream' },
-};
-
-const AGENT_CFG = {
-  ai_coder:           LAB.agents.coder,
-  ai_support:         LAB.agents.support,
-  ai_marketer:        LAB.agents.marketer,
-  ai_product_manager: LAB.agents.product_manager,
-  ai_ceo:             LAB.agents.ceo,
 };
 
 const HW_TIERS = {
@@ -56,7 +49,7 @@ function sfBuy(state, track) {
 
 function agentMinorNextCost(state, agentKey) {
   const agent = state.lab.agents[agentKey];
-  const cfg   = AGENT_CFG[agentKey];
+  const cfg   = LAB.agents[agentKey];
   return Math.floor(cfg.minor_base_cost * Math.pow(cfg.minor_cost_scale, agent.modelLevel));
 }
 
@@ -67,7 +60,7 @@ function agentMinorBuy(state, agentKey) {
 }
 
 function agentMajorCost(agentKey, modelLevel) {
-  const cfg = AGENT_CFG[agentKey];
+  const cfg = LAB.agents[agentKey];
   return Math.floor(cfg.major_base_cost * Math.pow(cfg.major_cost_scale, Math.floor(modelLevel / 10)));
 }
 
@@ -106,18 +99,12 @@ function autoClaimMilestones(state) {
 
 // ── Lab plan management ────────────────────────────────────────────────────
 
-const PLAN_ORDER = ['free', 'hobbyist', 'growth', 'scale', 'infernal'];
-const PLAN_GATES = {
-  free: null, hobbyist: 'hobbyist_unlock', growth: 'growth_unlock',
-  scale: 'scale_unlock', infernal: 'infernal_unlock',
-};
-
 function highestUnlockedPlan(state, targetPlan) {
   const targetIdx = PLAN_ORDER.indexOf(targetPlan);
   let best = 'free';
   for (let i = 0; i <= targetIdx; i++) {
     const plan = PLAN_ORDER[i];
-    const gate = PLAN_GATES[plan];
+    const gate = LAB.plans[plan].gate;
     if (!gate || state.milestones.claimed[gate]) best = plan;
   }
   return best;
@@ -168,8 +155,8 @@ export function runSim(strategy) {
 
     // 3. Post on X
     if (strategy.alwaysPost !== false && state.reputation.postCooldownTicks === 0) {
-      state.reputation.multiplier        += CONSTANTS.PostOnX_Rep_Delta;
-      state.reputation.postCooldownTicks  = CONSTANTS.PostOnX_Cooldown;
+      state.reputation.multiplier        += CONSTANTS.POST_REP_DELTA;
+      state.reputation.postCooldownTicks  = CONSTANTS.POST_COOLDOWN;
       state.reputation.numberOfPosts++;
     }
 
@@ -250,7 +237,7 @@ export function runSim(strategy) {
     // 10. Passive coder RCU
     if (state.milestones.claimed.lab_unlock) {
       const agent  = state.lab.agents.ai_coder;
-      const plan   = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
+      const plan   = LAB.plans[agent.tier] ?? LAB.plans.free;
       const pmMult = calcProductManagerMultiplier(state);
       const rcuH   = calcCoderRcuPerHour(agent) * plan.multiplier * pmMult;
       state.rcu         += rcuH;
@@ -306,7 +293,7 @@ export function runSim(strategy) {
         }
         const totalCost = Object.values(state.lab.agents)
           .filter(a => a.unlocked)
-          .reduce((s, a) => s + (LAB_PLANS[a.tier]?.dailyCost ?? 0), 0);
+          .reduce((s, a) => s + (LAB.plans[a.tier]?.dailyCost ?? 0), 0);
         state.wallet           -= totalCost;
         state.labSpendLifetime += totalCost;
       }
@@ -320,7 +307,7 @@ export function runSim(strategy) {
 
       // Sample timeline (every day)
       const coderAgent = state.lab.agents.ai_coder;
-      const coderPlan  = LAB_PLANS[coderAgent.tier] ?? LAB_PLANS.free;
+      const coderPlan  = LAB.plans[coderAgent.tier] ?? LAB.plans.free;
       const rcuH = state.milestones.claimed.lab_unlock
         ? calcCoderRcuPerHour(coderAgent) * coderPlan.multiplier * calcProductManagerMultiplier(state)
         : 0;

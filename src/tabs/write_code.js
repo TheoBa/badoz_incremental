@@ -3,7 +3,7 @@
 // Price and product details live in the saas_product tab.
 
 import { fmtN, fmt } from '../ui/render.js';
-import { calcRcuPerClick } from '../engine/state.js';
+import { calcRcuPerClick } from '../engine/formulas.js';
 
 export function renderWriteCode(state) {
   const panel = document.getElementById('panel-write_code');

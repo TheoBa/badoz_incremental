@@ -9,8 +9,11 @@
 //   - Three upgrade tracks: conversion, retention, marketing_stream (global, apply to all tiers)
 //   - Each track shows the next purchasable upgrade; costs scale as baseCost × Scale^level
 
-import { MILESTONES, SAAS, calcSupportRetentionBonus } from '../engine/state.js';
-import { fmt, fmtN, progressive_wall } from '../ui/render.js';
+import { CONSTANTS, MILESTONES, SAAS } from '../engine/config.js';
+import { softCap, upgradeScale, makeTier, calcSupportRetentionBonus } from '../engine/formulas.js';
+import { fmt, fmtN } from '../ui/render.js';
+
+const pct = (x, halfLife) => softCap(x, 100, halfLife).toFixed(2);
 
 // ── Track metadata (colors match CLAUDE.md color coding) ───────
 const TRACKS = [
@@ -46,10 +49,6 @@ const TRACKS = [
   },
 ];
 
-function upgradeScale(base, scaleFactor, level) {
-  return base * Math.pow(scaleFactor, level);
-}
-
 // ── Tier helpers ──────────────────────────────────────────────
 const LAUNCH_CLAIM_IDS = ['price_t1', 'price_t2'];  // milestone IDs per launch
 
@@ -74,8 +73,8 @@ export function renderSaasProduct(state) {
   const tierCards = tiers.map((tier, i) => {
     const customers = Math.floor(tier.cohorts.reduce((a, b) => a + b, 0));
     const tierMrr   = tier.price * tier.cohorts.reduce((a, b) => a + b, 0);
-    const convPct   = progressive_wall(state.saas.conversion * tier.conversionMult, 100, 2);
-    const retPct    = progressive_wall((state.saas.retention + supportBonus) * tier.retentionMult, 100, 5);
+    const convPct   = pct(state.saas.conversion * tier.conversionMult, CONSTANTS.CONV_HALF_LIFE);
+    const retPct    = pct((state.saas.retention + supportBonus) * tier.retentionMult, CONSTANTS.RET_HALF_LIFE);
     return `
     <div class="sp-tier-card">
       <div class="sp-tier-header">
@@ -112,8 +111,8 @@ export function renderSaasProduct(state) {
       <div class="stat-row"><span>customers</span><b class="mrr">${Math.floor(state.saas.customers)}</b></div>
       <div class="stat-row"><span>MRR</span><b class="mrr">${fmt(state.saas.mrr)}</b></div>
       ${tiers.length < 2 ? `
-      <div class="stat-row"><span>conv</span><b class="pink">${progressive_wall(state.saas.conversion, 100, 2)}%</b></div>
-      <div class="stat-row"><span>ret</span><b class="yellow">${progressive_wall(state.saas.retention + supportBonus, 100, 5)}%</b></div>
+      <div class="stat-row"><span>conv</span><b class="pink">${pct(state.saas.conversion, CONSTANTS.CONV_HALF_LIFE)}%</b></div>
+      <div class="stat-row"><span>ret</span><b class="yellow">${pct(state.saas.retention + supportBonus, CONSTANTS.RET_HALF_LIFE)}%</b></div>
       ` : ''}
     </div>
 
@@ -179,12 +178,7 @@ function onLaunchNewSubscription(state) {
   if (!state.milestones?.claimed?.[claimId]) return;
 
   const cfg = SAAS.subscription_tiers[nextIdx];
-  state.saas.tiers.push({
-    price:          cfg.price,
-    cohorts:        new Array(30).fill(0),
-    conversionMult: cfg.conversionMult,
-    retentionMult:  cfg.retentionMult,
-  });
+  state.saas.tiers.push(makeTier(cfg));
   state.events.push({ tick: state.ticksElapsed, type: 'launch_subscription', price: cfg.price });
 
   renderSaasProduct(state);

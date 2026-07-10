@@ -14,7 +14,8 @@
 //   buildReputationCategory — items with cooldown/max_uses → rep bump
 //   buildHardwareCategory   — gear/laptop tiers + cpu/gpu infinite upgrades
 
-import { INVESTMENTS, MILESTONES, calcRcuPerClick } from '../engine/state.js';
+import { INVESTMENTS, MILESTONES } from '../engine/config.js';
+import { calcRcuPerClick } from '../engine/formulas.js';
 import { fmt, fmtN } from '../ui/render.js';
 
 // ── Category builders ──────────────────────────────────────────

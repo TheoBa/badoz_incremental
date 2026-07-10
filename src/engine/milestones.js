@@ -3,7 +3,7 @@
 // Each step has a threshold and an optional onClaim() mutator.
 // Status is derived on-the-fly — nothing is stored except state.milestones.claimed[id].
 
-import { MILESTONES, CONSTANTS, SAAS } from './state.js';
+import { MILESTONES, SAAS } from './config.js';
 
 // ── Local formatters (no render.js import — avoids circular deps) ──
 function fmtMoney(n) {

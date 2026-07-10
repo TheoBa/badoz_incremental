@@ -54,9 +54,11 @@ tick.js mutates state → render.js reads state → DOM updates
 ### Frontend
 
 - **`src/main.js`** — entry point. Loads state (from save or `initState()`), calls `render()`, starts the tick loop.
-- **`src/engine/state.js`** — canonical state object + `CONSTANTS` (all balancing variables). When filling in `null` constants, change only this file.
+- **`src/engine/config.js`** — **every balancing constant** (`CONSTANTS`, `MILESTONES`, `FREELANCE`, `SAAS`, `LAB`, `INVESTMENTS`). All mechanics derive from this file; a balancing pass touches only this file. When filling in `null` constants, change only this file.
+- **`src/engine/formulas.js`** — pure derived-value helpers (`calcRcuPerClick`, `calcAgentBoost`, `softCap`, …). No mutation, no DOM.
+- **`src/engine/state.js`** — canonical state object (`initState()`). Shape only; values come from config.
 - **`src/engine/tick.js`** — game loop. Fires every `CONSTANTS.TICK_RATE` seconds (1 real second = 1 in-game hour). Every 24 ticks = 1 in-game day.
-- **`src/engine/save.js`** — localStorage persistence. Will later sync to `/api/state`.
+- **`src/engine/save.js`** — localStorage persistence.
 - **`src/ui/render.js`** — top-level renderer. Reads `state`, dispatches to the active tab's render function.
 - **`src/tabs/*.js`** — one file per game tab. Each exports a `renderXxx(state)` function and action handlers (`onXxx(state, ...args)`). Action handlers **mutate state directly** — they do not return new state.
 - **`src/ui/histograms.js`** — shared utility for the 7-bar KPI histograms.

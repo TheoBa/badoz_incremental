@@ -11,27 +11,16 @@
 // Agent catalog is derived from LAB.agents in state.js — add an entry there
 // and a matching entry in BOOST_DISPLAY here; the rest flows automatically.
 
+import { LAB, MILESTONES, PLAN_ORDER } from '../engine/config.js';
 import {
-  LAB,
-  LAB_PLANS,
-  MILESTONES,
   calcModelMinorUpgradeCost,
   calcModelMajorUpgradeCost,
   calcCoderRcuPerHour,
   calcProductManagerMultiplier,
   calcCeoReputationGain,
   calcAgentBoost,
-} from '../engine/state.js';
-
-// ── Plan display order + lab_spend gates ──────────────────────
-const PLAN_ORDER = ['free', 'hobbyist', 'growth', 'scale', 'infernal'];
-const PLAN_GATES = {
-  free:     null,
-  hobbyist: 'hobbyist_unlock',
-  growth:   'growth_unlock',
-  scale:    'scale_unlock',
-  infernal: 'infernal_unlock',
-};
+  calcDailyLabBurn,
+} from '../engine/formulas.js';
 
 // ── Per-agent boost display ────────────────────────────────────
 // Keyed by boost_type from LAB.agents. Called as fn(agent, plan, state).
@@ -42,13 +31,13 @@ const BOOST_DISPLAY = {
     return `passive_rcu/h: <b class="rcu">${fmtN(rcu)}</b>`;
   },
   support_retention: (agent, _plan, state) => {
-    const plan_ = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-    const bonus = calcAgentBoost(agent, LAB.agents.support) * plan_.multiplier * calcProductManagerMultiplier(state);
+    const plan_ = LAB.plans[agent.tier] ?? LAB.plans.free;
+    const bonus = calcAgentBoost(agent, LAB.agents.ai_support) * plan_.multiplier * calcProductManagerMultiplier(state);
     return `retention_bonus: <b class="yellow">+${bonus.toFixed(2)}</b>`;
   },
   marketer_mkt: (agent, _plan, state) => {
-    const plan_ = LAB_PLANS[agent.tier] ?? LAB_PLANS.free;
-    const mkt   = calcAgentBoost(agent, LAB.agents.marketer) * plan_.multiplier * calcProductManagerMultiplier(state);
+    const plan_ = LAB.plans[agent.tier] ?? LAB.plans.free;
+    const mkt   = calcAgentBoost(agent, LAB.agents.ai_marketer) * plan_.multiplier * calcProductManagerMultiplier(state);
     return `mkt_stream: <b class="gold">+${fmtN(mkt)}/d</b>`;
   },
   pm_mult: (_agent, _plan, state) => {
@@ -150,7 +139,7 @@ export function renderFrontierLab(state) {
     }
   });
 
-  const burn = calcDailyBurn(state);
+  const burn = calcDailyLabBurn(state);
   document.getElementById('lab-burn').textContent =
     burn > 0 ? `daily_burn: $${burn}/d` : '';
 }
@@ -174,7 +163,7 @@ function lockedCardHTML(cfg) {
 }
 
 function activeCardHTML(cfg, agent, state) {
-  const plan    = LAB_PLANS[agent.tier];
+  const plan    = LAB.plans[agent.tier];
   const pending = agent.pendingTier;
 
   // ── Model upgrade section ──
@@ -201,8 +190,8 @@ function activeCardHTML(cfg, agent, state) {
 
   // ── Plan selector ──
   const planBtns = PLAN_ORDER.map(planId => {
-    const p          = LAB_PLANS[planId];
-    const gateId     = PLAN_GATES[planId];
+    const p          = LAB.plans[planId];
+    const gateId     = p.gate;
     const isUnlocked = !gateId || !!state.milestones?.claimed?.[gateId];
     const isCurrent  = agent.tier === planId;
     const isPending  = pending === planId && !isCurrent;
@@ -255,7 +244,7 @@ function onSetPlan(state, agentId, planId) {
 function onMinorUpgrade(state, agentId) {
   const agent = state.lab.agents[agentId];
   if (agent.modelLevel % 10 >= 9) return;
-  const cfg  = Object.values(LAB.agents).find(a => a.id === agentId);
+  const cfg  = LAB.agents[agentId];
   const cost = calcModelMinorUpgradeCost(agent, cfg);
   if (state.rcu < cost) return;
   state.rcu -= cost;
@@ -276,7 +265,7 @@ function onBuyCompute(state) {
 function onMajorUpgrade(state, agentId) {
   const agent = state.lab.agents[agentId];
   if (agent.modelLevel % 10 !== 9) return;
-  const cfg  = Object.values(LAB.agents).find(a => a.id === agentId);
+  const cfg  = LAB.agents[agentId];
   const cost = calcModelMajorUpgradeCost(agent, cfg);
   if (state.wallet < cost) return;
   state.wallet -= cost;
@@ -284,12 +273,6 @@ function onMajorUpgrade(state, agentId) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────
-function calcDailyBurn(state) {
-  return Object.values(state.lab.agents)
-    .filter(a => a.unlocked)
-    .reduce((sum, a) => sum + (LAB_PLANS[a.tier]?.dailyCost ?? 0), 0);
-}
-
 function fmtMoney(n) {
   if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
   if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';

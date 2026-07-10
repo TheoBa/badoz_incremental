@@ -2,7 +2,7 @@
 // showLore(tab, state, renderFn) shows the #lore-overlay with tab-specific text.
 // For saas_product it also collects the product name before closing.
 
-import { MILESTONES } from '../engine/state.js';
+import { MILESTONES } from '../engine/config.js';
 import { save } from '../engine/save.js';
 
 const LORE = {

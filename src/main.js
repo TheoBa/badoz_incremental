@@ -1,7 +1,9 @@
 // main.js — entry point
 // Boots the game: loads state, wires tab switching, starts the tick loop.
 
-import { initState, INVESTMENTS, SAAS } from './engine/state.js';
+import { initState }            from './engine/state.js';
+import { CONSTANTS, INVESTMENTS, SAAS } from './engine/config.js';
+import { makeTier }             from './engine/formulas.js';
 import { startTick }            from './engine/tick.js';
 import { load, save }           from './engine/save.js';
 import { render }               from './ui/render.js';
@@ -75,9 +77,9 @@ if (!state.saas.tiers) {
   const oldRound = state.saas.priceRound ?? 0;
   const oldCusts = state.saas.customers  ?? 0;
   state.saas.tiers = SAAS.subscription_tiers.slice(0, oldRound + 1).map((cfg, i) => {
-    const cohorts = new Array(30).fill(0);
-    if (i === 0) cohorts[0] = oldCusts;
-    return { price: cfg.price, cohorts, conversionMult: cfg.conversionMult, retentionMult: cfg.retentionMult };
+    const tier = makeTier(cfg);
+    if (i === 0) tier.cohorts[0] = oldCusts;
+    return tier;
   });
   delete state.saas.price;
   delete state.saas.priceRound;
@@ -130,7 +132,7 @@ if (!('winTick' in state))      state.winTick      = null;
 // Migrate: analytics series + events (old saves predate run-series)
 if (!state.series || !Array.isArray(state.series.t)) {
   state.series = {
-    sampleEveryTicks: CONSTANTS.Sample_Every_Ticks,
+    sampleEveryTicks: CONSTANTS.SAMPLE_EVERY_TICKS,
     t: [0], money: [0], rcu: [0], labBurn: [0],
   };
 }
@@ -162,13 +164,7 @@ function switchToTab(tab) {
   }
 
   if (tab === 'saas_product' && state.saas.tiers.length === 0) {
-    const cfg = SAAS.subscription_tiers[0];
-    state.saas.tiers = [{
-      price:          cfg.price,
-      cohorts:        new Array(30).fill(0),
-      conversionMult: cfg.conversionMult,
-      retentionMult:  cfg.retentionMult,
-    }];
+    state.saas.tiers = [makeTier(SAAS.subscription_tiers[0])];
   }
 
   if (tab === 'leaderboard') refreshLeaderboard();
@@ -277,8 +273,7 @@ startTick(state, (s) => {
     // Save once on the winning frame so a reload keeps the run resolved,
     // then stop autosaving (the tick loop is frozen anyway).
     if (!s._winSaved) { s._winSaved = true; save(s); }
-  } else if (s.ticksElapsed % 60 === 0) {
-    // Auto-save every 60 ticks (1 in-game hour)
+  } else if (s.ticksElapsed % CONSTANTS.AUTOSAVE_EVERY_TICKS === 0) {
     save(s);
   }
 });
