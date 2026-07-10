@@ -624,6 +624,35 @@ function injectStyles() {
       background: none; border: none; color: #333; cursor: pointer; font-size: 11px; padding: 0 2px;
     }
     .da-sim-run-del:hover { color: #c94040; }
+
+    /* ── extract modal ── */
+    #da-extract-btn {
+      background: none; border: 1px solid #333; color: #666;
+      font-family: inherit; font-size: 10px; padding: 3px 10px; cursor: pointer; border-radius: 3px;
+      margin-right: 8px;
+    }
+    #da-extract-btn:hover { border-color: #16a34a; color: #16a34a; }
+    #da-extract-modal {
+      display: none; position: absolute; inset: 60px 15% ; z-index: 10;
+      flex-direction: column; gap: 8px; padding: 12px;
+      background: #0c0c10; border: 1px solid #2a2a2a; border-radius: 4px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7); max-height: calc(100% - 120px);
+    }
+    #da-extract-modal.on { display: flex; }
+    #da-extract-head { display: flex; justify-content: space-between; align-items: center; }
+    #da-extract-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+    #da-extract-actions { display: flex; gap: 6px; }
+    #da-extract-actions button {
+      background: none; border: 1px solid #333; color: #666;
+      font-family: inherit; font-size: 9px; padding: 2px 8px; cursor: pointer; border-radius: 2px;
+    }
+    #da-extract-actions button:hover { border-color: #666; color: #ccc; }
+    #da-extract-text {
+      flex: 1; min-height: 120px; resize: none; white-space: pre; overflow: auto;
+      background: #080810; border: 1px solid #1e1e28; border-radius: 3px;
+      color: #ccc; font-family: inherit; font-size: 10px; line-height: 1.6; padding: 8px;
+    }
+    #da-extract-text:focus { outline: none; border-color: #2a2a2a; }
   `;
   document.head.appendChild(el);
 }
@@ -657,7 +686,20 @@ function buildHTML() {
     <div id="da-panel">
       <div id="da-header">
         <span id="da-title">[ analysis_tool ]</span>
-        <button id="da-close">✕ close (Esc)</button>
+        <span>
+          <button id="da-extract-btn">⇪ extract</button>
+          <button id="da-close">✕ close (Esc)</button>
+        </span>
+      </div>
+      <div id="da-extract-modal">
+        <div id="da-extract-head">
+          <span id="da-extract-title">modified_parameters</span>
+          <span id="da-extract-actions">
+            <button id="da-extract-copy">copy</button>
+            <button id="da-extract-close">✕</button>
+          </span>
+        </div>
+        <textarea id="da-extract-text" readonly spellcheck="false"></textarea>
       </div>
       <div id="da-left">${groupsHTML}</div>
       <div id="da-right">
@@ -1009,6 +1051,38 @@ function drawSnapshot() {
   document.getElementById('da-s-mrr').textContent        = fmtNum(sim.mrr);
 }
 
+// ── Extract (modified parameters) ────────────────────────────────
+function collectDiffs(cur, def, path, out) {
+  if (cur !== null && typeof cur === 'object') {
+    for (const key of Object.keys(cur)) collectDiffs(cur[key], def?.[key], `${path}.${key}`, out);
+    return;
+  }
+  if (cur !== def) out.push({ path, from: def, to: cur });
+}
+
+function buildExtractText() {
+  const diffs = [];
+  for (const root of Object.keys(ROOTS)) collectDiffs(ROOTS[root], DEFAULTS[root], root, diffs);
+  if (!diffs.length) return 'no modified parameters — all values match src/engine/state.js';
+  const lines = diffs.map(d => `${d.path} = ${d.to}  # was ${d.from}`);
+  return [
+    '# balance extract — modified parameters from the dev analysis tool',
+    '# apply these values in src/engine/state.js (path = new_value)',
+    ...lines,
+  ].join('\n');
+}
+
+function toggleExtractModal(show) {
+  const modal = document.getElementById('da-extract-modal');
+  if (!modal) return;
+  if (show) {
+    document.getElementById('da-extract-text').value = buildExtractText();
+    modal.classList.add('on');
+  } else {
+    modal.classList.remove('on');
+  }
+}
+
 // ── Module state ─────────────────────────────────────────────────
 let _overlay = null;
 let _activeView = 'curves';
@@ -1159,8 +1233,21 @@ export function initDevAnalysis() {
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && _overlay.classList.contains('on')) {
+      const modal = document.getElementById('da-extract-modal');
+      if (modal?.classList.contains('on')) { modal.classList.remove('on'); return; }
       _overlay.classList.remove('on');
     }
+  });
+
+  // Extract modal
+  _overlay.querySelector('#da-extract-btn').addEventListener('click',   () => toggleExtractModal(true));
+  _overlay.querySelector('#da-extract-close').addEventListener('click', () => toggleExtractModal(false));
+  _overlay.querySelector('#da-extract-copy').addEventListener('click', e => {
+    const text = document.getElementById('da-extract-text').value;
+    navigator.clipboard?.writeText(text).then(() => {
+      e.target.textContent = 'copied ✓';
+      setTimeout(() => { e.target.textContent = 'copy'; }, 1200);
+    });
   });
 
   // View toggle buttons
