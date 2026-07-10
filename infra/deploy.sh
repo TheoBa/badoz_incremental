@@ -17,6 +17,9 @@ git -C "$PROD_DIR" fetch origin
 git -C "$PROD_DIR" checkout main 2>/dev/null || git -C "$PROD_DIR" checkout -b main --track origin/main
 git -C "$PROD_DIR" reset --hard origin/main
 
+echo "→ installing dependencies"
+npm --prefix "$PROD_DIR" install --omit=dev --silent
+
 echo ""
 echo "✓  $(git -C "$PROD_DIR" log -1 --oneline)"
 echo ""
