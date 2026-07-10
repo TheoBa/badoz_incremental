@@ -3,8 +3,14 @@
 # Wraps infra/deploy.sh with change detection and a server restart.
 # Replaces the legacy root auto-pull.sh (see infra/legacy/).
 #
+# The crontab MUST point at the ~/badoz_prod copy, not the dev working tree:
+# macOS TCC blocks cron from reading anything under ~/Documents (this is why
+# the legacy auto-pull cron never worked — 941 "Operation not permitted"
+# failures in its log). ~/badoz_prod is outside TCC scope and the copy there
+# self-updates on every deploy.
+#
 # Crontab:
-#   */5 * * * * $REPO/infra/auto-deploy.sh >> $HOME/Library/Logs/badoz/auto-deploy.log 2>&1
+#   */5 * * * * $HOME/badoz_prod/infra/auto-deploy.sh >> $HOME/Library/Logs/badoz/auto-deploy.log 2>&1
 set -euo pipefail
 
 PROD_DIR="$HOME/badoz_prod"

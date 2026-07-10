@@ -35,7 +35,7 @@ nginx proxies port 80 → 3000. Config lives at `infra/nginx.conf`.
 
 **Deployment** (mac mini): the production server runs from `~/badoz_prod`, a separate clone always on `main`. Never from the dev working tree.
 
-Deploys are **automatic**: a crontab entry runs `infra/auto-deploy.sh` every 5 minutes, which deploys + restarts the server whenever `origin/main` has new commits (so a `dev` → `main` merge goes live within 5 minutes). Logs: `~/Library/Logs/badoz/auto-deploy.log` and `server.log`.
+Deploys are **automatic**: a crontab entry runs `~/badoz_prod/infra/auto-deploy.sh` every 5 minutes, which deploys + restarts the server whenever `origin/main` has new commits (so a `dev` → `main` merge goes live within 5 minutes). Logs: `~/Library/Logs/badoz/auto-deploy.log` and `server.log`. The cron must point at the `~/badoz_prod` copy of the script — macOS TCC silently blocks cron from reading anything under `~/Documents`.
 
 To deploy manually instead:
 ```bash
