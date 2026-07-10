@@ -33,7 +33,11 @@ curl -X POST http://localhost:3000/api/runs/complete \
 
 nginx proxies port 80 → 3000. Config lives at `infra/nginx.conf`.
 
-**Deployment** (mac mini): the production server runs from `~/badoz_prod`, a separate clone always on `main`. Never from the dev working tree. To deploy:
+**Deployment** (mac mini): the production server runs from `~/badoz_prod`, a separate clone always on `main`. Never from the dev working tree.
+
+Deploys are **automatic**: a crontab entry runs `infra/auto-deploy.sh` every 5 minutes, which deploys + restarts the server whenever `origin/main` has new commits (so a `dev` → `main` merge goes live within 5 minutes). Logs: `~/Library/Logs/badoz/auto-deploy.log` and `server.log`.
+
+To deploy manually instead:
 ```bash
 bash infra/deploy.sh          # pulls origin/main into ~/badoz_prod
 lsof -i :3000 -t | xargs kill # stop running server
