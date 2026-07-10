@@ -3,20 +3,11 @@
 // Each step has a threshold and an optional onClaim() mutator.
 // Status is derived on-the-fly — nothing is stored except state.milestones.claimed[id].
 
-import { MILESTONES, CONSTANTS, SAAS } from './state.js';
-
-// ── Local formatters (no render.js import — avoids circular deps) ──
-function fmtMoney(n) {
-  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-  return '$' + Math.round(n);
-}
+import { MILESTONES, SAAS } from './config.js';
+import { fmt as fmtMoney, fmtN } from '../ui/format.js';
 
 function fmtRcu(n) {
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M RCU';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K RCU';
-  return Math.floor(n) + ' RCU';
+  return fmtN(n) + ' RCU';
 }
 
 function fmtMissions(n) {

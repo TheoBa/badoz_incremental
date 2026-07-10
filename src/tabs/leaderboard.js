@@ -5,6 +5,7 @@
 
 import { getPlayerName }      from '../engine/identity.js';
 import { renderSeriesCharts } from '../ui/charts.js';
+import { ticksToLabel }       from '../ui/format.js';
 
 let board   = null;                 // cached leaderboard rows (null = not loaded)
 let loading = false;
@@ -81,7 +82,7 @@ function paintList(panel) {
       <td class="lb-rank">${r.rank}</td>
       <td class="lb-name">${esc(r.player_name)}</td>
       <td class="lb-saas">${esc(r.saas_name)}</td>
-      <td class="lb-time">${fmtTicks(r.total_elapsed_ticks)}</td>
+      <td class="lb-time">${ticksToLabel(r.total_elapsed_ticks)}</td>
       <td class="lb-date">${fmtDate(r.submitted_at)}</td>
     </tr>`).join('');
 
@@ -129,7 +130,7 @@ function paintDetail(panel) {
   panel.innerHTML = backHTML() + `
     <div class="lb-detail-head">
       <div class="lb-detail-title">${esc(run.saas_name)} <span class="lb-detail-by">by ${esc(run.player_name)}</span></div>
-      <div class="lb-detail-meta">time ${fmtTicks(run.total_elapsed_ticks)} · ${fmtDate(run.submitted_at)}</div>
+      <div class="lb-detail-meta">time ${ticksToLabel(run.total_elapsed_ticks)} · ${fmtDate(run.submitted_at)}</div>
     </div>
     <div id="lb-charts"></div>`;
 
@@ -150,11 +151,6 @@ function wireBack(panel) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────
-function fmtTicks(ticks) {
-  const t = Number(ticks) || 0;
-  return `${Math.floor(t / 24)}d ${t % 24}h`;
-}
-
 function fmtDate(ms) {
   try { return new Date(Number(ms)).toLocaleDateString(); } catch { return '—'; }
 }

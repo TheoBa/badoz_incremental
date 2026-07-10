@@ -1,15 +1,15 @@
-// tick.js — game loop
+// tick.js — game loop orchestration.
 // Fires every TICK_RATE real seconds = 1 in-game hour.
-// Every 24 ticks = 1 in-game day.
+// The economy itself (passive RCU, daily SaaS, lab billing, CEO rep) lives in
+// economy.js so the simulator runs the exact same code.
 
+import { CONSTANTS } from './config.js';
 import {
-  CONSTANTS, LAB_PLANS,
-  calcCoderRcuPerHour,
-  calcSupportRetentionBonus,
-  calcMarketerMarketingBonus,
-  calcProductManagerMultiplier,
-  calcCeoReputationGain,
-} from './state.js';
+  applyPassiveCoderRcu,
+  applyDailySaas,
+  applyDailyLabBilling,
+  applyDailyCeoReputation,
+} from './economy.js';
 import { generateMissions } from './missions.js';
 
 export function startTick(state, onTick) {
@@ -26,19 +26,18 @@ function tick(state) {
 
   state.ticksElapsed++;
 
-  // Passive RCU generation (AI Coder agent)
-  applyLabAgents(state);
+  applyPassiveCoderRcu(state);
 
-  // Daily events (every 24 ticks = 1 in-game day)
-  if (state.ticksElapsed % 24 === 0) {
+  // Daily events (every TICKS_PER_DAY ticks = 1 in-game day)
+  if (state.ticksElapsed % CONSTANTS.TICKS_PER_DAY === 0) {
     applyDailySaas(state);
     applyDailyLabBilling(state);
     applyDailyCeoReputation(state);
     refreshFreelanceMissions(state);
     pushHistorySnapshot(state);
 
-    // Weekly summary — trigger every 7 days (168 ticks)
-    if (state.ticksElapsed % 168 === 0) {
+    // Weekly summary — trigger every 7 days
+    if (state.ticksElapsed % CONSTANTS.TICKS_PER_WEEK === 0) {
       // Freeze display snapshot BEFORE resetting accumulators
       state.weekStats.lastWeek = {
         missionsDone: (state.freelance.missionsCompleted ?? 0) - state.weekStats.missionsAtStart,
@@ -50,8 +49,8 @@ function tick(state) {
     }
   }
 
-  // Analytics sampler — cumulative snapshot every Sample_Every_Ticks
-  if (state.ticksElapsed % CONSTANTS.Sample_Every_Ticks === 0) {
+  // Analytics sampler — cumulative snapshot every SAMPLE_EVERY_TICKS
+  if (state.ticksElapsed % CONSTANTS.SAMPLE_EVERY_TICKS === 0) {
     sampleSeries(state);
   }
 
@@ -65,101 +64,11 @@ function tick(state) {
 
   checkWin(state);
 
-  // Sliding window for RCU/h display — push this tick's total, keep last 10
-  if (!Array.isArray(state.rcuHistory)) state.rcuHistory = new Array(10).fill(0);
+  // Sliding window for RCU/h display — push this tick's total, keep the window
+  if (!Array.isArray(state.rcuHistory)) state.rcuHistory = new Array(CONSTANTS.RCU_WINDOW_TICKS).fill(0);
   state.rcuHistory.push(state._rcuThisTick ?? 0);
-  if (state.rcuHistory.length > 10) state.rcuHistory.shift();
+  if (state.rcuHistory.length > CONSTANTS.RCU_WINDOW_TICKS) state.rcuHistory.shift();
   state._rcuThisTick = 0;
-}
-
-// ── Agent passive effects ──────────────────────────────────────
-function applyLabAgents(state) {
-  if (!state.milestones?.claimed?.lab_unlock) return;
-  const coder = state.lab.agents.ai_coder;
-  if (!coder.unlocked) return;
-
-  // Free plan (multiplier 1) provides the baseline floor; paid plans scale above that
-  const plan       = LAB_PLANS[coder.tier] ?? LAB_PLANS.free;
-  const pmMult     = calcProductManagerMultiplier(state);
-  const rcuPerHour = calcCoderRcuPerHour(coder) * plan.multiplier * pmMult;
-
-  // 1 tick = 1 in-game hour
-  state.rcu            += rcuPerHour;
-  state.rcuLifetime    += rcuPerHour;
-  state._rcuThisTick    = (state._rcuThisTick ?? 0) + rcuPerHour;
-}
-
-// ── Daily SaaS: acquisition + monthly renewal (cohort ring buffer) ─
-function applyDailySaas(state) {
-  if (state.saas.tiers.length === 0) return;
-
-  const slotIdx       = Math.floor(state.ticksElapsed / 24) % 30;
-  const investBoost   = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
-  const pmMult        = calcProductManagerMultiplier(state);
-  const marketerBoost = calcMarketerMarketingBonus(state) * pmMult;
-  const visitors      = (1 + state.saas.marketingStream + investBoost + marketerBoost)
-                        * state.reputation.multiplier;
-  const supportBonus  = calcSupportRetentionBonus(state);
-
-  for (const tier of state.saas.tiers) {
-    // Renewal: 30-day-old cohort either renews or churns
-    const oldCohort    = tier.cohorts[slotIdx];
-    const effRetention = (state.saas.retention + supportBonus * pmMult) * tier.retentionMult;
-    const renewalProb  = effRetention > 0 ? Math.pow(1 - 0.02 / effRetention, 30) : 0;
-    const renewed      = oldCohort * renewalProb;
-
-    // Acquisition: new signups today
-    const convRate     = progressive_wall(state.saas.conversion * tier.conversionMult, 1, 2);
-    const gained       = visitors * convRate;
-
-    // Revenue collected upfront: renewals pay for next month, new signups pay for month 1
-    const revenue = (renewed + gained) * tier.price;
-    state.wallet        += revenue;
-    state.moneyLifetime += revenue;
-
-    // Write slot: renewed subscribers + today's new signups
-    tier.cohorts[slotIdx] = renewed + gained;
-  }
-
-  // Recompute derived fields
-  state.saas.customers = state.saas.tiers.reduce(
-    (total, t) => total + t.cohorts.reduce((a, b) => a + b, 0), 0
-  );
-  state.saas.mrr = state.saas.tiers.reduce(
-    (s, t) => s + t.price * t.cohorts.reduce((a, b) => a + b, 0), 0
-  );
-  if (state.saas.mrr > (state.saas.mrrPeak ?? 0)) state.saas.mrrPeak = state.saas.mrr;
-}
-
-// ── Daily Lab billing ──────────────────────────────────────────
-function applyDailyLabBilling(state) {
-  if (!state.milestones?.claimed?.lab_unlock) return;
-  // Apply plan changes queued from previous day
-  for (const agent of Object.values(state.lab.agents)) {
-    if (agent.pendingTier != null) {
-      agent.tier        = agent.pendingTier;
-      agent.pendingTier = null;
-    }
-  }
-  // Deduct daily plan costs — only once the frontier_lab is unlocked
-  let totalCost = 0;
-  if (state.milestones?.claimed?.lab_unlock) {
-    for (const agent of Object.values(state.lab.agents)) {
-      if (!agent.unlocked) continue;
-      const plan = LAB_PLANS[agent.tier];
-      if (plan && plan.dailyCost > 0) totalCost += plan.dailyCost;
-    }
-  }
-  if (totalCost > 0) {
-    state.wallet           -= totalCost;
-    state.labSpendLifetime += totalCost;
-  }
-}
-
-// ── Daily CEO reputation gain ──────────────────────────────────
-function applyDailyCeoReputation(state) {
-  const gain = calcCeoReputationGain(state);
-  if (gain > 0) state.reputation.multiplier += gain;
 }
 
 // ── Freelance mission refresh ──────────────────────────────────
@@ -226,10 +135,4 @@ function sampleSeries(state) {
   s.money.push(state.moneyLifetime);
   s.rcu.push(state.rcuLifetime);
   s.labBurn.push(state.labSpendLifetime);
-}
-
-
-// ── Helpers ────────────────────────────────────────────────────
-export function progressive_wall(x, wall_value, half_life) {
-  return ((wall_value * x) / (x + half_life)).toFixed(2);
 }

@@ -2,7 +2,8 @@
 // Fires every 7 in-game days (168 ticks). Shows a digest of the past week
 // with a balance trend chart.
 
-import { fmt, fmtN } from './render.js';
+import { CONSTANTS } from '../engine/config.js';
+import { fmt, fmtN } from './format.js';
 import { renderHistogram } from './histograms.js';
 
 const overlay = () => document.getElementById('weekly-overlay');
@@ -19,7 +20,7 @@ function showWeeklySummary(state) {
   const ov = overlay();
   if (!ov) return;
 
-  const weekNum = Math.floor(state.ticksElapsed / 168);
+  const weekNum = Math.floor(state.ticksElapsed / CONSTANTS.TICKS_PER_WEEK);
   const h       = state.history;
   const lw      = state.weekStats?.lastWeek ?? {};
 

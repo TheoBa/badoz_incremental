@@ -1,7 +1,7 @@
 // missions.js — mission pool definitions and generation
 // Costs are generated per-mission
 
-import { FREELANCE } from './state.js';
+import { FREELANCE } from './config.js';
 
 // ── Name pools (one per tier) ──────────────────────────────────
 const POOLS = {
@@ -43,14 +43,6 @@ const POOLS = {
   ],
 };
 
-// ── Tier → state constants lookup ────────────────────────────────────
-const TIER_MAP = {
-  junior: "t1",
-  senior: "t2",
-  lead:   "t3",
-  tenmx:  "t4",
-};
-
 // ── Box-Muller normal distribution ────────────────────────────
 // Returns a random integer drawn from N(mean, stdDev), clamped to ≥ 1.
 function normalRandom(mean, stdDev) {
@@ -73,10 +65,9 @@ function rand() {
  */
 export function generateMissions(tier) {
   const pool   = POOLS[tier] ?? POOLS.junior;
-  const tierKey = TIER_MAP[tier] ?? TIER_MAP.junior;
-  const mean   = FREELANCE.rcu_cost[tierKey];
+  const mean   = FREELANCE.rcu_cost[tier] ?? FREELANCE.rcu_cost.junior;
   const stdDev = mean * FREELANCE.rcu_stdev;
-  const mult   = FREELANCE.rcu_to_money_mult[tierKey];
+  const mult   = FREELANCE.rcu_to_money_mult[tier] ?? FREELANCE.rcu_to_money_mult.junior;
 
   const shuffled = [...pool].sort(() => rand() - 0.5);
   return shuffled.slice(0, 3).map((name, i) => {

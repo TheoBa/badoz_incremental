@@ -14,8 +14,9 @@
 //   buildReputationCategory — items with cooldown/max_uses → rep bump
 //   buildHardwareCategory   — gear/laptop tiers + cpu/gpu infinite upgrades
 
-import { INVESTMENTS, MILESTONES, calcRcuPerClick } from '../engine/state.js';
-import { fmt, fmtN } from '../ui/render.js';
+import { INVESTMENTS, MILESTONES } from '../engine/config.js';
+import { calcRcuPerClick } from '../engine/formulas.js';
+import { fmt, fmtN, ticksToLabel } from '../ui/format.js';
 
 // ── Category builders ──────────────────────────────────────────
 
@@ -303,9 +304,9 @@ function investmentCard(inv, state, effectClass = '') {
   // Badge: priority — cooldown > in-progress > custom (null = no badge)
   const customBadge = inv.badge ? inv.badge(state) : null;
   const badge = onCooldown
-    ? `<span class="inv-badge">${ticksToLabel(cdTicks)}</span>`
+    ? `<span class="inv-badge">${ticksToLabel(cdTicks)} left</span>`
     : inProgress
-      ? `<span class="inv-badge">active · ${ticksToLabel(activeTicks)}</span>`
+      ? `<span class="inv-badge">active · ${ticksToLabel(activeTicks)} left</span>`
       : customBadge
         ? `<span class="inv-badge">${customBadge}</span>`
         : '';
@@ -332,9 +333,3 @@ function investmentCard(inv, state, effectClass = '') {
     </div>`;
 }
 
-// ── Helpers ────────────────────────────────────────────────────
-function ticksToLabel(ticks) {
-  const days  = Math.floor(ticks / 24);
-  const hours = ticks % 24;
-  return days > 0 ? `${days}d ${hours}h left` : `${hours}h left`;
-}
