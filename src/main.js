@@ -179,6 +179,7 @@ function switchToTab(tab) {
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.classList.contains('locked')) return;
+    btn.blur(); // so Enter/Space go to the tab's primary action, not the tab button
     switchToTab(btn.dataset.tab);
   });
 });
@@ -193,6 +194,28 @@ document.addEventListener('keydown', e => {
   const btn = document.querySelectorAll('.tab')[idx];
   if (!btn || btn.classList.contains('locked')) return;
   switchToTab(btn.dataset.tab);
+});
+
+// ── Action shortcuts (Enter / Space trigger the active tab's primary action) ──
+const PRIMARY_ACTION = {
+  write_code: () => document.getElementById('wc-btn'),
+  freelance:  () => document.querySelector('#fl-missions .fl-btn-accept:not([disabled])'),
+  post_on_x:  () => document.getElementById('pox-btn'),
+  milestones: () => document.querySelector('.ms-claim-btn'),
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const target = e.target;
+  if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) return;
+  if (target?.tagName === 'BUTTON') return; // focused buttons keep native Enter/Space
+  if (document.querySelector('#start-screen.on, #lore-overlay.on, #go-broke-overlay.on, #weekly-overlay.on, #win-screen.on, #dev-analysis-overlay.on')) return;
+  const tab = document.querySelector('.tab.on')?.dataset.tab;
+  const btn = PRIMARY_ACTION[tab]?.();
+  if (!btn || btn.disabled) return;
+  e.preventDefault(); // keep Space from scrolling the page
+  btn.click();
 });
 
 // ── Dev panel (toggle with ` key) ─────────────────────────────
