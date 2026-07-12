@@ -2,7 +2,7 @@
 // Called once when a run is won (see ui/win.js). Same-origin fetch, so it works
 // locally and behind the Cloudflare tunnel without any base URL.
 
-import { CLIENT_VERSION } from './state.js';
+import { CLIENT_VERSION } from './config.js';
 import { getPlayerName }  from './identity.js';
 
 /** Build the /api/runs/complete payload from final run state. */

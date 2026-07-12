@@ -2,7 +2,7 @@
 // showLore(tab, state, renderFn) shows the #lore-overlay with tab-specific text.
 // For saas_product it also collects the product name before closing.
 
-import { MILESTONES } from '../engine/state.js';
+import { MILESTONES } from '../engine/config.js';
 import { save } from '../engine/save.js';
 
 const LORE = {
@@ -104,6 +104,10 @@ export function showLore(tab, state, renderFn) {
   // Wire dismiss — replace any old listener by cloning the button
   const newOk = okBtn.cloneNode(true);
   okBtn.parentNode.replaceChild(newOk, okBtn);
+
+  // Enter inside the product name input confirms (assignment, not addEventListener,
+  // so repeated showLore calls don't stack listeners)
+  if (inputEl) inputEl.onkeydown = e => { if (e.key === 'Enter') newOk.click(); };
 
   newOk.addEventListener('click', () => {
     if (entry.hasNameInput) {

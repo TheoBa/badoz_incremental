@@ -13,7 +13,11 @@ import { renderHistogram }   from './histograms.js';
 import { renderWinScreen }     from './win.js';
 import { renderStartScreen }   from './start.js';
 import { renderWeeklyOverlay } from './weekly.js';
-import { CONSTANTS, MILESTONES, LAB_PLANS, calcSupportRetentionBonus, calcMarketerMarketingBonus } from '../engine/state.js';
+import { fmt, fmtN } from './format.js';
+import { CONSTANTS, MILESTONES } from '../engine/config.js';
+import {
+  softCap, calcSupportRetentionBonus, calcMarketerMarketingBonus, calcDailyLabBurn,
+} from '../engine/formulas.js';
 import { MILESTONE_TRACKS, getStepStatus } from '../engine/milestones.js';
 
 export function render(state) {
@@ -57,8 +61,8 @@ function renderTabLocks(state) {
 // ── Header ─────────────────────────────────────────────────────
 function renderHeader(state) {
   const hours = state.ticksElapsed;
-  const days  = Math.floor(hours / 24);
-  const h     = hours % 24;
+  const days  = Math.floor(hours / CONSTANTS.TICKS_PER_DAY);
+  const h     = hours % CONSTANTS.TICKS_PER_DAY;
   set('h-timer', `${String(days).padStart(2, '0')}d ${String(h).padStart(2, '0')}h`);
 }
 
@@ -74,15 +78,13 @@ function renderKpi(state) {
   set('k-earned', fmt(lastEarned) + '/d');
   set('k-rcu',    fmtN(lastRcu)  + '/d');
   set('k-mrr',    fmt(state.saas.mrr));
-  set('k-burn',   fmt(calcBurnPerDay(state)) + '/d');
-  const conversionRate = progressive_wall(state.saas.conversion, 100, 2);
-  set('k-sat',    conversionRate + '%');
+  set('k-burn',   fmt(calcDailyLabBurn(state)) + '/d');
+  const conversionRate = softCap(state.saas.conversion, 100, CONSTANTS.CONV_HALF_LIFE);
+  set('k-sat',    conversionRate.toFixed(2) + '%');
   const effectiveRetention = state.saas.retention + calcSupportRetentionBonus(state);
-  const retentionPct = progressive_wall(effectiveRetention, 100, 5);
-  set('k-ret',    retentionPct + '%');
-  const investBoost = Array.isArray(state.investments)
-    ? 0
-    : state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
+  const retentionPct = softCap(effectiveRetention, 100, CONSTANTS.RET_HALF_LIFE);
+  set('k-ret',    retentionPct.toFixed(2) + '%');
+  const investBoost = state.investments.active.reduce((s, b) => s + b.marketingBoost, 0);
   const marketerBoost = calcMarketerMarketingBonus(state);
   const effectiveMkt = (state.saas.marketingStream + investBoost + marketerBoost) * state.reputation.multiplier;
   set('k-mkt', fmtN(effectiveMkt) + '/d');
@@ -129,35 +131,11 @@ function set(id, val) {
   if (el) el.textContent = val;
 }
 
-export function fmt(n) {
-  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-  return '$' + Math.round(n);
-}
-
-export function fmtN(n) {
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return String(Math.floor(n));
-}
-
 function calcRcuPerHour(state) {
   if (!Array.isArray(state.rcuHistory) || state.rcuHistory.length === 0) return 0;
   return state.rcuHistory.reduce((a, b) => a + b, 0) / state.rcuHistory.length;
 }
 
 function calcBurnPerHour(state) {
-  return calcBurnPerDay(state) / 24;
-}
-
-function calcBurnPerDay(state) {
-  if (!state.milestones?.claimed?.lab_unlock) return 0;
-  return Object.values(state.lab.agents)
-    .filter(a => a.unlocked)
-    .reduce((sum, a) => sum + (LAB_PLANS[a.tier]?.dailyCost ?? 0), 0);
-}
-
-export function progressive_wall(x, wall_value, half_life) {
-  return ((wall_value * x) / (x + half_life)).toFixed(2);
+  return calcDailyLabBurn(state) / CONSTANTS.TICKS_PER_DAY;
 }

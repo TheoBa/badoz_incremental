@@ -1,8 +1,9 @@
 // weekly.js — weekly summary pop-up
 // Fires every 7 in-game days (168 ticks). Shows a digest of the past week
-// and hints at the $1B wallet target via a balance trend chart.
+// with a balance trend chart.
 
-import { fmt, fmtN } from './render.js';
+import { CONSTANTS } from '../engine/config.js';
+import { fmt, fmtN } from './format.js';
 import { renderHistogram } from './histograms.js';
 
 const overlay = () => document.getElementById('weekly-overlay');
@@ -19,7 +20,7 @@ function showWeeklySummary(state) {
   const ov = overlay();
   if (!ov) return;
 
-  const weekNum = Math.floor(state.ticksElapsed / 168);
+  const weekNum = Math.floor(state.ticksElapsed / CONSTANTS.TICKS_PER_WEEK);
   const h       = state.history;
   const lw      = state.weekStats?.lastWeek ?? {};
 
@@ -42,7 +43,7 @@ function showWeeklySummary(state) {
   // Wallet evolution bars — clamp to 0 for bar height; negative shown as near-zero
   renderHistogram(el('weekly-wallet'), h.wallet.map(v => Math.max(v, 0)), '#16a34a');
 
-  el('weekly-hint').textContent = `balance: ${fmt(state.wallet)} · target: $1B`;
+  el('weekly-hint').textContent = `balance: ${fmt(state.wallet)}`;
 
   ov.classList.add('on');
 

@@ -37,4 +37,4 @@ logs/
 server/db/*.db.bin
 
 # Theo's ignore
-auto-pull.sh
+/auto-pull.sh

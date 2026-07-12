@@ -4,7 +4,7 @@
 
 import { newRun }      from '../engine/run.js';
 import { submitRun }   from '../engine/submit.js';
-import { fmt, fmtN }   from './render.js';
+import { fmt, fmtN, ticksToLabel } from './format.js';
 
 export function initWinScreen(state, renderFn) {
   document.getElementById('win-new-run')?.addEventListener('click', () => {
@@ -24,11 +24,9 @@ export function renderWinScreen(state) {
 
   overlay.classList.add('on');
   const tick = state.winTick ?? state.ticksElapsed;
-  const days = Math.floor(tick / 24);
-  const hrs  = tick % 24;
 
   set('win-product', state.productName ?? '—');
-  set('win-time',    `${days}d ${hrs}h`);
+  set('win-time',    ticksToLabel(tick));
   set('win-earned',  fmt(state.moneyLifetime));
   set('win-rcu',     fmtN(state.rcuLifetime));
   set('win-burn',    fmt(state.labSpendLifetime));

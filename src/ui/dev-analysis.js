@@ -1,6 +1,6 @@
 // dev-analysis.js — developer analysis panel for game balancing
 
-import { CONSTANTS, MILESTONES, FREELANCE, SAAS, LAB, INVESTMENTS } from '../engine/state.js';
+import { CONSTANTS, MILESTONES, FREELANCE, SAAS, LAB, INVESTMENTS } from '../engine/config.js';
 import { runSim, saveSim, loadSims, deleteSim } from '../engine/simulator.js';
 
 const ROOTS    = { CONSTANTS, MILESTONES, FREELANCE, SAAS, LAB, INVESTMENTS };
@@ -13,8 +13,8 @@ const GROUPS = [
     fields: [
       { path: 'CONSTANTS.TICK_RATE',            label: 'tick_rate',      step: 0.1 },
       { path: 'CONSTANTS.WIN_CONDITION',         label: 'win_condition',  step: 1e7 },
-      { path: 'CONSTANTS.PostOnX_Rep_Delta',     label: 'post_rep_delta', step: 0.001 },
-      { path: 'CONSTANTS.PostOnX_Cooldown',      label: 'post_cooldown',  step: 1 },
+      { path: 'CONSTANTS.POST_REP_DELTA',     label: 'post_rep_delta', step: 0.001 },
+      { path: 'CONSTANTS.POST_COOLDOWN',      label: 'post_cooldown',  step: 1 },
     ]
   },
   {
@@ -70,14 +70,14 @@ const GROUPS = [
   {
     id: 'freelance', label: 'freelance',
     fields: [
-      { path: 'FREELANCE.rcu_cost.t1',           label: 'rcu_cost.jr',   step: 1 },
-      { path: 'FREELANCE.rcu_cost.t2',           label: 'rcu_cost.sr',   step: 1 },
-      { path: 'FREELANCE.rcu_cost.t3',           label: 'rcu_cost.lead', step: 5 },
-      { path: 'FREELANCE.rcu_cost.t4',           label: 'rcu_cost.10x',  step: 50 },
-      { path: 'FREELANCE.rcu_to_money_mult.t1',  label: 'mult.jr',       step: 0.5 },
-      { path: 'FREELANCE.rcu_to_money_mult.t2',  label: 'mult.sr',       step: 0.5 },
-      { path: 'FREELANCE.rcu_to_money_mult.t3',  label: 'mult.lead',     step: 0.5 },
-      { path: 'FREELANCE.rcu_to_money_mult.t4',  label: 'mult.10x',      step: 0.5 },
+      { path: 'FREELANCE.rcu_cost.junior',           label: 'rcu_cost.jr',   step: 1 },
+      { path: 'FREELANCE.rcu_cost.senior',           label: 'rcu_cost.sr',   step: 1 },
+      { path: 'FREELANCE.rcu_cost.lead',           label: 'rcu_cost.lead', step: 5 },
+      { path: 'FREELANCE.rcu_cost.tenmx',           label: 'rcu_cost.10x',  step: 50 },
+      { path: 'FREELANCE.rcu_to_money_mult.junior',  label: 'mult.jr',       step: 0.5 },
+      { path: 'FREELANCE.rcu_to_money_mult.senior',  label: 'mult.sr',       step: 0.5 },
+      { path: 'FREELANCE.rcu_to_money_mult.lead',  label: 'mult.lead',     step: 0.5 },
+      { path: 'FREELANCE.rcu_to_money_mult.tenmx',  label: 'mult.10x',      step: 0.5 },
       { path: 'FREELANCE.rcu_stdev',             label: 'rcu_stdev',     step: 0.05 },
     ]
   },
@@ -99,61 +99,61 @@ const GROUPS = [
   {
     id: 'lab_coder', label: 'agent / ai_coder',
     fields: [
-      { path: 'LAB.agents.coder.minor_base_cost',  label: 'minor_base_cost',  step: 1 },
-      { path: 'LAB.agents.coder.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
-      { path: 'LAB.agents.coder.base_delta',       label: 'base_delta',       step: 0.1 },
-      { path: 'LAB.agents.coder.delta_scale',      label: 'delta_scale',      step: 0.01 },
-      { path: 'LAB.agents.coder.major_base_cost',  label: 'major_base_cost',  step: 50 },
-      { path: 'LAB.agents.coder.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
-      { path: 'LAB.agents.coder.major_pow',        label: 'major_pow',        step: 0.5 },
+      { path: 'LAB.agents.ai_coder.minor_base_cost',  label: 'minor_base_cost',  step: 1 },
+      { path: 'LAB.agents.ai_coder.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
+      { path: 'LAB.agents.ai_coder.base_delta',       label: 'base_delta',       step: 0.1 },
+      { path: 'LAB.agents.ai_coder.delta_scale',      label: 'delta_scale',      step: 0.01 },
+      { path: 'LAB.agents.ai_coder.major_base_cost',  label: 'major_base_cost',  step: 50 },
+      { path: 'LAB.agents.ai_coder.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
+      { path: 'LAB.agents.ai_coder.major_pow',        label: 'major_pow',        step: 0.5 },
     ]
   },
   {
     id: 'lab_support', label: 'agent / ai_support',
     fields: [
-      { path: 'LAB.agents.support.minor_base_cost',  label: 'minor_base_cost',  step: 10 },
-      { path: 'LAB.agents.support.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
-      { path: 'LAB.agents.support.base_delta',       label: 'base_delta',       step: 0.1 },
-      { path: 'LAB.agents.support.delta_scale',      label: 'delta_scale',      step: 0.01 },
-      { path: 'LAB.agents.support.major_base_cost',  label: 'major_base_cost',  step: 200 },
-      { path: 'LAB.agents.support.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
-      { path: 'LAB.agents.support.major_pow',        label: 'major_pow',        step: 0.5 },
+      { path: 'LAB.agents.ai_support.minor_base_cost',  label: 'minor_base_cost',  step: 10 },
+      { path: 'LAB.agents.ai_support.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
+      { path: 'LAB.agents.ai_support.base_delta',       label: 'base_delta',       step: 0.1 },
+      { path: 'LAB.agents.ai_support.delta_scale',      label: 'delta_scale',      step: 0.01 },
+      { path: 'LAB.agents.ai_support.major_base_cost',  label: 'major_base_cost',  step: 200 },
+      { path: 'LAB.agents.ai_support.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
+      { path: 'LAB.agents.ai_support.major_pow',        label: 'major_pow',        step: 0.5 },
     ]
   },
   {
     id: 'lab_marketer', label: 'agent / ai_marketer',
     fields: [
-      { path: 'LAB.agents.marketer.minor_base_cost',  label: 'minor_base_cost',  step: 100 },
-      { path: 'LAB.agents.marketer.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
-      { path: 'LAB.agents.marketer.base_delta',       label: 'base_delta',       step: 0.5 },
-      { path: 'LAB.agents.marketer.delta_scale',      label: 'delta_scale',      step: 0.01 },
-      { path: 'LAB.agents.marketer.major_base_cost',  label: 'major_base_cost',  step: 1000 },
-      { path: 'LAB.agents.marketer.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
-      { path: 'LAB.agents.marketer.major_pow',        label: 'major_pow',        step: 0.5 },
+      { path: 'LAB.agents.ai_marketer.minor_base_cost',  label: 'minor_base_cost',  step: 100 },
+      { path: 'LAB.agents.ai_marketer.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
+      { path: 'LAB.agents.ai_marketer.base_delta',       label: 'base_delta',       step: 0.5 },
+      { path: 'LAB.agents.ai_marketer.delta_scale',      label: 'delta_scale',      step: 0.01 },
+      { path: 'LAB.agents.ai_marketer.major_base_cost',  label: 'major_base_cost',  step: 1000 },
+      { path: 'LAB.agents.ai_marketer.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
+      { path: 'LAB.agents.ai_marketer.major_pow',        label: 'major_pow',        step: 0.5 },
     ]
   },
   {
     id: 'lab_pm', label: 'agent / ai_pm',
     fields: [
-      { path: 'LAB.agents.product_manager.minor_base_cost',  label: 'minor_base_cost',  step: 500 },
-      { path: 'LAB.agents.product_manager.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
-      { path: 'LAB.agents.product_manager.base_delta',       label: 'base_delta',       step: 0.01 },
-      { path: 'LAB.agents.product_manager.delta_scale',      label: 'delta_scale',      step: 0.01 },
-      { path: 'LAB.agents.product_manager.major_base_cost',  label: 'major_base_cost',  step: 5000 },
-      { path: 'LAB.agents.product_manager.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
-      { path: 'LAB.agents.product_manager.major_pow',        label: 'major_pow',        step: 0.5 },
+      { path: 'LAB.agents.ai_product_manager.minor_base_cost',  label: 'minor_base_cost',  step: 500 },
+      { path: 'LAB.agents.ai_product_manager.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
+      { path: 'LAB.agents.ai_product_manager.base_delta',       label: 'base_delta',       step: 0.01 },
+      { path: 'LAB.agents.ai_product_manager.delta_scale',      label: 'delta_scale',      step: 0.01 },
+      { path: 'LAB.agents.ai_product_manager.major_base_cost',  label: 'major_base_cost',  step: 5000 },
+      { path: 'LAB.agents.ai_product_manager.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
+      { path: 'LAB.agents.ai_product_manager.major_pow',        label: 'major_pow',        step: 0.5 },
     ]
   },
   {
     id: 'lab_ceo', label: 'agent / ai_ceo',
     fields: [
-      { path: 'LAB.agents.ceo.minor_base_cost',  label: 'minor_base_cost',  step: 10000 },
-      { path: 'LAB.agents.ceo.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
-      { path: 'LAB.agents.ceo.base_delta',       label: 'base_delta',       step: 0.001 },
-      { path: 'LAB.agents.ceo.delta_scale',      label: 'delta_scale',      step: 0.01 },
-      { path: 'LAB.agents.ceo.major_base_cost',  label: 'major_base_cost',  step: 50000 },
-      { path: 'LAB.agents.ceo.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
-      { path: 'LAB.agents.ceo.major_pow',        label: 'major_pow',        step: 0.5 },
+      { path: 'LAB.agents.ai_ceo.minor_base_cost',  label: 'minor_base_cost',  step: 10000 },
+      { path: 'LAB.agents.ai_ceo.minor_cost_scale', label: 'minor_cost_scale', step: 0.01 },
+      { path: 'LAB.agents.ai_ceo.base_delta',       label: 'base_delta',       step: 0.001 },
+      { path: 'LAB.agents.ai_ceo.delta_scale',      label: 'delta_scale',      step: 0.01 },
+      { path: 'LAB.agents.ai_ceo.major_base_cost',  label: 'major_base_cost',  step: 50000 },
+      { path: 'LAB.agents.ai_ceo.major_cost_scale', label: 'major_cost_scale', step: 0.1 },
+      { path: 'LAB.agents.ai_ceo.major_pow',        label: 'major_pow',        step: 0.5 },
     ]
   },
   {
@@ -251,7 +251,7 @@ function computeCurves(systemVal, N) {
   }
 
   if (systemVal.startsWith('agent/')) {
-    const key = { coder: 'coder', support: 'support', marketer: 'marketer', pm: 'product_manager', ceo: 'ceo' }[systemVal.slice(6)];
+    const key = { coder: 'ai_coder', support: 'ai_support', marketer: 'ai_marketer', pm: 'ai_product_manager', ceo: 'ai_ceo' }[systemVal.slice(6)];
     const cfg = LAB.agents[key];
     const minorCost = [], totalCost = [], boost = [], cumBoost = [];
     let ct = 0, cb = 0;
@@ -624,6 +624,35 @@ function injectStyles() {
       background: none; border: none; color: #333; cursor: pointer; font-size: 11px; padding: 0 2px;
     }
     .da-sim-run-del:hover { color: #c94040; }
+
+    /* ── extract modal ── */
+    #da-extract-btn {
+      background: none; border: 1px solid #333; color: #666;
+      font-family: inherit; font-size: 10px; padding: 3px 10px; cursor: pointer; border-radius: 3px;
+      margin-right: 8px;
+    }
+    #da-extract-btn:hover { border-color: #16a34a; color: #16a34a; }
+    #da-extract-modal {
+      display: none; position: absolute; inset: 60px 15% ; z-index: 10;
+      flex-direction: column; gap: 8px; padding: 12px;
+      background: #0c0c10; border: 1px solid #2a2a2a; border-radius: 4px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7); max-height: calc(100% - 120px);
+    }
+    #da-extract-modal.on { display: flex; }
+    #da-extract-head { display: flex; justify-content: space-between; align-items: center; }
+    #da-extract-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+    #da-extract-actions { display: flex; gap: 6px; }
+    #da-extract-actions button {
+      background: none; border: 1px solid #333; color: #666;
+      font-family: inherit; font-size: 9px; padding: 2px 8px; cursor: pointer; border-radius: 2px;
+    }
+    #da-extract-actions button:hover { border-color: #666; color: #ccc; }
+    #da-extract-text {
+      flex: 1; min-height: 120px; resize: none; white-space: pre; overflow: auto;
+      background: #080810; border: 1px solid #1e1e28; border-radius: 3px;
+      color: #ccc; font-family: inherit; font-size: 10px; line-height: 1.6; padding: 8px;
+    }
+    #da-extract-text:focus { outline: none; border-color: #2a2a2a; }
   `;
   document.head.appendChild(el);
 }
@@ -657,7 +686,20 @@ function buildHTML() {
     <div id="da-panel">
       <div id="da-header">
         <span id="da-title">[ analysis_tool ]</span>
-        <button id="da-close">✕ close (Esc)</button>
+        <span>
+          <button id="da-extract-btn">⇪ extract</button>
+          <button id="da-close">✕ close (Esc)</button>
+        </span>
+      </div>
+      <div id="da-extract-modal">
+        <div id="da-extract-head">
+          <span id="da-extract-title">modified_parameters</span>
+          <span id="da-extract-actions">
+            <button id="da-extract-copy">copy</button>
+            <button id="da-extract-close">✕</button>
+          </span>
+        </div>
+        <textarea id="da-extract-text" readonly spellcheck="false"></textarea>
       </div>
       <div id="da-left">${groupsHTML}</div>
       <div id="da-right">
@@ -908,14 +950,16 @@ function simMRR(rcuBudget, price, planName, days, tierCfg) {
   const convMult      = tierCfg?.conversionMult ?? 1;
   const retMult       = tierCfg?.retentionMult  ?? 1;
   const effRetention  = saasRetention * retMult;
-  const renewalProb   = effRetention > 0 ? Math.pow(1 - 0.02 / effRetention, 30) : 0;
+  const renewalProb   = effRetention > 0
+    ? Math.pow(1 - CONSTANTS.CHURN_BASE / effRetention, CONSTANTS.COHORT_DAYS)
+    : 0;
   const visitors      = (1 + saasMarketing);
   const effConversion = saasConversion * convMult;
-  const convRate      = effConversion > 0 ? effConversion / (effConversion + 2) : 0;
-  const cohorts       = new Array(30).fill(0);
+  const convRate      = effConversion > 0 ? effConversion / (effConversion + CONSTANTS.CONV_HALF_LIFE) : 0;
+  const cohorts       = new Array(CONSTANTS.COHORT_DAYS).fill(0);
 
   for (let d = 0; d < days; d++) {
-    const slotIdx = d % 30;
+    const slotIdx = d % CONSTANTS.COHORT_DAYS;
     const renewed = cohorts[slotIdx] * renewalProb;
     const gained  = visitors * convRate;
     cohorts[slotIdx] = renewed + gained;
@@ -937,7 +981,7 @@ function drawSnapshot() {
   const convCfg = SAAS.ship_feature.conversion;
   const retCfg  = SAAS.ship_feature.retention;
   const mktCfg  = SAAS.ship_feature.marketing;
-  const coderCfg = LAB.agents.coder;
+  const coderCfg = LAB.agents.ai_coder;
 
   const conv  = maxLevel(rcu, convCfg.base_cost,    convCfg.cost_scale);
   const ret   = maxLevel(rcu, retCfg.base_cost,     retCfg.cost_scale);
@@ -1007,6 +1051,38 @@ function drawSnapshot() {
   const sim = simMRR(rcu, price, plan, days, tierCfg);
   document.getElementById('da-s-customers').textContent  = `${sim.customers} after ${days}d`;
   document.getElementById('da-s-mrr').textContent        = fmtNum(sim.mrr);
+}
+
+// ── Extract (modified parameters) ────────────────────────────────
+function collectDiffs(cur, def, path, out) {
+  if (cur !== null && typeof cur === 'object') {
+    for (const key of Object.keys(cur)) collectDiffs(cur[key], def?.[key], `${path}.${key}`, out);
+    return;
+  }
+  if (cur !== def) out.push({ path, from: def, to: cur });
+}
+
+function buildExtractText() {
+  const diffs = [];
+  for (const root of Object.keys(ROOTS)) collectDiffs(ROOTS[root], DEFAULTS[root], root, diffs);
+  if (!diffs.length) return 'no modified parameters — all values match src/engine/config.js';
+  const lines = diffs.map(d => `${d.path} = ${d.to}  # was ${d.from}`);
+  return [
+    '# balance extract — modified parameters from the dev analysis tool',
+    '# apply these values in src/engine/config.js (path = new_value)',
+    ...lines,
+  ].join('\n');
+}
+
+function toggleExtractModal(show) {
+  const modal = document.getElementById('da-extract-modal');
+  if (!modal) return;
+  if (show) {
+    document.getElementById('da-extract-text').value = buildExtractText();
+    modal.classList.add('on');
+  } else {
+    modal.classList.remove('on');
+  }
 }
 
 // ── Module state ─────────────────────────────────────────────────
@@ -1159,8 +1235,21 @@ export function initDevAnalysis() {
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && _overlay.classList.contains('on')) {
+      const modal = document.getElementById('da-extract-modal');
+      if (modal?.classList.contains('on')) { modal.classList.remove('on'); return; }
       _overlay.classList.remove('on');
     }
+  });
+
+  // Extract modal
+  _overlay.querySelector('#da-extract-btn').addEventListener('click',   () => toggleExtractModal(true));
+  _overlay.querySelector('#da-extract-close').addEventListener('click', () => toggleExtractModal(false));
+  _overlay.querySelector('#da-extract-copy').addEventListener('click', e => {
+    const text = document.getElementById('da-extract-text').value;
+    navigator.clipboard?.writeText(text).then(() => {
+      e.target.textContent = 'copied ✓';
+      setTimeout(() => { e.target.textContent = 'copy'; }, 1200);
+    });
   });
 
   // View toggle buttons
